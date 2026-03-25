@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TaskOrganizer Einrichtung",
+        "description": "Möchtest du die TaskOrganizer Integration einrichten?"
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Es ist nur eine einzige Instanz des TaskOrganizers erlaubt."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "all_tasks": { "name": "Alle Aufgaben" },
+      "due_tasks": { "name": "Fällige Aufgaben" },
+      "settings": { "name": "Einstellungen" },
+      "points": { "name": "Punktestand" },
+      "leaderboard": { "name": "Mitbewohner des Monats" }
+    }
+  },
+  "services": {
+    "reset_monthly_points": {
+      "name": "Monatspunkte zurücksetzen",
+      "description": "Setzt die Punkte aller Mitbewohner manuell auf 0 und archiviert den Monat."
+    },
+    "complete_task_by_name": {
+      "name": "Aufgabe abschließen",
+      "description": "Markiert eine Aufgabe anhand ihres Namens als erledigt.",
+      "fields": {
+        "task_name": { "name": "Aufgabenname", "description": "Der exakte Name der Aufgabe." },
+        "user_id": { "name": "Benutzer (Optional)", "description": "Die HA User-ID oder Entität." }
+      }
+    },
+    "add_task": {
+      "name": "Neue Aufgabe anlegen",
+      "description": "Erstellt eine neue Aufgabe.",
+      "fields": {
+        "name": { "name": "Name", "description": "Wie soll die Aufgabe heißen?" },
+        "description": { "name": "Beschreibung", "description": "Zusätzliche Informationen." },
+        "interval": { "name": "Intervall (Tage)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
+        "complexity": { "name": "Punkte (1-10)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
+        "icon": { "name": "Icon", "description": "Ein mdi-Icon" },
+        "assignees": { "name": "Bearbeiter", "description": "Komma getrennte User-IDs." }
+      }
+    }
+  }
+}

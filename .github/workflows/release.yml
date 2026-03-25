@@ -1,0 +1,79 @@
+name: Auto Release TaskOrganizer
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: get_version
+        run: |
+          VERSION=$(jq -r .version custom_components/task_organizer/manifest.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - id: release_info
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "TYPE=nightly" >> $GITHUB_ENV
+            echo "TAG=nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
+            echo "TITLE=TaskOrganizer-nightly$(date +'%Y%m%d')" >> $GITHUB_ENV
+            echo "PRERELEASE=true" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "TYPE=stable" >> $GITHUB_ENV
+            echo "TAG=v${VERSION}" >> $GITHUB_ENV
+            echo "TITLE=TaskOrganizerV${VERSION}" >> $GITHUB_ENV
+            echo "PRERELEASE=false" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/beta" ]]; then
+            echo "TYPE=beta" >> $GITHUB_ENV
+            echo "TAG=v${VERSION}-beta" >> $GITHUB_ENV
+            echo "TITLE=TaskOrganizerV${VERSION}-beta" >> $GITHUB_ENV
+            echo "PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "TYPE=unknown" >> $GITHUB_ENV
+          fi
+
+      - if: env.TYPE == 'beta'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release delete "${TAG}" --cleanup-tag -y || true
+          fi
+          git push --delete origin "${TAG}" || true
+
+      - if: env.TYPE == 'nightly'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag -l "nightly-*" | sort -r > nightly_tags.txt
+          COUNT=$(wc -l < nightly_tags.txt)
+          if [ "$COUNT" -ge 25 ]; then
+            tail -n +25 nightly_tags.txt > tags_to_delete.txt
+            while read -r tag_to_delete; do
+              gh release delete "$tag_to_delete" --cleanup-tag -y || true
+              git push --delete origin "$tag_to_delete" || true
+            done < tags_to_delete.txt
+          fi
+
+      - if: env.TYPE != 'unknown'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          gh release create "${TAG}" -t "${TITLE}" --generate-notes ${PRERELEASE_FLAG}

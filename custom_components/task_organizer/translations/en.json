@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TaskOrganizer Setup",
+        "description": "Do you want to set up the TaskOrganizer integration?"
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single instance of TaskOrganizer is allowed."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "all_tasks": { "name": "All Tasks" },
+      "due_tasks": { "name": "Due Tasks" },
+      "settings": { "name": "Settings" },
+      "points": { "name": "Points" },
+      "leaderboard": { "name": "Roommate of the Month" }
+    }
+  },
+  "services": {
+    "reset_monthly_points": {
+      "name": "Reset monthly points",
+      "description": "Manually resets all roommate points to 0 and archives the month."
+    },
+    "complete_task_by_name": {
+      "name": "Complete task",
+      "description": "Marks a task as completed by its exact name.",
+      "fields": {
+        "task_name": { "name": "Task name", "description": "The exact name of the task." },
+        "user_id": { "name": "User (Optional)", "description": "The HA User-ID or entity." }
+      }
+    },
+    "add_task": {
+      "name": "Add new task",
+      "description": "Creates a new task in the Task Organizer.",
+      "fields": {
+        "name": { "name": "Name", "description": "What should the task be called?" },
+        "description": { "name": "Description", "description": "Additional info." },
+        "interval": { "name": "Interval (Days)", "description": "How often does it need to be done?" },
+        "complexity": { "name": "Points (1-10)", "description": "How many points is it worth?" },
+        "icon": { "name": "Icon", "description": "An mdi-icon" },
+        "assignees": { "name": "Assignees", "description": "Comma separated user IDs." }
+      }
+    }
+  }
+}

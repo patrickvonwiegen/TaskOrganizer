@@ -1,0 +1,69 @@
+reset_monthly_points:
+  name: Reset monthly points
+  description: Manually resets all roommate points to 0 and archives the month.
+  
+complete_task_by_name:
+  name: Complete task
+  description: Marks a task as completed by its exact name.
+  fields:
+    task_name:
+      name: Task name
+      description: The exact name of the task (e.g., "Take out the trash").
+      required: true
+      example: "Take out the trash"
+      selector:
+        text:
+    user_id:
+      name: User (Optional)
+      description: The HA User-ID or a person.name entity. If left empty, the executing user gets the points.
+      required: false
+      selector:
+        text:
+        
+add_task:
+  name: Add new task
+  description: Creates a new task in the Task Organizer.
+  fields:
+    name:
+      name: Name
+      description: What should the task be called?
+      required: true
+      selector:
+        text:
+    description:
+      name: Description (Optional)
+      description: Additional info.
+      required: false
+      selector:
+        text:
+    interval:
+      name: Interval (Days)
+      description: How often does it need to be done?
+      required: true
+      default: 7
+      selector:
+        number:
+          min: 1
+          max: 365
+    complexity:
+      name: Points (1-10)
+      description: How many points is it worth?
+      required: true
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 10
+    icon:
+      name: Icon (Optional)
+      description: An mdi-icon, e.g. mdi:broom
+      required: false
+      default: "mdi:broom"
+      selector:
+        icon:
+    assignees:
+      name: Assignees (Optional)
+      description: Who is responsible? (Comma separated user IDs or person.name entities). If left empty, the executing user is assigned.
+      required: false
+      selector:
+        text:
