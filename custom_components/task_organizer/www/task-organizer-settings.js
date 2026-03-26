@@ -256,8 +256,8 @@ class TaskOrganizerSettings extends HTMLElement {
         .btn-save { background: #2196F3; color: white; margin-top: 8px; } 
         .btn-reset { background: #FF9800; color: white; } 
         .btn-factory { background: #F44336; color: white; } 
-        .btn-export { background: #4CAF50; color: white; }
-        .btn-import { background: #9C27B0; color: white; }
+        .btn-export { background: #2196F3; color: white; }
+        .btn-import { background: #2196F3; color: white; }
       </style>
     `;
   }

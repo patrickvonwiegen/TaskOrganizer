@@ -287,6 +287,97 @@ async def ws_factory_reset(hass: HomeAssistant, connection: websocket_api.Active
     connection.send_result(msg["id"], {"success": True})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_UPDATE_SETTINGS,
+    vol.Required("settings"): dict,
+})
+@websocket_api.async_response
+async def ws_update_settings(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    data = hass.data[DOMAIN]["data"]
+    data["settings"].update(msg["settings"])
+    await hass.data[DOMAIN]["store"].async_save(data)
+    hass.bus.async_fire(EVENT_TASK_UPDATED)
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_DELETE_HISTORY_ITEM,
+    vol.Required("entry_id"): str,
+})
+@websocket_api.async_response
+async def ws_delete_history_item(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    data = hass.data[DOMAIN]["data"]
+    entry_id = msg["entry_id"]
+    
+    history = data["history"]
+    entry_to_delete = next((item for item in history if item["id"] == entry_id), None)
+    
+    if entry_to_delete:
+        u_id = entry_to_delete["user_id"]
+        pts = float(entry_to_delete.get("points", 0))
+        
+        if u_id in data["points"]:
+            data["points"][u_id] = max(0.0, float(data["points"][u_id]) - pts)
+            
+        data["history"] = [item for item in history if item["id"] != entry_id]
+        
+        await hass.data[DOMAIN]["store"].async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+    
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_EDIT_HISTORY_ITEM,
+    vol.Required("entry_id"): str,
+    vol.Required("points"): vol.Coerce(float),
+    vol.Required("user_id"): str,
+})
+@websocket_api.async_response
+async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    data = hass.data[DOMAIN]["data"]
+    entry_id = msg["entry_id"]
+    new_points = msg["points"]
+    new_user_id = msg["user_id"]
+    
+    history = data["history"]
+    entry = next((item for item in history if item["id"] == entry_id), None)
+    
+    if entry:
+        old_u_id = entry["user_id"]
+        old_pts = float(entry.get("points", 0))
+        
+        if old_u_id in data["points"]:
+            data["points"][old_u_id] = max(0.0, float(data["points"][old_u_id]) - old_pts)
+            
+        if new_user_id not in data["points"]:
+            data["points"][new_user_id] = 0.0
+        data["points"][new_user_id] += new_points
+        
+        entry["user_id"] = new_user_id
+        entry["points"] = new_points
+        
+        await hass.data[DOMAIN]["store"].async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+        
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_IMPORT_TASKS,
+    vol.Required("tasks"): dict,
+})
+@websocket_api.async_response
+async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    data = hass.data[DOMAIN]["data"]
+    imported = msg["tasks"]
+    for tid, tdata in imported.items():
+        data["tasks"][tid] = tdata
+    await hass.data[DOMAIN]["store"].async_save(data)
+    hass.bus.async_fire(EVENT_TASK_UPDATED)
+    connection.send_result(msg["id"], {"success": True})
+
+
 async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
     """
     Check if a new month has started and perform the points reset.
@@ -445,6 +536,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     websocket_api.async_register_command(hass, ws_edit_task)
     websocket_api.async_register_command(hass, ws_delete_task)
     websocket_api.async_register_command(hass, ws_factory_reset)
+    websocket_api.async_register_command(hass, ws_update_settings)
+    websocket_api.async_register_command(hass, ws_delete_history_item)
+    websocket_api.async_register_command(hass, ws_edit_history_item)
+    websocket_api.async_register_command(hass, ws_import_tasks)
     
     # Register static path for frontend cards
     frontend_path = hass.config.path(f"custom_components/{DOMAIN}/www")

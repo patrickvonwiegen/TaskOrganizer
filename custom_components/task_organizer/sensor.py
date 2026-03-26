@@ -108,3 +108,85 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
             "json_string": json.dumps(due_tasks), 
             "data": due_tasks
         }
+
+
+class TaskOrganizerSettingsSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the integration settings."""
+
+    def __init__(self, hass: HomeAssistant):
+        super().__init__(hass, "task_organizer_settings", "settings")
+        self._attr_icon = "mdi:cog"
+
+    @property
+    def state(self) -> str:
+        """Return a generic OK state."""
+        return "OK"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the settings as state attributes."""
+        return self._data.get("settings", {})
+
+
+class TaskOrganizerPointsSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the points of all users."""
+
+    def __init__(self, hass: HomeAssistant):
+        super().__init__(hass, "task_organizer_points", "points")
+        self._attr_icon = "mdi:star"
+
+    @property
+    def state(self) -> float:
+        """Return the sum of all points."""
+        return sum(self._data.get("points", {}).values())
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the points list as state attributes."""
+        pts = self._data.get("points", {})
+        points_list = []
+        for uid, p in pts.items():
+            name = uid
+            for state in self.hass.states.async_all("person"):
+                if state.attributes.get("user_id") == uid:
+                    name = state.attributes.get("friendly_name", uid)
+                    break
+            points_list.append({"user_id": uid, "name": name, "points": p})
+        return {"json_string": json.dumps(points_list), "data": points_list}
+
+
+class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the current leaderboard leader."""
+
+    def __init__(self, hass: HomeAssistant):
+        super().__init__(hass, "task_organizer_leaderboard", "leaderboard")
+        self._attr_icon = "mdi:trophy"
+
+    @property
+    def state(self) -> str:
+        """Return the name of the user with the most points."""
+        points = self._data.get("points", {})
+        if not points:
+            return "Niemand"
+        best_user_id = max(points, key=points.get)
+        if points[best_user_id] == 0:
+            return "Niemand"
+        for state in self.hass.states.async_all("person"):
+            if state.attributes.get("user_id") == best_user_id:
+                return state.attributes.get("friendly_name", best_user_id)
+        return best_user_id
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the sorted leaderboard as state attributes."""
+        points = self._data.get("points", {})
+        sorted_users = sorted(points.items(), key=lambda item: item[1], reverse=True)
+        leaderboard = []
+        for uid, pts in sorted_users:
+            name = uid
+            for state in self.hass.states.async_all("person"):
+                if state.attributes.get("user_id") == uid:
+                    name = state.attributes.get("friendly_name", uid)
+                    break
+            leaderboard.append({"user_id": uid, "name": name, "points": pts})
+        return {"json_string": json.dumps(leaderboard), "data": leaderboard}

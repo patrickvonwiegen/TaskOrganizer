@@ -13,7 +13,8 @@ const I18N_CARD = {
     desc_lbl: "Description (optional)", desc_placeholder: "Additional info...", 
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
-    set_due_today: "Set immediately due", pause_until: "Pause until", paused: "Paused until {date}" 
+    set_due_today: "Set immediately due", pause_until: "Pause until", paused: "Paused until {date}",
+    prev: "Previous", next: "Next", page: "Page"
   },
   de: { 
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
@@ -24,7 +25,8 @@ const I18N_CARD = {
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
-    set_due_today: "Sofort fällig setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}" 
+    set_due_today: "Sofort fällig setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}",
+    prev: "Zurück", next: "Weiter", page: "Seite"
   }
 };
 
@@ -56,6 +58,7 @@ class TaskOrganizerCard extends HTMLElement {
     
     this._dataLoaded = false; 
     this._unsubEvents = null;
+    this.currentPage = 1;
     this.addEventListener('click', (ev) => this._handleCardClick(ev));
   }
 
@@ -94,7 +97,9 @@ class TaskOrganizerCard extends HTMLElement {
           type: "custom:task-organizer-card", 
           sort_by: "due_date", 
           sort_order: "default", 
-          filter_by: "none" 
+          filter_by: "none",
+          items_per_page: 10,
+          hide_delete: false
       }; 
   }
 
@@ -190,6 +195,12 @@ class TaskOrganizerCard extends HTMLElement {
         this._closeChoiceModal();
     } else if (target.id === 'btn-choice-confirm') {
         this._confirmCompletion();
+    } else if (target.id === 'btn-prev-page') {
+        this.currentPage = Math.max(1, this.currentPage - 1);
+        this._render();
+    } else if (target.id === 'btn-next-page') {
+        this.currentPage++;
+        this._render();
     }
   }
 
@@ -390,7 +401,7 @@ class TaskOrganizerCard extends HTMLElement {
           .header span { font-size: 20px; font-weight: bold; } 
           .add-button { width: 38px; height: 38px; background: #2196F3 !important; color: white !important; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; } 
           .task-list { display: flex; flex-direction: column; gap: 10px; width: 100%; flex-grow: 1; } 
-          .task-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border-left: 6px solid var(--status-color); border: 1px solid var(--divider-color); background-color: color-mix(in srgb, var(--status-color), transparent 92%); transition: transform 0.2s; } 
+          .task-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border-left: 6px solid var(--status-color); border: 1px solid var(--divider-color); background-color: color-mix(in srgb, var(--status-color), transparent 92%); transition: transform 0.2s; min-height: 75px; box-sizing: border-box; } 
           .task-item:hover { background-color: color-mix(in srgb, var(--status-color), transparent 85%); transform: translateX(2px); box-shadow: -2px 4px 8px rgba(0,0,0,0.1); } 
           .task-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; } 
           .task-text { flex: 1; min-width: 0; word-break: break-word; text-align: left; } 
@@ -404,6 +415,10 @@ class TaskOrganizerCard extends HTMLElement {
           .btn-complete { color: #4CAF50 !important; } 
           .btn-edit { color: #2196F3 !important; } 
           .btn-delete { color: #F44336 !important; } 
+          .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
+          .btn-page { background: #2196F3; color: white; padding: 8px 12px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
+          .btn-page:active { opacity: 0.8; }
+          .btn-page[disabled] { background: var(--divider-color); color: var(--secondary-text-color); cursor: not-allowed; opacity: 0.6; }
           .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
           .modal.open { display: flex; } 
           .modal-content { background: var(--card-background-color, white); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; } 
@@ -422,6 +437,8 @@ class TaskOrganizerCard extends HTMLElement {
     const filterBy = this._config.filter_by || 'none'; 
     const sortBy = this._config.sort_by || 'due_date';
     const sortOrder = this._config.sort_order || 'default';
+    const itemsPerPage = this._config.items_per_page;
+    const hideDelete = this._config.hide_delete === true;
 
     const nowForSort = new Date(); 
     nowForSort.setHours(0,0,0,0);
@@ -472,6 +489,20 @@ class TaskOrganizerCard extends HTMLElement {
       return cmp; 
     });
 
+    let paginatedTasks = taskArray;
+    let totalPages = 1;
+
+    // Pagination Logic
+    if (itemsPerPage && itemsPerPage > 0) {
+      totalPages = Math.max(1, Math.ceil(taskArray.length / itemsPerPage));
+      if (this.currentPage > totalPages) {
+          this.currentPage = Math.max(1, totalPages);
+      }
+      
+      const startIndex = (this.currentPage - 1) * itemsPerPage;
+      paginatedTasks = taskArray.slice(startIndex, startIndex + itemsPerPage);
+    }
+
     const displayTitle = this._config.title || this.localize('title');
 
     // Generate Card HTML Structure
@@ -486,7 +517,7 @@ class TaskOrganizerCard extends HTMLElement {
     `;
 
     // Loop through tasks and render items
-    taskArray.forEach(task => {
+    paginatedTasks.forEach(task => {
       const d = new Date(task.due_date); 
       d.setHours(0,0,0,0);
       const now = new Date(); 
@@ -536,16 +567,27 @@ class TaskOrganizerCard extends HTMLElement {
             <div class="actions">
                 <button class="action-btn btn-complete" data-id="${task.id}"><ha-icon icon="mdi:check"></ha-icon></button>
                 <button class="action-btn btn-edit" data-id="${task.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>
-                <button class="action-btn btn-delete" data-id="${task.id}"><ha-icon icon="mdi:delete"></ha-icon></button>
+                ${hideDelete ? '' : `<button class="action-btn btn-delete" data-id="${task.id}"><ha-icon icon="mdi:delete"></ha-icon></button>`}
             </div>
         </div>
       `;
     });
 
+    html += `</div>`;
+
+    // Render Pagination Controls if needed
+    if (itemsPerPage && itemsPerPage > 0 && taskArray.length > itemsPerPage) {
+        html += `
+            <div class="pagination">
+                <button class="btn-page" id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</button>
+                <span style="font-size: 13px; color: var(--secondary-text-color);">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
+                <button class="btn-page" id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</button>
+            </div>
+        `;
+    }
+
     // Modals for Choice and Task Edit
     html += `
-        </div>
-        
         <div id="choice-modal" class="modal">
             <div class="modal-content">
                 <h2 style="margin:0">${this.localize('who_did_it')}</h2>

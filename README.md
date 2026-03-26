@@ -53,6 +53,8 @@ title: "My Tasks"
 sort_by: due_date       # Options: due_date, points, assignee, alphabet (default due_date)
 sort_order: desc        # Options: default, asc, desc (default default)
 filter_by: none         # Options: none, current_user, due, overdue, due_and_overdue, active, inactive, unassigned (default none)
+items_per_page: 10      # Number of displayed items
+hide_delete: false      # Hides the task delete symbol (Default false)
 ```
 
 ### 2. Roommate of the Month (task-organizer-leaderboard)
@@ -71,6 +73,8 @@ A list of recently completed tasks with the option to correct or delete entries.
 ```yaml
 type: custom:task-organizer-stats
 title: "Who did what?"
+filter_by: all      # Options: all, mine (Default all)
+items_per_page: 10  # Number of displayed items
 ```
 ### 4. Settings (task-organizer-settings)
 Allows customization of colors, data export, and factory resets.

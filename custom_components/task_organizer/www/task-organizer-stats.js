@@ -4,8 +4,18 @@
  * de: German translations.
  */
 const I18N_STATS = {
-  en: { title: "Household Log", empty: "No entries.", unknown: "Unknown", confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points", user: "Assignee", cancel: "Cancel", save: "Save" },
-  de: { title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern" }
+  en: { 
+    title: "Household Log", empty: "No entries.", unknown: "Unknown", 
+    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points", 
+    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All", 
+    filter_mine: "Mine", prev: "Previous", next: "Next", page: "Page" 
+  },
+  de: { 
+    title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
+    confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
+    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle", 
+    filter_mine: "Eigene", prev: "Zurück", next: "Weiter", page: "Seite" 
+  }
 };
 
 /**
@@ -34,6 +44,9 @@ class TaskOrganizerStats extends HTMLElement {
     this._unsubEvents = null;
     this.dataLoaded = false;
     
+    // Pagination
+    this.currentPage = 1;
+    
     this.addEventListener('click', (ev) => this._handleClick(ev));
   }
 
@@ -59,7 +72,7 @@ class TaskOrganizerStats extends HTMLElement {
    * Generates default configuration for the Card Picker.
    */
   static getStubConfig() { 
-    return { type: "custom:task-organizer-stats" }; 
+    return { type: "custom:task-organizer-stats", items_per_page: 10, filter_by: "all" }; 
   }
 
   /**
@@ -133,14 +146,20 @@ class TaskOrganizerStats extends HTMLElement {
       this.render(); 
     }); 
   }
-  
+
   /**
    * Central click handler for action buttons inside the shadow DOM.
    * * @param {Event} ev - The click event.
    */
   _handleClick(ev) {
     const path = ev.composedPath();
-    const target = path.find(el => el.classList?.contains('action-btn') || el.id === 'btn-edit-save' || el.id === 'btn-edit-cancel');
+    const target = path.find(el => 
+        el.classList?.contains('action-btn') || 
+        el.id === 'btn-edit-save' || 
+        el.id === 'btn-edit-cancel' ||
+        el.id === 'btn-prev-page' ||
+        el.id === 'btn-next-page'
+    );
     
     if (!target) {
       return;
@@ -148,17 +167,19 @@ class TaskOrganizerStats extends HTMLElement {
     
     const entryId = target.dataset.id;
     
-    if (target.classList.contains('btn-edit')) {
-      this.openEditModal(entryId);
+    if (target.classList.contains('btn-edit')) this.openEditModal(entryId);
+    if (target.classList.contains('btn-delete')) this.deleteEntry(entryId);
+    if (target.id === 'btn-edit-cancel') this.closeModal();
+    if (target.id === 'btn-edit-save') this.saveEdit();
+    
+    // Pagination Handler
+    if (target.id === 'btn-prev-page') {
+      this.currentPage = Math.max(1, this.currentPage - 1);
+      this.render();
     }
-    if (target.classList.contains('btn-delete')) {
-      this.deleteEntry(entryId);
-    }
-    if (target.id === 'btn-edit-cancel') {
-      this.closeModal();
-    }
-    if (target.id === 'btn-edit-save') {
-      this.saveEdit();
+    if (target.id === 'btn-next-page') {
+      this.currentPage++;
+      this.render();
     }
   }
 
@@ -229,23 +250,27 @@ class TaskOrganizerStats extends HTMLElement {
         :host { display: block; width: 100%; } 
         * { box-sizing: border-box; } 
         ha-card { padding: 16px; display: flex; flex-direction: column; } 
-        .header { font-size: 20px; font-weight: bold; margin-bottom: 20px; } 
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header { font-size: 20px; font-weight: bold; } 
         .hist-list { display: flex; flex-direction: column; gap: 10px; } 
-        .hist-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); box-shadow: var(--ha-card-box-shadow, 0 2px 2px rgba(0,0,0,0.1)); } 
+        .hist-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); box-shadow: var(--ha-card-box-shadow, 0 2px 2px rgba(0,0,0,0.1)); min-height: 75px; box-sizing: border-box; } 
         .hist-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } 
         .task-name { font-weight: bold; font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .meta { font-size: 12px; color: var(--secondary-text-color); } 
         .actions { display: flex; gap: 4px; align-items: center; } 
         .points-badge { font-weight: bold; color: var(--primary-color); margin-right: 8px; font-size: 14px; } 
         .action-btn { background: none; border: none; padding: 6px; cursor: pointer; color: var(--primary-text-color); } 
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
+        .btn-page { background: #2196F3; color: white; padding: 8px 12px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
+        .btn-page:active { opacity: 0.8; }
+        .btn-page[disabled] { background: var(--divider-color); color: var(--secondary-text-color); cursor: not-allowed; opacity: 0.6; }
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
         .modal.open { display: flex; } 
         .modal-content { background: var(--card-background-color, white); padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; } 
         .input-group { display: flex; flex-direction: column; gap: 5px; width: 100%; } 
-        .modal input, .modal select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background: var(--primary-background-color); color: var(--primary-text-color); } 
+        .modal input, .modal select { width: 100%; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px; font-size: 16px; background: var(--primary-background-color); color: var(--primary-text-color); } 
         .modal-actions { display: flex; gap: 10px; margin-top: 10px; } 
         .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; } 
-        /* Button colors */
         .btn-save { background: #2196F3; color: white; } 
       </style>
     `;
@@ -262,18 +287,37 @@ class TaskOrganizerStats extends HTMLElement {
     const displayTitle = this.config.title || this.localize('title');
     let html = this._getStyles();
     
+    // Filter History based on YAML configuration
+    const filterBy = this.config.filter_by || 'all';
+    let filteredHistory = this.history;
+    
+    if (filterBy === 'mine') {
+      const currentUserId = this._hass.user.id;
+      filteredHistory = filteredHistory.filter(h => h.user_id === currentUserId);
+    }
+    
+    // Pagination Logic
+    const itemsPerPage = this.config.items_per_page || 10;
+    const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
+    if (this.currentPage > totalPages) this.currentPage = totalPages;
+    
+    const startIndex = (this.currentPage - 1) * itemsPerPage;
+    const paginatedHistory = filteredHistory.slice(startIndex, startIndex + itemsPerPage);
+
     // Render HTML Structure
     html += `
       <ha-card>
-        <div class="header">${displayTitle}</div>
+        <div class="top-bar">
+          <div class="header">${displayTitle}</div>
+        </div>
         <div class="hist-list">
     `;
     
-    if (this.history.length === 0) {
+    if (paginatedHistory.length === 0) {
       html += `<div style="text-align:center; color:gray; padding:20px;">${this.localize('empty')}</div>`;
     }
     
-    this.history.forEach(entry => {
+    paginatedHistory.forEach(entry => {
       const date = new Date(entry.timestamp).toLocaleString([], {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
       });
@@ -297,9 +341,21 @@ class TaskOrganizerStats extends HTMLElement {
         </div>`;
     });
     
+    html += `</div>`;
+    
+    // Render Pagination Controls if needed
+    if (filteredHistory.length > itemsPerPage) {
+        html += `
+            <div class="pagination">
+                <button class="btn-page" id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</button>
+                <span style="font-size: 13px; color: var(--secondary-text-color);">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
+                <button class="btn-page" id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</button>
+            </div>
+        `;
+    }
+
     // Render Edit Modal
     html += `
-        </div>
         <div id="edit-modal" class="modal">
           <div class="modal-content">
             <h2>${this.localize('edit')}</h2>
@@ -314,7 +370,7 @@ class TaskOrganizerStats extends HTMLElement {
               </select>
             </div>
             <div class="modal-actions">
-              <button class="btn btn-cancel" id="btn-edit-cancel">${this.localize('cancel')}</button>
+              <button class="btn btn-cancel" id="btn-edit-cancel" style="background:#eee; color:#333;">${this.localize('cancel')}</button>
               <button class="btn btn-save" id="btn-edit-save">${this.localize('save')}</button>
             </div>
           </div>
