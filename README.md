@@ -46,6 +46,8 @@ The integration includes four specialized cards for the Lovelace dashboard.
 ### 1. Household Tasks (`task-organizer-card`)
 The main card for viewing and completing tasks.
 
+<img width="383" height="547" alt="image" src="https://github.com/user-attachments/assets/c33fdd31-6d33-4bfb-b41a-c167a36334b8" />
+
 **YAML Configuration:**
 ```yaml
 type: custom:task-organizer-card
@@ -60,6 +62,8 @@ hide_delete: false      # Hides the task delete symbol (Default false)
 ### 2. Roommate of the Month (task-organizer-leaderboard)
 Displays the winner's podium and an optional history of previous months.
 
+<img width="388" height="228" alt="image" src="https://github.com/user-attachments/assets/288496e5-29f7-47c4-9430-b9baab65e9d3" />
+
 **YAML Configuration:**
 ```yaml
 type: custom:task-organizer-leaderboard
@@ -68,6 +72,8 @@ show_history: true      # Displays the table of previous winners (default: true)
 
 ### 3. Household Log (task-organizer-stats)
 A list of recently completed tasks with the option to correct or delete entries.
+
+<img width="383" height="354" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
 
 **YAML Configuration:**
 ```yaml
@@ -78,6 +84,8 @@ items_per_page: 10  # Number of displayed items
 ```
 ### 4. Settings (task-organizer-settings)
 Allows customization of colors, data export, and factory resets.
+
+<img width="385" height="327" alt="image" src="https://github.com/user-attachments/assets/be06b2cc-7153-4229-b9f9-986e03d836bd" />
 
 **YAML Configuration:**
 ```yaml
