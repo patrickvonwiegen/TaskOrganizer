@@ -3,9 +3,12 @@
   "name": "TaskOrganizer",
   "codeowners": [ "@patrickvonwiegen" ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/patrickvonwiegen/TaskOrganizer",
+  "issue_tracker": "https://github.com/patrickvonwiegen/TaskOrganizer/issues",
   "iot_class": "calculated",
   "requirements": [],
-  "version": "1.0.17"
+  "version": "1.0.18"
 }
