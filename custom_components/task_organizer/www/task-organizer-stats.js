@@ -8,13 +8,13 @@ const I18N_STATS = {
     title: "Household Log", empty: "No entries.", unknown: "Unknown", 
     confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points", 
     user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All", 
-    filter_mine: "Mine", prev: "Previous", next: "Next", page: "Page" 
+    prev: "Previous", next: "Next", page: "Page" 
   },
   de: { 
     title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
     confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
     user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle", 
-    filter_mine: "Eigene", prev: "Zurück", next: "Weiter", page: "Seite" 
+    prev: "Zurück", next: "Weiter", page: "Seite" 
   }
 };
 

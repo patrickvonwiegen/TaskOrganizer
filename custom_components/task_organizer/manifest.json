@@ -1,11 +1,11 @@
 {
   "domain": "task_organizer",
   "name": "TaskOrganizer",
-  "codeowners": [ "patrickvonwiegen" ],
+  "codeowners": [ "@patrickvonwiegen" ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/patrickvonwiegen/TaskOrganizer",
-  "iot_class": "local_polling",
+  "iot_class": "calculated",
   "requirements": [],
-  "version": "1.0.16"
+  "version": "1.0.17"
 }

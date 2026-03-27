@@ -7,19 +7,19 @@ const I18N_SETTINGS = {
   en: { 
     title: "Settings", colors: "Colors (Done, Due, Overdue)", c_done: "Done", c_due: "Due", c_overdue: "Overdue", 
     days_overdue: "Overdue after (Days)", save: "Save Settings", advanced: "ADVANCED SETTINGS", 
-    archive_btn: "⚠️ Archive/Reset monthly points now", factory_btn: "🔥 FACTORY RESET (Delete everything)", 
+    archive_btn: "Archive and reset monthly points now", factory_btn: "🔥 Factory reset (Delete everything)", 
     success: "Settings saved!", confirm_reset: "Do you really want to reset all points? Data will be archived.", 
     confirm_factory: "WARNING: This permanently deletes ALL tasks, points, and history!",
-    import_export: "IMPORT / EXPORT", export_btn: "Export Tasks (JSON)", import_btn: "Import Tasks (JSON)",
+    import_export: "IMPORT / EXPORT", export_btn: "Export Tasks", import_btn: "Import Tasks",
     import_success: "Tasks successfully imported!", import_error: "Error reading file. Is it valid JSON?"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
     days_overdue: "Überfällig nach (Tagen)", save: "Einstellungen speichern", advanced: "ERWEITERTE EINSTELLUNGEN", 
-    archive_btn: "⚠️ Monats-Punkte jetzt archivieren/resetten", factory_btn: "🔥 WERKSEINSTELLUNGEN (Alles löschen)", 
+    archive_btn: "Monats-Punkte archivieren und zurücksetzen", factory_btn: "🔥 Werkseinstellungen setzen (Alles löschen)", 
     success: "Einstellungen erfolgreich gespeichert!", confirm_reset: "Möchtest du alle monatlichen Punkte wirklich auf 0 setzen? Die Daten werden archiviert.", 
     confirm_factory: "ACHTUNG: Dies löscht unwiderruflich ALLE Aufgaben, Punkte und die Historie!",
-    import_export: "IMPORT / EXPORT", export_btn: "Aufgaben exportieren (JSON)", import_btn: "Aufgaben importieren (JSON)",
+    import_export: "IMPORT / EXPORT", export_btn: "Aufgaben exportieren", import_btn: "Aufgaben importieren",
     import_success: "Aufgaben erfolgreich importiert!", import_error: "Fehler beim Lesen der Datei. Ist es valides JSON?"
   }
 };

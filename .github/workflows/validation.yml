@@ -1,0 +1,25 @@
+name: Validation
+
+on:
+  push:
+    branches: 
+      - main
+      - release
+      - develop
+      - 'feature/**'
+  pull_request:
+    branches: 
+      - main
+      - release
+      - develop
+
+jobs:
+  hassfest:
+    name: Validate with Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validation (Hassfest)
+        uses: home-assistant/actions/hassfest@master

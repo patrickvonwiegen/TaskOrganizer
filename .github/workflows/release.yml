@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
-      - beta
+      - develop
+      - 'feature/*'
+      - 'release/*'
   schedule:
     - cron: '0 0 * * *'
 
@@ -36,7 +38,7 @@ jobs:
             echo "TAG=v${VERSION}" >> $GITHUB_ENV
             echo "TITLE=TaskOrganizerV${VERSION}" >> $GITHUB_ENV
             echo "PRERELEASE=false" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/beta" ]]; then
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
             echo "TYPE=beta" >> $GITHUB_ENV
             echo "TAG=v${VERSION}-beta" >> $GITHUB_ENV
             echo "TITLE=TaskOrganizerV${VERSION}-beta" >> $GITHUB_ENV
@@ -72,6 +74,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "ℹ️ Release ${TAG} already exists. No new release needed. Skipping creation..."
+            exit 0
+          fi
+
           PRERELEASE_FLAG=""
           if [ "$PRERELEASE" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
