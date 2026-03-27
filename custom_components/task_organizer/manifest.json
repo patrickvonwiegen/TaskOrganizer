@@ -7,8 +7,8 @@
     "http"
   ],
   "documentation": "https://github.com/patrickvonwiegen/TaskOrganizer",
-  "issue_tracker": "https://github.com/patrickvonwiegen/TaskOrganizer/issues",
   "iot_class": "calculated",
+  "issue_tracker": "https://github.com/patrickvonwiegen/TaskOrganizer/issues",
   "requirements": [],
   "version": "1.0.18"
 }
