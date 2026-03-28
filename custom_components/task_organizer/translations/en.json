@@ -10,6 +10,19 @@
       "single_instance_allowed": "Only a single instance of TaskOrganizer is allowed."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TaskOrganizer Settings",
+        "data": {
+          "overdue_days": "Days until overdue",
+          "color_done": "Color: Done (Hex Code)",
+          "color_due": "Color: Due (Hex Code)",
+          "color_overdue": "Color: Overdue (Hex Code)"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "all_tasks": { "name": "All Tasks" },
@@ -17,6 +30,10 @@
       "settings": { "name": "Settings" },
       "points": { "name": "Points" },
       "leaderboard": { "name": "Roommate of the Month" }
+    },
+    "button": {
+      "reset_month": { "name": "End Month" },
+      "factory_reset": { "name": "Factory Reset" }
     }
   },
   "services": {

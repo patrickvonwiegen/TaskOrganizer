@@ -1,4 +1,4 @@
-"""Initialisierung der TaskOrganizer Integration."""
+"""Initialization of the TaskOrganizer integration."""
 
 import logging
 import time
@@ -36,13 +36,20 @@ from .const import (
     SERVICE_ADD_TASK,
     SERVICE_COMPLETE_TASK_BY_NAME,
     SERVICE_RESET_MONTHLY_POINTS,
+    SERVICE_FACTORY_RESET,
 )
 
 # Global logger for the integration
 _LOGGER = logging.getLogger(__name__)
 
 # Supported platforms
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "button"]
+
+
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
+    """Called when options are changed via the UI gear icon."""
+    hass.bus.async_fire(EVENT_TASK_UPDATED)
+
 
 def _calculate_points_per_user(total_points: float, user_count: int) -> float:
     """
@@ -87,7 +94,15 @@ async def ws_get_data(hass: HomeAssistant, connection: websocket_api.ActiveConne
     :param msg: The incoming message payload.
     """
     data = hass.data[DOMAIN]["data"]
-    connection.send_result(msg["id"], data)
+    
+    # Get options from ConfigEntry and inject as 'settings'
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    
+    # Create a copy to avoid accidentally modifying the original dictionary
+    response_data = dict(data)
+    response_data["settings"] = dict(entry.options)
+    
+    connection.send_result(msg["id"], response_data)
 
 
 @websocket_api.websocket_command({
@@ -112,7 +127,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
         completed_by = [connection.user.id]
 
     if task_id not in data["tasks"]:
-        connection.send_error(msg["id"], "not_found", "Task nicht gefunden")
+        connection.send_error(msg["id"], "not_found", "Task not found")
         return
 
     task = data["tasks"][task_id]
@@ -128,7 +143,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
         history_entry = {
             "id": str(uuid.uuid4()),
             "task_id": task_id,
-            "task_name": task.get("name", "Unbekannte Aufgabe"),
+            "task_name": task.get("name", "Unknown task"),
             "user_id": u_id,
             "points": points_per_user,
             "timestamp": datetime.now().isoformat()
@@ -214,7 +229,7 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
     task_id = msg["task_id"]
     
     if task_id not in data["tasks"]:
-        connection.send_error(msg["id"], "not_found", "Task nicht gefunden")
+        connection.send_error(msg["id"], "not_found", "Task not found")
         return
         
     task_ref = data["tasks"][task_id]
@@ -270,20 +285,7 @@ async def ws_factory_reset(hass: HomeAssistant, connection: websocket_api.Active
     :param connection: The active websocket connection.
     :param msg: The incoming message payload.
     """
-    store = hass.data[DOMAIN]["store"]
-    new_data = {
-        "tasks": {}, 
-        "points": {}, 
-        "history": [], 
-        "settings": {}, 
-        "monthly_history": {}, 
-        "current_month": datetime.now().strftime("%Y-%m"), 
-        "current_period_start": datetime.now().isoformat()
-    }
-    hass.data[DOMAIN]["data"] = new_data
-    
-    await store.async_save(new_data)
-    hass.bus.async_fire(EVENT_TASK_UPDATED)
+    await hass.services.async_call(DOMAIN, SERVICE_FACTORY_RESET)
     connection.send_result(msg["id"], {"success": True})
 
 
@@ -293,10 +295,15 @@ async def ws_factory_reset(hass: HomeAssistant, connection: websocket_api.Active
 })
 @websocket_api.async_response
 async def ws_update_settings(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
-    data = hass.data[DOMAIN]["data"]
-    data["settings"].update(msg["settings"])
-    await hass.data[DOMAIN]["store"].async_save(data)
-    hass.bus.async_fire(EVENT_TASK_UPDATED)
+    """Saves the settings from the card directly into the Home Assistant OptionsFlow."""
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    
+    # Update the Entry-Options with the new settings from the card
+    new_options = dict(entry.options)
+    new_options.update(msg["settings"])
+    
+    hass.config_entries.async_update_entry(entry, options=new_options)
+    # The update event is triggered automatically by the update_listener
     connection.send_result(msg["id"], {"success": True})
 
 
@@ -431,6 +438,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN]["store"] = store
     hass.data[DOMAIN]["data"] = data
 
+    # Register listener for the OptionsFlow (gear icon)
+    entry.async_on_unload(entry.add_update_listener(update_listener))
+
     # Perform initial check on startup
     await _async_check_monthly_reset(hass)
 
@@ -446,6 +456,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_manual_reset(call: ServiceCall): 
         """Service handle to force reset monthly points."""
         await _async_check_monthly_reset(hass, force=True)
+
+    async def handle_factory_reset(call: ServiceCall):
+        """Service handle to perform a factory reset."""
+        new_data = {
+            "tasks": {}, "points": {}, "history": [], "settings": {}, 
+            "monthly_history": {}, "current_month": datetime.now().strftime("%Y-%m"), 
+            "current_period_start": datetime.now().isoformat()
+        }
+        hass.data[DOMAIN]["data"] = new_data
+        await store.async_save(new_data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
         
     async def handle_complete_task_by_name(call: ServiceCall):
         """Service handle to complete a task by its string name."""
@@ -459,7 +480,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
                 
         if not target_task_id:
-            _LOGGER.warning("Task '%s' nicht gefunden.", task_name)
+            _LOGGER.warning("Task '%s' not found.", task_name)
             return
             
         task = data["tasks"][target_task_id]
@@ -479,7 +500,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             history_entry = {
                 "id": str(uuid.uuid4()), 
                 "task_id": target_task_id,
-                "task_name": task.get("name", "Unbekannte Aufgabe"),
+                "task_name": task.get("name", "Unknown task"),
                 "user_id": u_id, 
                 "points": points_per_user,
                 "timestamp": datetime.now().isoformat()
@@ -511,12 +532,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         task_id = str(uuid.uuid4())
         data["tasks"][task_id] = {
             "id": task_id, 
-            "name": call.data.get("name", "Neue Aufgabe"),
+            "name": call.data.get("name", "New task"),
             "description": call.data.get("description", ""),
             "interval": call.data.get("interval", 7),
             "assignees": assignees,
             "complexity": call.data.get("complexity", 5),
-            "category": "Allgemein",
+            "category": "General",
             "icon": call.data.get("icon", "mdi:broom"),
             "due_date": datetime.now().isoformat(), 
             "paused_until": None
@@ -526,6 +547,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_RESET_MONTHLY_POINTS, handle_manual_reset)
+    hass.services.async_register(DOMAIN, SERVICE_FACTORY_RESET, handle_factory_reset)
     hass.services.async_register(DOMAIN, SERVICE_COMPLETE_TASK_BY_NAME, handle_complete_task_by_name)
     hass.services.async_register(DOMAIN, SERVICE_ADD_TASK, handle_add_task)
     
@@ -587,7 +609,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     else: 
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, register_lovelace_resources)
     
-    # Initialize sensors
+    # Initialize sensors and buttons
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
