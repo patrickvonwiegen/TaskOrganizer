@@ -1,4 +1,3 @@
-
 # TaskOrganizer for Home Assistant
 
 TaskOrganizer is a integration for Home Assistant designed to manage household tasks in a gamified way. It allows you to create tasks with intervals and complexity points, assign them to roommates, and crown a "Roommate of the Month".
@@ -65,7 +64,7 @@ sort_by: due_date        # Options: due_date, points, assignee, alphabet (defaul
 sort_order: desc         # Options: default, asc, desc (default default)
 filter_by: none          # Options: none, current_user, due, overdue, due_and_overdue, active, inactive, unassigned (default none)
 items_per_page: 10       # Number of displayed items
-hide_delete: false       # Hides the task delete symbol (Default false)
+show_delete: true        # Shows the task delete symbol (Default true)
 show_search: true        # Shows the search icon and bar (Default true)
 ```
 

@@ -102,7 +102,7 @@ class TaskOrganizerCard extends HTMLElement {
           sort_order: "default", 
           filter_by: "none",
           items_per_page: 10,
-          hide_delete: false,
+          show_delete: true,
           show_search: true
       }; 
   }
@@ -622,7 +622,7 @@ class TaskOrganizerCard extends HTMLElement {
     const sortBy = this._config.sort_by || 'due_date';
     const sortOrder = this._config.sort_order || 'default';
     const itemsPerPage = this._config.items_per_page;
-    const hideDelete = this._config.hide_delete === true;
+    const showDelete = this._config.show_delete !== false;
 
     const nowForSort = new Date(); 
     nowForSort.setHours(0,0,0,0);
@@ -748,7 +748,7 @@ class TaskOrganizerCard extends HTMLElement {
             <div class="actions">
                 <button class="action-btn btn-complete" data-id="${task.id}"><ha-icon icon="mdi:check"></ha-icon></button>
                 <button class="action-btn btn-edit" data-id="${task.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>
-                ${hideDelete ? '' : `<button class="action-btn btn-delete" data-id="${task.id}"><ha-icon icon="mdi:delete"></ha-icon></button>`}
+                ${showDelete ? `<button class="action-btn btn-delete" data-id="${task.id}"><ha-icon icon="mdi:delete"></ha-icon></button>` : ''}
             </div>
         </div>
       `;
