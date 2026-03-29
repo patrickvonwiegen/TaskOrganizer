@@ -5,6 +5,7 @@ TaskOrganizer is a integration for Home Assistant designed to manage household t
 
 ## Features
 * **Task Management**: Create, edit, and delete tasks directly from your dashboard.
+* **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
 * **Dynamic Due Dates**: Tasks are automatically rescheduled based on their defined interval after completion.
 * **Points System**: Each task has a complexity level (1-10); points are shared fairly among all participants upon completion.
 * **Pause & Immediate Due**: Tasks can be paused until a specific date or manually set to "due today".
@@ -59,12 +60,13 @@ The main card for viewing and completing tasks.
 **YAML Configuration:**
 ```yaml
 type: custom:task-organizer-card
-title: "My Tasks"
-sort_by: due_date       # Options: due_date, points, assignee, alphabet (default due_date)
-sort_order: desc        # Options: default, asc, desc (default default)
-filter_by: none         # Options: none, current_user, due, overdue, due_and_overdue, active, inactive, unassigned (default none)
-items_per_page: 10      # Number of displayed items
-hide_delete: false      # Hides the task delete symbol (Default false)
+title: "Household Tasks" # Custom title for the card (Default: Household Tasks)
+sort_by: due_date        # Options: due_date, points, assignee, alphabet (default due_date)
+sort_order: desc         # Options: default, asc, desc (default default)
+filter_by: none          # Options: none, current_user, due, overdue, due_and_overdue, active, inactive, unassigned (default none)
+items_per_page: 10       # Number of displayed items
+hide_delete: false       # Hides the task delete symbol (Default false)
+show_search: true        # Shows the search icon and bar (Default true)
 ```
 
 ### 2. Roommate of the Month (task-organizer-leaderboard)
