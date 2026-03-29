@@ -24,6 +24,8 @@ The integration provides the following sensors:
 | `sensor.settings` | Provides the current configuration (colors, overdue thresholds). |
 
 ## Buttons
+| Button | Description |
+| :--- | :--- |
 | `button.button.task_organizer_reset_month`| Triggers the monthly reset (archives points and starts a new period). |
 | `button.button.task_organizer_factory_reset` | Performs a factory reset (deletes all data). |
 
