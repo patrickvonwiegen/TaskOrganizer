@@ -32,7 +32,7 @@
       "leaderboard": { "name": "Roommate of the Month" }
     },
     "button": {
-      "reset_month": { "name": "End Month" },
+      "reset_month": { "name": "Complete Month" },
       "factory_reset": { "name": "Factory Reset" }
     }
   },
@@ -40,6 +40,10 @@
     "reset_monthly_points": {
       "name": "Reset monthly points",
       "description": "Manually resets all roommate points to 0 and archives the month."
+    },
+    "factory_reset": {
+      "name": "Factory reset",
+      "description": "Deletes all tasks, history and points."
     },
     "complete_task_by_name": {
       "name": "Complete task",

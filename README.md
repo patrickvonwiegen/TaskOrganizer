@@ -10,6 +10,7 @@ TaskOrganizer is a integration for Home Assistant designed to manage household t
 * **Pause & Immediate Due**: Tasks can be paused until a specific date or manually set to "due today".
 * **Roommate of the Month**: A podium system visualizes current standings. At the end of the month, points are archived, and a long-term history is maintained.
 * **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
+* **Configuration**: Manage global settings like colors and overdue thresholds
 
 ## Sensors
 The integration provides the following sensors:
@@ -21,6 +22,10 @@ The integration provides the following sensors:
 | `sensor.points` | Shows the current point standings for all users. Perfect for custom visualizations. |
 | `sensor.leaderboard` | Displays the name of the roommate currently in the lead. |
 | `sensor.settings` | Provides the current configuration (colors, overdue thresholds). |
+
+## Buttons
+| `button.button.task_organizer_reset_month`| Triggers the monthly reset (archives points and starts a new period). |
+| `button.button.task_organizer_factory_reset` | Performs a factory reset (deletes all data). |
 
 ## Services
 TaskOrganizer offers services that can be used in automations or scripts:
@@ -39,6 +44,9 @@ Marks a task as completed by its exact name.
 
 ### `task_organizer.reset_monthly_points`
 Manually resets all points to 0 and saves the current month to the history.
+
+### `task_organizer.factory_reset`
+Deletes all tasks, history, and points, returning the integration to its initial state.
 
 ## Dashboard Cards
 The integration includes four specialized cards for the Lovelace dashboard.

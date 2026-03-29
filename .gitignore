@@ -207,6 +207,4 @@ marimo/_lsp/
 __marimo__/
 
 *.vsidx
-/.vs/slnx.sqlite
-/.vs/TaskOrganizer/config/applicationhost.config
-/.vs/TaskOrganizer/v17/.wsuo
+/.vs/
