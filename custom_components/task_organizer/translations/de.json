@@ -10,6 +10,19 @@
       "single_instance_allowed": "Es ist nur eine einzige Instanz des TaskOrganizers erlaubt."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TaskOrganizer Einstellungen",
+        "data": {
+          "overdue_days": "Tage bis überfällig",
+          "color_done": "Farbe: Erledigt (Hex-Code)",
+          "color_due": "Farbe: Fällig (Hex-Code)",
+          "color_overdue": "Farbe: Überfällig (Hex-Code)"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "all_tasks": { "name": "Alle Aufgaben" },
@@ -17,12 +30,20 @@
       "settings": { "name": "Einstellungen" },
       "points": { "name": "Punktestand" },
       "leaderboard": { "name": "Mitbewohner des Monats" }
+    },
+    "button": {
+      "reset_month": { "name": "Monat abschließen" },
+      "factory_reset": { "name": "Werkseinstellungen" }
     }
   },
   "services": {
     "reset_monthly_points": {
       "name": "Monatspunkte zurücksetzen",
       "description": "Setzt die Punkte aller Mitbewohner manuell auf 0 und archiviert den Monat."
+    },
+    "factory_reset": {
+      "name": "Werkseinstellungen",
+      "description": "Löscht alle Aufgaben, Historie und Punkte."
     },
     "complete_task_by_name": {
       "name": "Aufgabe abschließen",
