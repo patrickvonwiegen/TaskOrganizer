@@ -118,7 +118,8 @@ The integration includes four specialized cards for the Lovelace dashboard.
 ### 1. Household Tasks (`task-organizer-card`)
 The main card for viewing and completing tasks.
 
-<img width="383" height="547" alt="image" src="https://github.com/user-attachments/assets/c33fdd31-6d33-4bfb-b41a-c167a36334b8" />
+<img width="381" height="579" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
+
 
 **YAML Configuration:**
 ```yaml
