@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
 
       - id: get_version
         run: |
@@ -29,10 +30,23 @@ jobs:
       - id: release_info
         run: |
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "TYPE=nightly" >> $GITHUB_ENV
-            echo "TAG=nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizer-nightly$(date +'%Y%m%d')" >> $GITHUB_ENV
-            echo "PRERELEASE=true" >> $GITHUB_ENV
+            LATEST_NIGHTLY=$(git tag -l "nightly-*" | sort -r | head -n 1)
+            
+            if [ -n "$LATEST_NIGHTLY" ]; then
+              CHANGES=$(git log $LATEST_NIGHTLY..HEAD --oneline)
+            else
+              CHANGES="initial_run"
+            fi
+
+            if [ -z "$CHANGES" ]; then
+              echo "ℹ️ No changes since last nightly ($LATEST_NIGHTLY). Skip release."
+              echo "TYPE=unknown" >> $GITHUB_ENV
+            else
+              echo "TYPE=nightly" >> $GITHUB_ENV
+              echo "TAG=nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
+              echo "TITLE=TaskOrganizer-nightly$(date +'%Y%m%d')" >> $GITHUB_ENV
+              echo "PRERELEASE=true" >> $GITHUB_ENV
+            fi
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TYPE=stable" >> $GITHUB_ENV
             echo "TAG=v${VERSION}" >> $GITHUB_ENV
