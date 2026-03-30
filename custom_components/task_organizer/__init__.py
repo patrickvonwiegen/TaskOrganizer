@@ -19,6 +19,8 @@ from homeassistant.helpers.storage import Store
 from .const import (
     DOMAIN,
     EVENT_TASK_UPDATED,
+    EVENT_LEADERBOARD_CHANGED,
+    EVENT_TASK_COMPLETED,
     STORAGE_KEY,
     STORAGE_VERSION,
     WS_TYPE_ADD_TASK,
@@ -83,6 +85,38 @@ def _get_user_id(hass: HomeAssistant, target: str) -> str | None:
     return target
 
 
+def _fire_leaderboard_event_if_changed(hass: HomeAssistant, old_points: dict, new_points: dict):
+    """
+    Compares the old and new points. Fires an event if the top 3 user order changes.
+    """
+    # Sort by points (descending) and then by user_id (ascending) for stable tie-breaking
+    old_sorted = sorted(old_points.items(), key=lambda item: (-item[1], item[0]))
+    new_sorted = sorted(new_points.items(), key=lambda item: (-item[1], item[0]))
+    
+    # Get top 3
+    old_top_3 = [{"user_id": uid, "points": pts} for uid, pts in old_sorted[:3]]
+    new_top_3 = [{"user_id": uid, "points": pts} for uid, pts in new_sorted[:3]]
+    
+    # Check if the order of user_ids changed in the top 3
+    old_order = [item["user_id"] for item in old_top_3]
+    new_order = [item["user_id"] for item in new_top_3]
+    
+    if old_order != new_order:
+        # Resolve friendly names for a better event payload experience
+        for item in old_top_3 + new_top_3:
+            name = item["user_id"]
+            for state in hass.states.async_all("person"):
+                if state.attributes.get("user_id") == item["user_id"]:
+                    name = state.attributes.get("friendly_name", item["user_id"])
+                    break
+            item["name"] = name
+            
+        hass.bus.async_fire(EVENT_LEADERBOARD_CHANGED, {
+            "old_leaderboard": old_top_3,
+            "new_leaderboard": new_top_3,
+        })
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_TYPE_GET_DATA})
 @websocket_api.async_response
 async def ws_get_data(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -134,6 +168,8 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     total_points = float(task.get("complexity", 1))
     points_per_user = _calculate_points_per_user(total_points, len(completed_by))
     
+    old_points = data["points"].copy()
+    
     for u_id in completed_by:
         if u_id not in data["points"]:
             data["points"][u_id] = 0
@@ -153,6 +189,16 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     interval = task.get("interval", 1)
     task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
     task["paused_until"] = None 
+    
+    # Trigger events
+    _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
+    hass.bus.async_fire(EVENT_TASK_COMPLETED, {
+        "task_id": task_id,
+        "task_name": task.get("name"),
+        "completed_by": completed_by,
+        "points_per_user": points_per_user,
+        "total_points": total_points
+    })
     
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -320,6 +366,7 @@ async def ws_delete_history_item(hass: HomeAssistant, connection: websocket_api.
     entry_to_delete = next((item for item in history if item["id"] == entry_id), None)
     
     if entry_to_delete:
+        old_points = data["points"].copy()
         u_id = entry_to_delete["user_id"]
         pts = float(entry_to_delete.get("points", 0))
         
@@ -327,6 +374,8 @@ async def ws_delete_history_item(hass: HomeAssistant, connection: websocket_api.
             data["points"][u_id] = max(0.0, float(data["points"][u_id]) - pts)
             
         data["history"] = [item for item in history if item["id"] != entry_id]
+        
+        _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
         
         await hass.data[DOMAIN]["store"].async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -351,6 +400,8 @@ async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.Ac
     entry = next((item for item in history if item["id"] == entry_id), None)
     
     if entry:
+        old_all_points = data["points"].copy()
+        
         old_u_id = entry["user_id"]
         old_pts = float(entry.get("points", 0))
         
@@ -363,6 +414,8 @@ async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.Ac
         
         entry["user_id"] = new_user_id
         entry["points"] = new_points
+        
+        _fire_leaderboard_event_if_changed(hass, old_all_points, data["points"])
         
         await hass.data[DOMAIN]["store"].async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -398,6 +451,8 @@ async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
     saved_month = data.get("current_month")
     
     if saved_month != current_actual_month or force:
+        old_points = data["points"].copy()
+        
         if saved_month: 
             data["monthly_history"][saved_month] = data["points"].copy()
             
@@ -406,6 +461,8 @@ async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
             
         data["current_month"] = current_actual_month
         data["current_period_start"] = datetime.now().isoformat()
+        
+        _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
         
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -459,12 +516,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_factory_reset(call: ServiceCall):
         """Service handle to perform a factory reset."""
+        old_points = hass.data[DOMAIN]["data"].get("points", {}).copy()
+        
         new_data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
             "monthly_history": {}, "current_month": datetime.now().strftime("%Y-%m"), 
             "current_period_start": datetime.now().isoformat()
         }
         hass.data[DOMAIN]["data"] = new_data
+        
+        _fire_leaderboard_event_if_changed(hass, old_points, new_data["points"])
+        
         await store.async_save(new_data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
         
@@ -492,6 +554,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         total_points = float(task.get("complexity", 1))
         points_per_user = _calculate_points_per_user(total_points, len(completed_by))
         
+        old_points = data["points"].copy()
+        
         for u_id in completed_by:
             if u_id not in data["points"]: 
                 data["points"][u_id] = 0
@@ -510,6 +574,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         interval = task.get("interval", 1)
         task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
         task["paused_until"] = None 
+        
+        # Trigger events
+        _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
+        hass.bus.async_fire(EVENT_TASK_COMPLETED, {
+            "task_id": target_task_id,
+            "task_name": task.get("name"),
+            "completed_by": completed_by,
+            "points_per_user": points_per_user,
+            "total_points": total_points
+        })
         
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)

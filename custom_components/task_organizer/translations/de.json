@@ -41,6 +41,10 @@
       "name": "Monatspunkte zurücksetzen",
       "description": "Setzt die Punkte aller Mitbewohner manuell auf 0 und archiviert den Monat."
     },
+    "factory_reset": {
+      "name": "Werkseinstellungen",
+      "description": "Löscht alle Aufgaben, Historie und Punkte."
+    },
     "complete_task_by_name": {
       "name": "Aufgabe abschließen",
       "description": "Markiert eine Aufgabe anhand ihres Namens als erledigt.",
