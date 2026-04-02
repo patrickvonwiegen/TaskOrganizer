@@ -14,7 +14,8 @@ const I18N_CARD = {
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
     set_due_today: "Set immediately due", pause_until: "Pause until", paused: "Paused until {date}",
-    prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks..."
+    prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks...",
+    search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
   },
   de: { 
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
@@ -26,7 +27,8 @@ const I18N_CARD = {
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
     set_due_today: "Sofort fällig setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}",
-    prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen..."
+    prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen...",
+    search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
   }
 };
 
@@ -471,14 +473,14 @@ class TaskOrganizerCard extends HTMLElement {
         <div class="header">
             <span>${displayTitle}</span>
             <div class="header-actions">
-                ${showSearch ? `<button class="icon-button" id="btn-search-toggle" title="Search"><ha-icon icon="mdi:magnify"></ha-icon></button>` : ''}
-                <button class="icon-button add-button" id="btn-add-task" title="Add Task"><ha-icon icon="mdi:plus"></ha-icon></button>
+                ${showSearch ? `<button class="icon-button" id="btn-search-toggle" title="${this.localize('search_btn')}"><ha-icon icon="mdi:magnify"></ha-icon></button>` : ''}
+                <button class="icon-button add-button" id="btn-add-task" title="${this.localize('add_task_btn')}"><ha-icon icon="mdi:plus"></ha-icon></button>
             </div>
         </div>
         
         <div class="search-container" id="search-container">
             <input type="text" class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}">
-            <ha-icon icon="mdi:close" class="clear-search" id="btn-search-clear" title="Clear"></ha-icon>
+            <ha-icon icon="mdi:close" class="clear-search" id="btn-search-clear" title="${this.localize('clear_btn')}"></ha-icon>
         </div>
 
         <div id="task-list-wrapper"></div>
