@@ -38,8 +38,8 @@ const I18N_CARD = {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "task-organizer-card",
-  name: "Task Organizer Card",
-  description: "A custom card to display and manage household tasks.",
+  name: "Task Organizer: Task List",
+  description: "A custom list card to display and manage household tasks.",
   preview: true,
 });
 
@@ -68,17 +68,14 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
-   * Translates a given key based on the Home Assistant language.
-   * * @param {string} key - The translation key.
+   * Statically translates a key. Helper for getStubConfig.
+   * @param {object} hass - The Home Assistant object.
+   * @param {string} key - The translation key.
    * @param {object} replace - Object with parameters to replace in string.
    * @returns {string} - The translated text.
    */
-  localize(key, replace = null) {
-    let lang = 'en';
-    if (this._hass && this._hass.language) {
-      lang = this._hass.language.substring(0, 2);
-    }
-    
+  static _localize(hass, key, replace = null) {
+    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
     const dict = I18N_CARD[lang] || I18N_CARD['en'];
     let text = dict[key] || I18N_CARD['en'][key] || key;
     
@@ -90,6 +87,16 @@ class TaskOrganizerCard extends HTMLElement {
     return text;
   }
 
+  /**
+   * Translates a given key based on the Home Assistant language.
+   * * @param {string} key - The translation key.
+   * @param {object} replace - Object with parameters to replace in string.
+   * @returns {string} - The translated text.
+   */
+  localize(key, replace = null) {
+    return TaskOrganizerCard._localize(this._hass, key, replace);
+  }
+
   static getLayoutOptions() { 
       return { grid_columns: 4, grid_rows: "auto", grid_min_columns: 1, grid_max_columns: 4 }; 
   }
@@ -97,9 +104,10 @@ class TaskOrganizerCard extends HTMLElement {
   /**
    * Generate stub configuration for the Card Picker.
    */
-  static getStubConfig() { 
+  static getStubConfig(hass) { 
       return { 
           type: "custom:task-organizer-card", 
+          title: this._localize(hass, 'title'),
           sort_by: "due_date", 
           sort_order: "default", 
           filter_by: "none",

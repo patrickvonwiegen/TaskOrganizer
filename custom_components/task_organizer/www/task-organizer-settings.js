@@ -36,7 +36,7 @@ const I18N_SETTINGS = {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "task-organizer-settings",
-  name: "Task Organizer Settings",
+  name: "Task Organizer: Settings",
   description: "Displays and manages integration settings, colors, and imports/exports.",
   preview: true,
 });
@@ -59,14 +59,24 @@ class TaskOrganizerSettings extends HTMLElement {
   }
 
   /**
+   * Statically translates a key. Helper for getStubConfig.
+   * @param {object} hass - The Home Assistant object.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  static _localize(hass, key) {
+    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
+    const dict = I18N_SETTINGS[lang] || I18N_SETTINGS['en'];
+    return dict[key] || key;
+  }
+
+  /**
    * Translates a given key based on the Home Assistant language.
    * * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
   localize(key) { 
-    const lang = (this._hass && this._hass.language) ? this._hass.language.substring(0, 2) : 'en'; 
-    const dict = I18N_SETTINGS[lang] || I18N_SETTINGS['en']; 
-    return dict[key] || key; 
+    return TaskOrganizerSettings._localize(this._hass, key);
   }
 
   /**
@@ -79,8 +89,12 @@ class TaskOrganizerSettings extends HTMLElement {
   /**
    * Generates default configuration for the Card Picker.
    */
-  static getStubConfig() { 
-    return { type: "custom:task-organizer-settings", show_advanced: false }; 
+  static getStubConfig(hass) { 
+    return { 
+      type: "custom:task-organizer-settings", 
+      title: this._localize(hass, 'title'),
+      show_advanced: false 
+    }; 
   }
 
   /**

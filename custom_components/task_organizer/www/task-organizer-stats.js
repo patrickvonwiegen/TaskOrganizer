@@ -28,7 +28,7 @@ const I18N_STATS = {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "task-organizer-stats",
-  name: "Task Organizer Statistics",
+  name: "Task Organizer: Statistics",
   description: "Displays a log of completed tasks and allows editing.",
   preview: true,
 });
@@ -55,14 +55,24 @@ class TaskOrganizerStats extends HTMLElement {
   }
 
   /**
+   * Statically translates a key. Helper for getStubConfig.
+   * @param {object} hass - The Home Assistant object.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  static _localize(hass, key) {
+    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
+    const dict = I18N_STATS[lang] || I18N_STATS['en'];
+    return dict[key] || key;
+  }
+
+  /**
    * Translates a given key based on the Home Assistant language.
    * * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
   localize(key) { 
-    const lang = (this._hass && this._hass.language) ? this._hass.language.substring(0, 2) : 'en'; 
-    const dict = I18N_STATS[lang] || I18N_STATS['en']; 
-    return dict[key] || key; 
+    return TaskOrganizerStats._localize(this._hass, key);
   }
 
   /**
@@ -75,8 +85,13 @@ class TaskOrganizerStats extends HTMLElement {
   /**
    * Generates default configuration for the Card Picker.
    */
-  static getStubConfig() { 
-    return { type: "custom:task-organizer-stats", items_per_page: 10, filter_by: "all" }; 
+  static getStubConfig(hass) { 
+    return { 
+      type: "custom:task-organizer-stats", 
+      title: this._localize(hass, 'title'),
+      items_per_page: 10, 
+      filter_by: "all" 
+    }; 
   }
 
   /**

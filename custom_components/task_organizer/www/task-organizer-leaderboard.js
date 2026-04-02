@@ -14,7 +14,7 @@ const I18N_BOARD = {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "task-organizer-leaderboard",
-  name: "Task Organizer Leaderboard",
+  name: "Task Organizer: Leaderboard",
   description: "Displays the roommate of the month and the history of previous winners.",
   preview: true,
 });
@@ -38,14 +38,15 @@ class TaskOrganizerLeaderboard extends HTMLElement {
   }
 
   /**
-   * Translates a given key based on the Home Assistant language.
-   * * @param {string} key - The translation key.
+   * Statically translates a key. Helper for getStubConfig.
+   * @param {object} hass - The Home Assistant object.
+   * @param {string} key - The translation key.
    * @param {object} replace - Object with parameters to replace in string.
    * @returns {string} - The translated text.
    */
-  localize(key, replace = null) { 
-    const lang = (this._hass && this._hass.language) ? this._hass.language.substring(0, 2) : 'en'; 
-    const dict = I18N_BOARD[lang] || I18N_BOARD['en']; 
+  static _localize(hass, key, replace = null) {
+    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
+    const dict = I18N_BOARD[lang] || I18N_BOARD['en'];
     let text = dict[key] || I18N_BOARD['en'][key] || key;
     
     if (replace) { 
@@ -54,6 +55,16 @@ class TaskOrganizerLeaderboard extends HTMLElement {
       } 
     }
     return text;
+  }
+
+  /**
+   * Translates a given key based on the Home Assistant language.
+   * * @param {string} key - The translation key.
+   * @param {object} replace - Object with parameters to replace in string.
+   * @returns {string} - The translated text.
+   */
+  localize(key, replace = null) { 
+    return TaskOrganizerLeaderboard._localize(this._hass, key, replace);
   }
 
   /**
@@ -71,9 +82,10 @@ class TaskOrganizerLeaderboard extends HTMLElement {
   /**
    * Generates default configuration for the Card Picker.
    */
-  static getStubConfig() { 
+  static getStubConfig(hass) { 
     return { 
       type: "custom:task-organizer-leaderboard", 
+      title: this._localize(hass, 'title'),
       show_history: true 
     }; 
   }
