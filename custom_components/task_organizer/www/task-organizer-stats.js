@@ -7,14 +7,18 @@ const I18N_STATS = {
   en: { 
     title: "Household Log", empty: "No entries.", unknown: "Unknown", 
     confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points", 
-    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All", 
-    prev: "Previous", next: "Next", page: "Page" 
+    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All",
+    prev: "Previous", next: "Next", page: "Page",
+    edit_hover: "Edit entry",
+    delete_hover: "Delete entry"
   },
   de: { 
     title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
     confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
-    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle", 
-    prev: "Zurück", next: "Weiter", page: "Seite" 
+    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle",
+    prev: "Zurück", next: "Weiter", page: "Seite",
+    edit_hover: "Eintrag bearbeiten",
+    delete_hover: "Eintrag löschen"
   }
 };
 
@@ -331,10 +335,10 @@ class TaskOrganizerStats extends HTMLElement {
           </div>
           <div class="actions">
             <span class="points-badge">+${entry.points}</span>
-            <button class="action-btn btn-edit" data-id="${entry.id}">
+            <button class="action-btn btn-edit" data-id="${entry.id}" title="${this.localize('edit_hover')}">
               <ha-icon icon="mdi:pencil-outline"></ha-icon>
             </button>
-            <button class="action-btn btn-delete" data-id="${entry.id}">
+            <button class="action-btn btn-delete" data-id="${entry.id}" title="${this.localize('delete_hover')}">
               <ha-icon icon="mdi:delete-outline"></ha-icon>
             </button>
           </div>
