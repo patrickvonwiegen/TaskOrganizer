@@ -4,8 +4,8 @@
  * de: German translations.
  */
 const I18N_BOARD = {
-  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History" },
-  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie" }
+  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points" },
+  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten" }
 };
 
 /**
@@ -40,12 +40,20 @@ class TaskOrganizerLeaderboard extends HTMLElement {
   /**
    * Translates a given key based on the Home Assistant language.
    * * @param {string} key - The translation key.
+   * @param {object} replace - Object with parameters to replace in string.
    * @returns {string} - The translated text.
    */
-  localize(key) { 
+  localize(key, replace = null) { 
     const lang = (this._hass && this._hass.language) ? this._hass.language.substring(0, 2) : 'en'; 
     const dict = I18N_BOARD[lang] || I18N_BOARD['en']; 
-    return dict[key] || key; 
+    let text = dict[key] || I18N_BOARD['en'][key] || key;
+    
+    if (replace) { 
+      for (const [k, v] of Object.entries(replace)) { 
+        text = text.replace(`{${k}}`, v); 
+      } 
+    }
+    return text;
   }
 
   /**
@@ -260,8 +268,9 @@ class TaskOrganizerLeaderboard extends HTMLElement {
                 const dateObj = new Date(y, m - 1, 1);
                 const monthName = dateObj.toLocaleString(lang, { month: 'long' });
                 const winnerName = this.users[winnerId]?.name || winnerId;
+                const hoverText = this.localize('history_hover', { month: monthName, year: y, name: winnerName, points: maxPts });
 
-                html += `<tr><td>${monthName}</td><td>${y}</td><td>${winnerName}</td><td>${maxPts}</td></tr>`;
+                html += `<tr title="${hoverText}"><td>${monthName}</td><td>${y}</td><td>${winnerName}</td><td>${maxPts}</td></tr>`;
             }
         });
         html += `</tbody></table></div>`;
@@ -279,8 +288,9 @@ class TaskOrganizerLeaderboard extends HTMLElement {
    */
   generatePodiumHTML(user, place) {
     let trophyColor = place === 1 ? '#FFD700' : (place === 2 ? '#C0C0C0' : '#CD7F32'); // Gold, Silver, Bronze
+    const hoverText = this.localize('podium_hover', { place: place, name: user.name, points: user.points });
     return `
-      <div class="podium-place place-${place}">
+      <div class="podium-place place-${place}" title="${hoverText}">
         <div class="name">${user.name.split(' ')[0]}</div>
         <div class="points-badge">${user.points} ${this.localize('pts')}</div>
         <ha-icon icon="mdi:trophy" class="trophy-icon" style="color: ${trophyColor}; --mdc-icon-size: 45px;"></ha-icon>
