@@ -10,17 +10,23 @@ const I18N_SETTINGS = {
     archive_btn: "Archive and reset monthly points now", factory_btn: "🔥 Factory reset (Delete everything)", 
     success: "Settings saved!", confirm_reset: "Do you really want to reset all points? Data will be archived.", 
     confirm_factory: "WARNING: This permanently deletes ALL tasks, points, and history!",
-    import_export: "IMPORT / EXPORT", export_btn: "Export Tasks", import_btn: "Import Tasks",
-    import_success: "Tasks successfully imported!", import_error: "Error reading file. Is it valid JSON?"
+    import_export: "IMPORT / EXPORT", export_btn: "Export Tasks", import_btn: "Import Tasks", 
+    import_success: "Tasks successfully imported!", import_error: "Error reading file. Is it valid JSON?",
+    save_hover: "Saves the current color and day settings.",
+    export_hover: "Downloads all current tasks as a JSON file.",
+    import_hover: "Opens a dialog to select a JSON file for importing tasks."
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
     days_overdue: "Überfällig nach (Tagen)", save: "Einstellungen speichern", advanced: "ERWEITERTE EINSTELLUNGEN", 
     archive_btn: "Monats-Punkte archivieren und zurücksetzen", factory_btn: "🔥 Werkseinstellungen setzen (Alles löschen)", 
     success: "Einstellungen erfolgreich gespeichert!", confirm_reset: "Möchtest du alle monatlichen Punkte wirklich auf 0 setzen? Die Daten werden archiviert.", 
-    confirm_factory: "ACHTUNG: Dies löscht unwiderruflich ALLE Aufgaben, Punkte und die Historie!",
-    import_export: "IMPORT / EXPORT", export_btn: "Aufgaben exportieren", import_btn: "Aufgaben importieren",
-    import_success: "Aufgaben erfolgreich importiert!", import_error: "Fehler beim Lesen der Datei. Ist es valides JSON?"
+    confirm_factory: "ACHTUNG: Dies löscht unwiderruflich ALLE Aufgaben, Punkte und die Historie!", 
+    import_export: "IMPORT / EXPORT", export_btn: "Aufgaben exportieren", import_btn: "Aufgaben importieren", 
+    import_success: "Aufgaben erfolgreich importiert!", import_error: "Fehler beim Lesen der Datei. Ist es valides JSON?",
+    save_hover: "Speichert die aktuellen Farb- und Tageseinstellungen.",
+    export_hover: "Lädt alle aktuellen Aufgaben als JSON-Datei herunter.",
+    import_hover: "Öffnet einen Dialog zur Auswahl einer JSON-Datei für den Import von Aufgaben."
   }
 };
 
@@ -294,16 +300,16 @@ class TaskOrganizerSettings extends HTMLElement {
           <input type="number" id="num-overdue" min="1" value="${this.settings.overdue_days}">
         </div>
         
-        <button class="btn btn-save" id="btn-save">${this.localize('save')}</button>
+        <button class="btn btn-save" id="btn-save" title="${this.localize('save_hover')}">${this.localize('save')}</button>
         
         <div class="collapsible-header" id="ie-toggle">
           <span>${this.localize('import_export')}</span>
           <ha-icon icon="${this._ieOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
         </div>
         <div class="collapsible-content ${this._ieOpen ? 'open' : ''}">
-          <button class="btn btn-export" id="btn-export">${this.localize('export_btn')}</button>
+          <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
           <input type="file" id="file-import" accept=".json" style="display:none;">
-          <button class="btn btn-import" id="btn-import-trigger">${this.localize('import_btn')}</button>
+          <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
         </div>
 
         ${showAdvanced ? `
@@ -312,8 +318,8 @@ class TaskOrganizerSettings extends HTMLElement {
             <ha-icon icon="${this._advancedOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
           </div>
           <div class="collapsible-content ${this._advancedOpen ? 'open' : ''}">
-            <button class="btn btn-reset" id="btn-reset">${this.localize('archive_btn')}</button>
-            <button class="btn btn-factory" id="btn-factory">${this.localize('factory_btn')}</button>
+            <button class="btn btn-reset" id="btn-reset" title="${this.localize('confirm_reset')}">${this.localize('archive_btn')}</button>
+            <button class="btn btn-factory" id="btn-factory" title="${this.localize('confirm_factory')}">${this.localize('factory_btn')}</button>
           </div>
         ` : ''}
         
