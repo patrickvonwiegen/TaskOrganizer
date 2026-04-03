@@ -61,6 +61,7 @@
       "fields": {
         "name": { "name": "Name", "description": "What should the task be called?" },
         "description": { "name": "Description", "description": "Additional info." },
+        "area": { "name": "Area", "description": "In which room/area does the task apply?" },
         "interval": { "name": "Interval (Days)", "description": "How often does it need to be done?" },
         "complexity": { "name": "Points (1-10)", "description": "How many points is it worth?" },
         "icon": { "name": "Icon", "description": "An mdi-icon" },

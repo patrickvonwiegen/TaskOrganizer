@@ -212,6 +212,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Required("type"): WS_TYPE_ADD_TASK,
     vol.Required("name"): str, 
     vol.Optional("description", default=""): str,
+    vol.Optional("area", default=""): str,
     vol.Required("interval"): int,
     vol.Optional("assignees"): cv.ensure_list,
     vol.Required("complexity"): vol.All(int, vol.Range(min=1, max=10)),
@@ -241,6 +242,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
         "id": task_id, 
         "name": msg["name"], 
         "description": msg.get("description", ""),
+        "area": msg.get("area", ""),
         "interval": msg["interval"],
         "assignees": msg.get("assignees", []), 
         "complexity": msg["complexity"],
@@ -261,6 +263,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Required("task_id"): str, 
     vol.Optional("name"): str,
     vol.Optional("description"): str,
+    vol.Optional("area"): str,
     vol.Optional("interval"): int, 
     vol.Optional("assignees"): cv.ensure_list,
     vol.Optional("complexity"): vol.All(int, vol.Range(min=1, max=10)),
@@ -286,7 +289,7 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         return
         
     task_ref = data["tasks"][task_id]
-    keys_to_update = ["name", "description", "interval", "assignees", "complexity", "category", "icon"]
+    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon"]
     
     for key in keys_to_update:
         if key in msg: 
@@ -618,6 +621,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "id": task_id, 
             "name": call.data.get("name", "New task"),
             "description": call.data.get("description", ""),
+            "area": call.data.get("area", ""),
             "interval": call.data.get("interval", 7),
             "assignees": assignees,
             "complexity": call.data.get("complexity", 5),

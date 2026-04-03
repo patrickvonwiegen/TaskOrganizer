@@ -61,6 +61,7 @@
       "fields": {
         "name": { "name": "Name", "description": "Wie soll die Aufgabe heißen?" },
         "description": { "name": "Beschreibung", "description": "Zusätzliche Informationen." },
+        "area": { "name": "Bereich", "description": "In welchem Raum/Bereich fällt die Aufgabe an?" },
         "interval": { "name": "Intervall (Tage)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
         "complexity": { "name": "Punkte (1-10)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
         "icon": { "name": "Icon", "description": "Ein mdi-Icon" },

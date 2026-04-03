@@ -13,7 +13,7 @@ const I18N_CARD = {
     desc_lbl: "Description (optional)", desc_placeholder: "Additional info...", 
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
-    set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date",
+    set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
     prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks...",
     search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
   },
@@ -26,7 +26,7 @@ const I18N_CARD = {
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
-    set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit",
+    set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
     prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen...",
     search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
   }
@@ -52,9 +52,9 @@ class TaskOrganizerCard extends HTMLElement {
     
     // Default colors: Green, Yellow/Orange, Red
     this.settings = { 
-        color_done: '#4CAF50', 
-        color_due: '#FFC107', 
-        color_overdue: '#F44336', 
+        color_done: 'var(--success-color, #4CAF50)', 
+        color_due: 'var(--warning-color, #FFC107)', 
+        color_overdue: 'var(--error-color, #F44336)', 
         overdue_days: 5 
     };
     
@@ -121,7 +121,7 @@ class TaskOrganizerCard extends HTMLElement {
 
   setConfig(config) { 
       this._config = config; 
-      this._skeletonBuilt = false; // Rebuild when config changes in editor
+      this._skeletonBuilt = false; 
       if (this._hass) this._render();
   }
 
@@ -139,9 +139,7 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   async _subscribeToUpdates() { 
-      if (!this._hass) {
-          return;
-      }
+      if (!this._hass) return;
       this._unsubEvents = this._hass.connection.subscribeEvents(
           () => this._fetchData(), 
           "task_organizer_updated"
@@ -150,9 +148,16 @@ class TaskOrganizerCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (!hass) {
-        return;
+    if (!hass) return;
+    
+    if (this.shadowRoot) {
+        const iconPicker = this.shadowRoot.getElementById('f-icon-picker');
+        if (iconPicker) iconPicker.hass = hass;
+        
+        const areaPicker = this.shadowRoot.getElementById('f-area');
+        if (areaPicker) areaPicker.hass = hass;
     }
+
     if (!this._dataLoaded) { 
         this._mapUsers(); 
         this._fetchData(); 
@@ -190,16 +195,13 @@ class TaskOrganizerCard extends HTMLElement {
     const path = ev.composedPath();
     const target = path.find(el => el.id?.startsWith('btn-') || el.classList?.contains('action-btn'));
     
-    if (!target) {
-        return;
-    }
+    if (!target) return;
     
     ev.stopPropagation();
     const taskId = target.dataset?.id;
 
-    if (target.id === 'btn-add-task') {
-        this._openModal();
-    } else if (target.id === 'btn-search-toggle') {
+    if (target.id === 'btn-add-task') this._openModal();
+    else if (target.id === 'btn-search-toggle') {
         this._searchVisible = !this._searchVisible;
         if (!this._searchVisible) {
             this._searchTerm = "";
@@ -207,7 +209,8 @@ class TaskOrganizerCard extends HTMLElement {
             this._renderTaskList();
         }
         this._updateSearchVisibility();
-    } else if (target.id === 'btn-search-clear') {
+    } 
+    else if (target.id === 'btn-search-clear') {
         this._searchTerm = "";
         this.currentPage = 1;
         const searchField = this.shadowRoot.getElementById('search-field');
@@ -216,24 +219,19 @@ class TaskOrganizerCard extends HTMLElement {
             searchField.focus();
         }
         this._renderTaskList();
-    } else if (target.classList?.contains('btn-complete')) {
-        this._checkCompleteAction(taskId);
-    } else if (target.classList?.contains('btn-edit')) {
-        this._openModal(taskId);
-    } else if (target.classList?.contains('btn-delete')) {
-        this._deleteTask(taskId);
-    } else if (target.id === 'btn-modal-cancel') {
-        this._closeModal();
-    } else if (target.id === 'btn-modal-save') {
-        this._saveTask();
-    } else if (target.id === 'btn-choice-cancel') {
-        this._closeChoiceModal();
-    } else if (target.id === 'btn-choice-confirm') {
-        this._confirmCompletion();
-    } else if (target.id === 'btn-prev-page') {
+    } 
+    else if (target.classList?.contains('btn-complete')) this._checkCompleteAction(taskId);
+    else if (target.classList?.contains('btn-edit')) this._openModal(taskId);
+    else if (target.classList?.contains('btn-delete')) this._deleteTask(taskId);
+    else if (target.id === 'btn-modal-cancel') this._closeModal();
+    else if (target.id === 'btn-modal-save') this._saveTask();
+    else if (target.id === 'btn-choice-cancel') this._closeChoiceModal();
+    else if (target.id === 'btn-choice-confirm') this._confirmCompletion();
+    else if (target.id === 'btn-prev-page') {
         this.currentPage = Math.max(1, this.currentPage - 1);
         this._renderTaskList();
-    } else if (target.id === 'btn-next-page') {
+    } 
+    else if (target.id === 'btn-next-page') {
         this.currentPage++;
         this._renderTaskList();
     }
@@ -241,17 +239,11 @@ class TaskOrganizerCard extends HTMLElement {
 
   _checkCompleteAction(taskId) {
     const task = this.tasks[taskId];
-    if (!task) {
-        return;
-    }
+    if (!task) return;
     
     let assignees = task.assignees;
-    if (typeof assignees === 'string') {
-        assignees = [assignees];
-    }
-    if (!assignees) {
-        assignees = [];
-    }
+    if (typeof assignees === 'string') assignees = [assignees];
+    if (!assignees) assignees = [];
 
     if (assignees.length > 1) {
         this._openChoiceModal(taskId, assignees);
@@ -269,10 +261,9 @@ class TaskOrganizerCard extends HTMLElement {
     container.innerHTML = assignees.map(uid => {
       const isChecked = (uid === currentUserId) ? 'checked' : '';
       return `
-        <label class="assignee-item" style="display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--divider-color);">
-            <input type="checkbox" class="choice-cb" value="${uid}" ${isChecked}>
-            <span>${this.users[uid] || this.localize('unknown')}</span>
-        </label>`;
+        <ha-formfield label="${this.users[uid] || this.localize('unknown')}">
+            <ha-checkbox class="choice-cb" value="${uid}" ${isChecked}></ha-checkbox>
+        </ha-formfield>`;
     }).join('');
     
     this.shadowRoot.getElementById('choice-modal').classList.add('open');
@@ -280,8 +271,8 @@ class TaskOrganizerCard extends HTMLElement {
 
   _confirmCompletion() {
     const selected = [];
-    this.shadowRoot.querySelectorAll('.choice-cb:checked').forEach(cb => {
-        selected.push(cb.value);
+    this.shadowRoot.querySelectorAll('.choice-cb').forEach(cb => {
+        if (cb.checked) selected.push(cb.value);
     });
     
     if (selected.length === 0) { 
@@ -341,6 +332,7 @@ class TaskOrganizerCard extends HTMLElement {
         const t = this.tasks[taskId];
         this.shadowRoot.getElementById('f-name').value = t.name;
         this.shadowRoot.getElementById('f-description').value = t.description || "";
+        this.shadowRoot.getElementById('f-area').value = t.area || "";
         this.shadowRoot.getElementById('f-interval').value = t.interval;
         this.shadowRoot.getElementById('f-complexity').value = t.complexity;
         this._currentIcon = t.icon || "mdi:broom";
@@ -350,7 +342,7 @@ class TaskOrganizerCard extends HTMLElement {
         });
         
         const now = new Date();
-        now.setHours(0, 0, 0, 0); // Compare date part only
+        now.setHours(0, 0, 0, 0); 
 
         if (t.paused_until && new Date(t.paused_until) >= now) {
             this.shadowRoot.getElementById('f-pause-cb').checked = true;
@@ -364,20 +356,18 @@ class TaskOrganizerCard extends HTMLElement {
     } else {
         this.shadowRoot.getElementById('f-name').value = ""; 
         this.shadowRoot.getElementById('f-description').value = "";
+        this.shadowRoot.getElementById('f-area').value = "";
         this.shadowRoot.getElementById('f-interval').value = 7;
         this.shadowRoot.getElementById('f-complexity').value = 5; 
         this._currentIcon = "mdi:broom";
         
-        this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
-            cb.checked = false;
-        });        
+        this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => cb.checked = false);        
 
         this.shadowRoot.getElementById('f-pause-cb').checked = false;
         this.shadowRoot.getElementById('f-pause-date').value = "";
         this.shadowRoot.getElementById('f-pause-date').disabled = true;
     }
     
-    // Always reset custom due date fields on modal open, as it's an action, not a persisted state.
     const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
     const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
     if (setDueDateCb && customDueDateInput) {
@@ -387,9 +377,8 @@ class TaskOrganizerCard extends HTMLElement {
     }
 
     const picker = this.shadowRoot.getElementById('f-icon-picker');
-    if (picker) { 
-        picker.value = this._currentIcon; 
-    }
+    if (picker) picker.value = this._currentIcon; 
+    
     modal.classList.add('open');
   }
 
@@ -399,17 +388,16 @@ class TaskOrganizerCard extends HTMLElement {
 
   _saveTask() {
     const assignees = [];
-    this.shadowRoot.querySelectorAll('.assignee-cb:checked').forEach(cb => {
-        assignees.push(cb.value);
+    this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
+        if (cb.checked) assignees.push(cb.value);
     });
     
     const setCustomDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb').checked;
     const customDueDateVal = this.shadowRoot.getElementById('f-custom-due-date').value;
     let customDueDate = null;
     if (setCustomDueDateCb) {
-        if (customDueDateVal) {
-            customDueDate = customDueDateVal;
-        } else {
+        if (customDueDateVal) customDueDate = customDueDateVal;
+        else {
             const today = new Date();
             customDueDate = today.toISOString().split('T')[0];
         }
@@ -421,6 +409,7 @@ class TaskOrganizerCard extends HTMLElement {
     const payload = {
       name: this.shadowRoot.getElementById('f-name').value, 
       description: this.shadowRoot.getElementById('f-description').value,
+      area: this.shadowRoot.getElementById('f-area').value,
       interval: parseInt(this.shadowRoot.getElementById('f-interval').value),
       complexity: parseInt(this.shadowRoot.getElementById('f-complexity').value), 
       icon: this.shadowRoot.getElementById('f-icon-picker').value,
@@ -431,9 +420,7 @@ class TaskOrganizerCard extends HTMLElement {
     };
     
     const type = this._editingTaskId ? 'task_organizer/edit_task' : 'task_organizer/add_task';
-    if (this._editingTaskId) {
-        payload.task_id = this._editingTaskId;
-    }
+    if (this._editingTaskId) payload.task_id = this._editingTaskId;
     
     this._hass.callWS({ type, ...payload }).then(() => { 
         this._showToast(this.localize('saved')); 
@@ -442,62 +429,63 @@ class TaskOrganizerCard extends HTMLElement {
     });
   }
 
-  /**
-   * Generates the custom CSS for the card view.
-   */
   _getStyles() {
       return `
         <style>
           :host { display: block; width: 100%; height: 100%; } 
           ha-card { width: 100%; height: 100%; padding: 16px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; position: relative; } 
+          
           .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } 
-          .header span { font-size: 20px; font-weight: bold; } 
+          .header span { font-size: 20px; font-weight: bold; color: var(--primary-text-color); } 
           .header-actions { display: flex; gap: 8px; align-items: center; }
-          .icon-button { width: 38px; height: 38px; background: #eee; color: #333; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-          .icon-button:hover { background: #e0e0e0; }
-          .add-button { background: #2196F3 !important; color: white !important; }
-          .add-button:hover { background: #1976D2 !important; }
+          
+          .icon-button { background: transparent; border: none; cursor: pointer; color: var(--primary-text-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: background-color 0.2s, transform 0.1s; }
+          .icon-button:hover { background-color: var(--secondary-background-color); }
+          
+          .add-button { background: var(--primary-color, #2196F3) !important; color: white !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+          .add-button:hover { background: var(--dark-primary-color, #1976D2) !important; transform: scale(1.05); }
+          
           .search-container { display: none; margin-bottom: 15px; position: relative; }
           .search-container.visible { display: flex; align-items: center; gap: 8px; }
-          .search-input { flex: 1; padding: 10px; padding-right: 35px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--primary-background-color); color: var(--primary-text-color); outline: none; transition: border-color 0.2s; }
-          .search-input:focus { border-color: #2196F3; }
           .clear-search { position: absolute; right: 10px; cursor: pointer; color: var(--secondary-text-color); transition: color 0.2s; }
           .clear-search:hover { color: var(--primary-text-color); }
+          
           #task-list-wrapper { display: flex; flex-direction: column; flex-grow: 1; width: 100%; }
           .task-list { display: flex; flex-direction: column; gap: 10px; width: 100%; } 
+          
           .task-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border-left: 6px solid var(--status-color); border: 1px solid var(--divider-color); background-color: color-mix(in srgb, var(--status-color), transparent 92%); transition: transform 0.2s; min-height: 75px; box-sizing: border-box; } 
           .task-item:hover { background-color: color-mix(in srgb, var(--status-color), transparent 85%); transform: translateX(2px); box-shadow: -2px 4px 8px rgba(0,0,0,0.1); } 
-          .task-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; } 
+          .task-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; color: var(--primary-text-color); } 
           .task-text { flex: 1; min-width: 0; word-break: break-word; text-align: left; } 
           .task-title { font-weight: bold; margin: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; } 
-          .task-meta { font-size: 11px; color: var(--secondary-text-color); margin-top: 2px; } 
+          .task-meta { font-size: 12px; color: var(--secondary-text-color); margin-top: 2px; } 
+          
           .assignees-icons { display: flex; margin-top: 6px; gap: 4px; } 
-          .mini-avatar { width: 22px; height: 22px; border-radius: 50%; background: #999; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-transform: uppercase; box-shadow: 0 1px 3px rgba(0,0,0,0.2); } 
+          .mini-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--secondary-text-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-transform: uppercase; box-shadow: 0 1px 3px rgba(0,0,0,0.2); } 
+          
           .actions { display: flex; gap: 4px; flex-shrink: 0; } 
-          .action-btn { background: none; border: none; padding: 6px; cursor: pointer; transition: transform 0.1s; } 
-          .action-btn:hover { transform: scale(1.15); } 
-          .btn-complete { color: #4CAF50 !important; } 
-          .btn-edit { color: #2196F3 !important; } 
-          .btn-delete { color: #F44336 !important; } 
+          .action-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; color: var(--secondary-text-color); transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+          .action-btn:hover { background-color: var(--secondary-background-color); color: var(--primary-text-color); }
+          .btn-complete { color: var(--success-color, #4CAF50); } 
+          .btn-edit { color: var(--info-color, #2196F3); } 
+          .btn-delete { color: var(--error-color, #F44336); } 
+          
           .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
-          .btn-page { background: #2196F3; color: white; padding: 8px 12px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
-          .btn-page:active { opacity: 0.8; }
-          .btn-page[disabled] { background: var(--divider-color); color: var(--secondary-text-color); cursor: not-allowed; opacity: 0.6; }
+          
           .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
           .modal.open { display: flex; } 
-          .modal-content { background: var(--card-background-color, white); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; } 
-          .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; } 
-          .form-label { font-size: 12px; font-weight: bold; color: var(--secondary-text-color); margin-bottom: 4px; display: block; } 
-          .form-input { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--primary-background-color); color: var(--primary-text-color); }
+          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); } 
+          
+          .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
         </style>
       `;
   }
 
   _buildSkeleton() {
     const displayTitle = this._config.title || this.localize('title');
-    const showSearch = this._config.show_search !== false; // Default true
-    const showAdd = this._config.show_add !== false; // Default true
-    const showEdit = this._config.show_edit !== false; // Default true
+    const showSearch = this._config.show_search !== false; 
+    const showAdd = this._config.show_add !== false; 
+    const showEdit = this._config.show_edit !== false; 
 
     let html = this._getStyles();
     html += `
@@ -511,7 +499,7 @@ class TaskOrganizerCard extends HTMLElement {
         </div>
         
         <div class="search-container" id="search-container">
-            <input type="text" class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}">
+            <ha-textfield class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}" icon="mdi:magnify" style="width: 100%;"></ha-textfield>
             <ha-icon icon="mdi:close" class="clear-search" id="btn-search-clear" title="${this.localize('clear_btn')}"></ha-icon>
         </div>
 
@@ -519,73 +507,69 @@ class TaskOrganizerCard extends HTMLElement {
 
         <div id="choice-modal" class="modal">
             <div class="modal-content">
-                <h2 style="margin:0">${this.localize('who_did_it')}</h2>
-                <p style="font-size:13px; color:gray; margin-bottom: 10px;">${this.localize('fair_points')}</p>
-                <div id="choice-assignees"></div>
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button class="btn" style="background:#eee; color:#333;" id="btn-choice-cancel">${this.localize('cancel')}</button>
-                    <button class="btn" style="background:#4CAF50; color:white;" id="btn-choice-confirm">${this.localize('confirm')}</button>
+                <h2 style="margin: 0 0 8px 0;">${this.localize('who_did_it')}</h2>
+                <p style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 16px;">${this.localize('fair_points')}</p>
+                <div id="choice-assignees" style="display:flex; flex-direction:column; gap:8px;"></div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
+                    <ha-button id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button raised id="btn-choice-confirm">${this.localize('confirm')}</ha-button>
                 </div>
             </div>
         </div>
         
         <div id="task-modal" class="modal">
             <div class="modal-content">
-                <h2 style="margin:0">${this.localize('task')}</h2>
-                <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-                    <div>
-                        <label class="form-label">${this.localize('name_lbl')}</label>
-                        <input type="text" id="f-name" class="form-input">
+                <h2 style="margin: 0 0 20px 0;">${this.localize('task')}</h2>
+                
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <ha-textfield id="f-name" label="${this.localize('name_lbl')}"></ha-textfield>
+                    <ha-textfield id="f-description" label="${this.localize('desc_lbl')}"></ha-textfield>
+                    
+                    <div style="display:flex; gap:16px;">
+                        <ha-textfield id="f-interval" type="number" label="${this.localize('interval_lbl')}" style="flex:1;"></ha-textfield>
+                        <ha-textfield id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" style="flex:1;"></ha-textfield>
                     </div>
-                    <div>
-                        <label class="form-label">${this.localize('desc_lbl')}</label>
-                        <input type="text" id="f-description" class="form-input" placeholder="${this.localize('desc_placeholder')}">
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <div style="flex:1;">
-                            <label class="form-label">${this.localize('interval_lbl')}</label>
-                            <input type="number" id="f-interval" class="form-input" min="1">
-                        </div>
-                        <div style="flex:1;">
-                            <label class="form-label">${this.localize('points_lbl')}</label>
-                            <input type="number" id="f-complexity" class="form-input" min="1" max="10">
-                        </div>
-                    </div>
+                    
                     <div>
                         <label class="form-label">${this.localize('icon_lbl')}</label>
                         <ha-icon-picker id="f-icon-picker"></ha-icon-picker>
                     </div>
+
+                    <div>
+                        <label class="form-label">${this.localize('area_lbl')}</label>
+                        <ha-area-picker id="f-area"></ha-area-picker>
+                    </div>
+                    
                     <div>
                         <label class="form-label">${this.localize('assignees_lbl')}</label>
-                        <div style="display:flex; flex-direction:column; gap:8px; padding:10px; border:1px solid var(--divider-color); border-radius:8px;">
+                        <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
                             ${Object.entries(this.users).map(([uid, name]) => `
-                                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                                    <input type="checkbox" class="assignee-cb" id="cb-${uid}" value="${uid}">
-                                    <span>${name}</span>
-                                </label>
+                                <ha-formfield label="${name}">
+                                    <ha-checkbox class="assignee-cb" id="cb-${uid}" value="${uid}"></ha-checkbox>
+                                </ha-formfield>
                             `).join('')}
                         </div>
                     </div>
                     
-                    <div style="margin-top: 10px; border-top: 1px solid var(--divider-color); padding-top: 10px;">
-                        <label class="form-label" style="margin-bottom: 8px;">${this.localize('due_date_lbl')}</label>
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
-                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                                <input type="checkbox" id="f-set-due-date-cb"> <span>${this.localize('set_due_today')}</span>
-                            </label>
-                            <input type="date" id="f-custom-due-date" class="form-input" style="flex:1;" disabled>
+                    <div style="margin-top: 8px; border-top: 1px solid var(--divider-color); padding-top: 16px; display:flex; flex-direction:column; gap:16px;">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <ha-formfield label="${this.localize('set_due_today')}">
+                                <ha-switch id="f-set-due-date-cb"></ha-switch>
+                            </ha-formfield>
+                            <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                                <input type="checkbox" id="f-pause-cb"> <span>${this.localize('pause_until')}</span>
-                            </label>
-                            <input type="date" id="f-pause-date" class="form-input" style="flex:1;" disabled>
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <ha-formfield label="${this.localize('pause_until')}">
+                                <ha-switch id="f-pause-cb"></ha-switch>
+                            </ha-formfield>
+                            <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
                         </div>
                     </div>
                 </div>
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button class="btn" style="background:#eee; color:#333;" id="btn-modal-cancel">${this.localize('cancel')}</button>
-                    <button class="btn" style="background:#2196F3; color:white;" id="btn-modal-save">${this.localize('save')}</button>
+                
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
+                    <ha-button id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
                 </div>
             </div>
         </div>
@@ -594,20 +578,20 @@ class TaskOrganizerCard extends HTMLElement {
     
     this.shadowRoot.innerHTML = html;
 
-    // Attach static event listeners
     const searchField = this.shadowRoot.getElementById('search-field');
     if (searchField) {
         searchField.addEventListener('input', (e) => {
             this._searchTerm = e.target.value;
-            this.currentPage = 1; // Always jump to page 1 on new searches
+            this.currentPage = 1; 
             this._renderTaskList();
         });
     }
 
-    const picker = this.shadowRoot.getElementById('f-icon-picker');
-    if (picker) { 
-        picker.hass = this._hass; 
-    }
+    const iconPicker = this.shadowRoot.getElementById('f-icon-picker');
+    if (iconPicker) iconPicker.hass = this._hass; 
+    
+    const areaPicker = this.shadowRoot.getElementById('f-area');
+    if (areaPicker) areaPicker.hass = this._hass;
     
     const pauseCb = this.shadowRoot.getElementById('f-pause-cb');
     const pauseDate = this.shadowRoot.getElementById('f-pause-date');
@@ -622,7 +606,6 @@ class TaskOrganizerCard extends HTMLElement {
         });
     }
 
-    // event listener for custom due date
     const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
     const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
     if (setDueDateCb && customDueDateInput) {
@@ -643,10 +626,7 @@ class TaskOrganizerCard extends HTMLElement {
       
       if (this._searchVisible) {
           container.classList.add('visible');
-          if (searchField) {
-              // Timeout needed for browser to apply 'visible' class display flex
-              setTimeout(() => searchField.focus(), 50); 
-          }
+          if (searchField) setTimeout(() => searchField.focus(), 50); 
       } else {
           container.classList.remove('visible');
       }
@@ -679,7 +659,6 @@ class TaskOrganizerCard extends HTMLElement {
     nowForSort.setHours(0,0,0,0);
     const currentUserId = this._hass.user.id;
 
-    // Filter Logic
     let taskArray = Object.values(this.tasks).filter(task => {
         const d = new Date(task.due_date); 
         d.setHours(0,0,0,0);
@@ -688,7 +667,6 @@ class TaskOrganizerCard extends HTMLElement {
         const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
         const overdueThreshold = -this.settings.overdue_days;
 
-        // Base filters
         if (filterBy === 'current_user' && !(task.assignees && task.assignees.includes(currentUserId))) return false;
         if (filterBy === 'due' && (isPaused || diff > 0 || diff <= overdueThreshold)) return false;
         if (filterBy === 'overdue' && (isPaused || diff > overdueThreshold)) return false;
@@ -697,7 +675,6 @@ class TaskOrganizerCard extends HTMLElement {
         if (filterBy === 'inactive' && !isPaused) return false;
         if (filterBy === 'unassigned' && task.assignees && task.assignees.length > 0) return false;
 
-        // Search filter
         if (this._searchTerm) {
             const term = this._searchTerm.toLowerCase();
             const nameMatch = task.name?.toLowerCase().includes(term);
@@ -708,21 +685,19 @@ class TaskOrganizerCard extends HTMLElement {
         return true; 
     });
     
-    // Sort Logic
     taskArray.sort((a, b) => {
       const aPaused = a.paused_until && new Date(a.paused_until) > nowForSort;
       const bPaused = b.paused_until && new Date(b.paused_until) > nowForSort;
 
       let cmp = 0;
-      if (sortBy === 'points') {
-          cmp = a.complexity - b.complexity;
-      } else if (sortBy === 'assignee') {
+      if (sortBy === 'points') cmp = a.complexity - b.complexity;
+      else if (sortBy === 'assignee') {
           const aName = (a.assignees && a.assignees.length > 0) ? (this.users[a.assignees[0]] || 'z') : 'z';
           const bName = (b.assignees && b.assignees.length > 0) ? (this.users[b.assignees[0]] || 'z') : 'z';
           cmp = aName.localeCompare(bName);
-      } else if (sortBy === 'alphabet') {
-          cmp = a.name.localeCompare(b.name);
-      } else { 
+      } 
+      else if (sortBy === 'alphabet') cmp = a.name.localeCompare(b.name);
+      else { 
           if (aPaused && !bPaused) cmp = 1;
           else if (!aPaused && bPaused) cmp = -1;
           else cmp = new Date(a.due_date) - new Date(b.due_date);
@@ -736,12 +711,9 @@ class TaskOrganizerCard extends HTMLElement {
     let paginatedTasks = taskArray;
     let totalPages = 1;
 
-    // Pagination Logic
     if (itemsPerPage && itemsPerPage > 0) {
       totalPages = Math.max(1, Math.ceil(taskArray.length / itemsPerPage));
-      if (this.currentPage > totalPages) {
-          this.currentPage = Math.max(1, totalPages);
-      }
+      if (this.currentPage > totalPages) this.currentPage = Math.max(1, totalPages);
       
       const startIndex = (this.currentPage - 1) * itemsPerPage;
       paginatedTasks = taskArray.slice(startIndex, startIndex + itemsPerPage);
@@ -749,7 +721,6 @@ class TaskOrganizerCard extends HTMLElement {
 
     let html = `<div class="task-list">`;
 
-    // Loop through tasks and render items
     paginatedTasks.forEach(task => {
       const d = new Date(task.due_date); 
       d.setHours(0,0,0,0);
@@ -763,7 +734,7 @@ class TaskOrganizerCard extends HTMLElement {
       let timeText = this.localize('today');
       
       if (isPaused) {
-        borderColor = '#9e9e9e'; 
+        borderColor = 'var(--disabled-text-color, #9e9e9e)'; 
         timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
       } else {
         if (diff <= 0) borderColor = this.settings.color_due;
@@ -771,6 +742,11 @@ class TaskOrganizerCard extends HTMLElement {
         
         if (diff > 0) timeText = this.localize('in_days', {days: diff});
         else if (diff < 0) timeText = this.localize('ago_days', {days: Math.abs(diff)});
+      }
+
+      let areaName = task.area || "";
+      if (task.area && this._hass.areas && this._hass.areas[task.area]) {
+          areaName = this._hass.areas[task.area].name;
       }
       
       let assigneesList = Array.isArray(task.assignees) ? task.assignees : (task.assignees ? [task.assignees] : []);
@@ -782,9 +758,7 @@ class TaskOrganizerCard extends HTMLElement {
 
       const tooltipText = task.description ? task.description.replace(/"/g, '&quot;') : this.localize('no_desc');
       let itemStyle = `--status-color: ${borderColor};`;
-      if (isPaused) {
-          itemStyle += ` opacity: 0.6; filter: grayscale(0.8);`;
-      }
+      if (isPaused) itemStyle += ` opacity: 0.6; filter: grayscale(0.8);`;
 
       html += `
         <div class="task-item" style="${itemStyle}">
@@ -792,7 +766,7 @@ class TaskOrganizerCard extends HTMLElement {
                 <ha-icon icon="${task.icon || 'mdi:broom'}" style="flex-shrink: 0;"></ha-icon>
                 <div class="task-text">
                     <p class="task-title" title="${tooltipText}">${task.name}</p>
-                    <div class="task-meta">${timeText} • ${task.complexity} ${this.localize('points')}</div>
+                    <div class="task-meta">${areaName ? areaName + ' • ' : ''}${timeText} • ${task.complexity} ${this.localize('points')}</div>
                     <div class="assignees-icons">${assigneeHtml}</div>
                 </div>
             </div>
@@ -807,13 +781,12 @@ class TaskOrganizerCard extends HTMLElement {
 
     html += `</div>`;
 
-    // Render Pagination Controls if needed
     if (itemsPerPage && itemsPerPage > 0 && taskArray.length > itemsPerPage) {
         html += `
             <div class="pagination">
-                <button class="btn-page" id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</button>
-                <span style="font-size: 13px; color: var(--secondary-text-color);">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
-                <button class="btn-page" id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</button>
+                <ha-button id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</ha-button>
+                <span style="font-size: 14px; color: var(--secondary-text-color); font-weight: 500;">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
+                <ha-button id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</ha-button>
             </div>
         `;
     }
