@@ -9,7 +9,7 @@ Currently still in testing. Suggestions for improvement or bug reports are welco
 * **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
 * **Dynamic Due Dates**: Tasks are automatically rescheduled based on their defined interval after completion.
 * **Points System**: Each task has a complexity level (1-10); points are shared fairly among all participants upon completion.
-* **Pause & Immediate Due**: Tasks can be paused until a specific date or manually set to "due today".
+* **Pause & Custom Due Date**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date.
 * **Roommate of the Month**: A podium system visualizes current standings. At the end of the month, points are archived, and a long-term history is maintained.
 * **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
 * **Configuration**: Manage global settings like colors and overdue thresholds

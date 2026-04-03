@@ -3,6 +3,7 @@
 ## [1.2.0] - 2024-04-03
 ### 🚀 New Features
 - Add yml configuration `show_add` and `show_edit` to `task-organizer-card`
+- Possibility to set a specific due date
 
 ### 🐛 Bug Fixes
 - All tooltips in the cards have been translated

@@ -217,7 +217,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Required("complexity"): vol.All(int, vol.Range(min=1, max=10)),
     vol.Required("category"): str, 
     vol.Required("icon"): str,
-    vol.Optional("set_due_today", default=False): bool,
+    vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
 })
 @websocket_api.async_response
@@ -231,7 +231,11 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     """
     data = hass.data[DOMAIN]["data"]
     task_id = str(uuid.uuid4())
-    due_date = datetime.now().isoformat()
+    custom_due_date_str = msg.get("custom_due_date")
+    if custom_due_date_str:
+        due_date = datetime.fromisoformat(custom_due_date_str).isoformat()
+    else:
+        due_date = datetime.now().isoformat() # Default if no custom date is provided
     
     new_task = {
         "id": task_id, 
@@ -262,7 +266,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Optional("complexity"): vol.All(int, vol.Range(min=1, max=10)),
     vol.Optional("category"): str, 
     vol.Optional("icon"): str,
-    vol.Optional("set_due_today"): bool,
+    vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
 })
 @websocket_api.async_response
@@ -287,9 +291,9 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
     for key in keys_to_update:
         if key in msg: 
             task_ref[key] = msg[key]
-        
-    if msg.get("set_due_today"):
-        task_ref["due_date"] = datetime.now().isoformat()
+
+    if msg.get("custom_due_date"):
+        task_ref["due_date"] = datetime.fromisoformat(msg["custom_due_date"]).isoformat()
         
     if "paused_until" in msg:
         task_ref["paused_until"] = msg["paused_until"]

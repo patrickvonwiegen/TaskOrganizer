@@ -13,7 +13,7 @@ const I18N_CARD = {
     desc_lbl: "Description (optional)", desc_placeholder: "Additional info...", 
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
-    set_due_today: "Set immediately due", pause_until: "Pause until", paused: "Paused until {date}",
+    set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date",
     prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks...",
     search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
   },
@@ -26,7 +26,7 @@ const I18N_CARD = {
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
-    set_due_today: "Sofort fällig setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}",
+    set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit",
     prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen...",
     search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
   }
@@ -349,8 +349,10 @@ class TaskOrganizerCard extends HTMLElement {
             cb.checked = t.assignees && t.assignees.includes(cb.value);
         });
         
-        this.shadowRoot.getElementById('f-due-today').checked = false;
-        if (t.paused_until) {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Compare date part only
+
+        if (t.paused_until && new Date(t.paused_until) >= now) {
             this.shadowRoot.getElementById('f-pause-cb').checked = true;
             this.shadowRoot.getElementById('f-pause-date').value = t.paused_until;
             this.shadowRoot.getElementById('f-pause-date').disabled = false;
@@ -368,14 +370,22 @@ class TaskOrganizerCard extends HTMLElement {
         
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
             cb.checked = false;
-        });
-        
-        this.shadowRoot.getElementById('f-due-today').checked = false;
+        });        
+
         this.shadowRoot.getElementById('f-pause-cb').checked = false;
         this.shadowRoot.getElementById('f-pause-date').value = "";
         this.shadowRoot.getElementById('f-pause-date').disabled = true;
     }
     
+    // Always reset custom due date fields on modal open, as it's an action, not a persisted state.
+    const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
+    const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
+    if (setDueDateCb && customDueDateInput) {
+        setDueDateCb.checked = false;
+        customDueDateInput.value = "";
+        customDueDateInput.disabled = true;
+    }
+
     const picker = this.shadowRoot.getElementById('f-icon-picker');
     if (picker) { 
         picker.value = this._currentIcon; 
@@ -393,7 +403,17 @@ class TaskOrganizerCard extends HTMLElement {
         assignees.push(cb.value);
     });
     
-    const setDueToday = this.shadowRoot.getElementById('f-due-today').checked;
+    const setCustomDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb').checked;
+    const customDueDateVal = this.shadowRoot.getElementById('f-custom-due-date').value;
+    let customDueDate = null;
+    if (setCustomDueDateCb) {
+        if (customDueDateVal) {
+            customDueDate = customDueDateVal;
+        } else {
+            const today = new Date();
+            customDueDate = today.toISOString().split('T')[0];
+        }
+    }
     const isPausedCb = this.shadowRoot.getElementById('f-pause-cb').checked;
     const pauseDateVal = this.shadowRoot.getElementById('f-pause-date').value;
     const pausedUntil = (isPausedCb && pauseDateVal) ? pauseDateVal : null;
@@ -406,7 +426,7 @@ class TaskOrganizerCard extends HTMLElement {
       icon: this.shadowRoot.getElementById('f-icon-picker').value,
       category: "Allgemein", 
       assignees: assignees,
-      set_due_today: setDueToday,
+      custom_due_date: customDueDate,
       paused_until: pausedUntil
     };
     
@@ -548,10 +568,13 @@ class TaskOrganizerCard extends HTMLElement {
                     </div>
                     
                     <div style="margin-top: 10px; border-top: 1px solid var(--divider-color); padding-top: 10px;">
-                        <label class="form-label" style="margin-bottom: 8px;">Fälligkeit & Pause</label>
-                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom: 10px;">
-                            <input type="checkbox" id="f-due-today"> <span>${this.localize('set_due_today')}</span>
-                        </label>
+                        <label class="form-label" style="margin-bottom: 8px;">${this.localize('due_date_lbl')}</label>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                                <input type="checkbox" id="f-set-due-date-cb"> <span>${this.localize('set_due_today')}</span>
+                            </label>
+                            <input type="date" id="f-custom-due-date" class="form-input" style="flex:1;" disabled>
+                        </div>
                         <div style="display:flex; align-items:center; gap:10px;">
                             <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
                                 <input type="checkbox" id="f-pause-cb"> <span>${this.localize('pause_until')}</span>
@@ -595,6 +618,19 @@ class TaskOrganizerCard extends HTMLElement {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 pauseDate.value = tomorrow.toISOString().split('T')[0];
+            }
+        });
+    }
+
+    // event listener for custom due date
+    const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
+    const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
+    if (setDueDateCb && customDueDateInput) {
+        setDueDateCb.addEventListener('change', (e) => {
+            customDueDateInput.disabled = !e.target.checked;
+            if (e.target.checked && !customDueDateInput.value) {
+                const today = new Date();
+                customDueDateInput.value = today.toISOString().split('T')[0];
             }
         });
     }
