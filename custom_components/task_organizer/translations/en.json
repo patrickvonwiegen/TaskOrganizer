@@ -27,6 +27,8 @@
     "sensor": {
       "all_tasks": { "name": "All Tasks" },
       "due_tasks": { "name": "Due Tasks" },
+      "overdue_tasks": { "name": "Overdue Tasks" },
+      "due_and_overdue_tasks": { "name": "Due and Overdue Tasks" },
       "settings": { "name": "Settings" },
       "points": { "name": "Points" },
       "leaderboard": { "name": "Roommate of the Month" }

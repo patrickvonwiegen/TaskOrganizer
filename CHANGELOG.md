@@ -1,12 +1,14 @@
 ﻿# Changelog
 
-## [1.1.1] - 2024-04-02
+## [1.1.1] - 2024-04-03
 ### 🚀 New Features
 No features
 
 ### 🐛 Bug Fixes
 - All tooltips in the cards have been translated
 - All cards now have a customizable title
+- Sensor `task_organizer_due_tasks` transfered into new sensor `task_organizer_due_and_overdue_tasks` and new sensors for differenciation  `task_organizer_due_tasks` and `task_organizer_overdue_tasks` (without paused tasks)
+-
 
 ### ⚠️ Breaking Changes
 No breaking changes

@@ -50,6 +50,9 @@ PLATFORMS = ["sensor", "button"]
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Called when options are changed via the UI gear icon."""
+    # Update the settings in the main data structure
+    hass.data[DOMAIN]["data"]["settings"] = dict(entry.options)
+
     hass.bus.async_fire(EVENT_TASK_UPDATED)
 
 
@@ -491,6 +494,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data.setdefault("monthly_history", {})
     data.setdefault("current_month", datetime.now().strftime("%Y-%m"))
     data.setdefault("current_period_start", datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat())
+
+    # IMPORTANT: Ensure settings from config entry options are always reflected in data
+    data["settings"] = dict(entry.options)
 
     hass.data[DOMAIN]["store"] = store
     hass.data[DOMAIN]["data"] = data

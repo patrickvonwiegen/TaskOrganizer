@@ -19,11 +19,13 @@ The integration provides the following sensors:
 
 | Sensor | Description |
 | :--- | :--- |
-| `sensor.all_tasks` | Displays the total number of created tasks. The full task list is available as JSON in the attributes. |
-| `sensor.due_tasks` | Displays the number of tasks that are due today or overdue. |
-| `sensor.points` | Shows the current point standings for all users. Perfect for custom visualizations. |
-| `sensor.leaderboard` | Displays the name of the roommate currently in the lead. |
-| `sensor.settings` | Provides the current configuration (colors, overdue thresholds). |
+| `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list is available as JSON in the attributes. |
+| `sensor.task_organizer_due_tasks` | Displays the number of tasks that are due but not yet overdue. |
+| `sensor.task_organizer_overdue_tasks` | Displays the number of overdue tasks. |
+| `sensor.task_organizer_due_and_overdue_tasks` | Displays the combined number of due and overdue tasks. |
+| `sensor.task_organizer_points` | Shows the current point standings for all users. Perfect for custom visualizations. |
+| `sensor.task_organizer_leaderboard` | Displays the name of the roommate currently in the lead. |
+| `sensor.task_organizer_settings` | Provides the current configuration (colors, overdue thresholds). |
 
 ## Buttons
 | Button | Description |
