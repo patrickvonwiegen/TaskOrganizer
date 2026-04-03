@@ -113,7 +113,9 @@ class TaskOrganizerCard extends HTMLElement {
           filter_by: "none",
           items_per_page: 10,
           show_delete: true,
-          show_search: true
+          show_edit: true,
+          show_search: true,
+          show_add: true
       }; 
   }
 
@@ -473,7 +475,9 @@ class TaskOrganizerCard extends HTMLElement {
 
   _buildSkeleton() {
     const displayTitle = this._config.title || this.localize('title');
-    const showSearch = this._config.show_search !== false;
+    const showSearch = this._config.show_search !== false; // Default true
+    const showAdd = this._config.show_add !== false; // Default true
+    const showEdit = this._config.show_edit !== false; // Default true
 
     let html = this._getStyles();
     html += `
@@ -482,7 +486,7 @@ class TaskOrganizerCard extends HTMLElement {
             <span>${displayTitle}</span>
             <div class="header-actions">
                 ${showSearch ? `<button class="icon-button" id="btn-search-toggle" title="${this.localize('search_btn')}"><ha-icon icon="mdi:magnify"></ha-icon></button>` : ''}
-                <button class="icon-button add-button" id="btn-add-task" title="${this.localize('add_task_btn')}"><ha-icon icon="mdi:plus"></ha-icon></button>
+                ${showAdd ? `<button class="icon-button add-button" id="btn-add-task" title="${this.localize('add_task_btn')}"><ha-icon icon="mdi:plus"></ha-icon></button>` : ''}
             </div>
         </div>
         
@@ -633,6 +637,7 @@ class TaskOrganizerCard extends HTMLElement {
     const sortOrder = this._config.sort_order || 'default';
     const itemsPerPage = this._config.items_per_page;
     const showDelete = this._config.show_delete !== false;
+    const showEdit = this._config.show_edit !== false;
 
     const nowForSort = new Date(); 
     nowForSort.setHours(0,0,0,0);
@@ -757,7 +762,7 @@ class TaskOrganizerCard extends HTMLElement {
             </div>
             <div class="actions">
                 <button class="action-btn btn-complete" data-id="${task.id}"><ha-icon icon="mdi:check"></ha-icon></button>
-                <button class="action-btn btn-edit" data-id="${task.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>
+                ${showEdit ? `<button class="action-btn btn-edit" data-id="${task.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>` : ''}
                 ${showDelete ? `<button class="action-btn btn-delete" data-id="${task.id}"><ha-icon icon="mdi:delete"></ha-icon></button>` : ''}
             </div>
         </div>
