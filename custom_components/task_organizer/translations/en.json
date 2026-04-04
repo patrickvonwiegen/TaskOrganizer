@@ -65,7 +65,8 @@
         "interval": { "name": "Interval (Days)", "description": "How often does it need to be done?" },
         "complexity": { "name": "Points (1-10)", "description": "How many points is it worth?" },
         "icon": { "name": "Icon", "description": "An mdi-icon" },
-        "assignees": { "name": "Assignees", "description": "Comma separated user IDs." }
+        "assignees": { "name": "Assignees", "description": "Comma separated user IDs." },
+        "override_overdue_days": { "name": "Days until overdue (optional)", "description": "Overrides the global setting for the number of days after which this task is considered overdue." }
       }
     }
   }

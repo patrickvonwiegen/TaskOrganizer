@@ -10,6 +10,8 @@ Currently still in testing. Suggestions for improvement or bug reports are welco
 * **Dynamic Due Dates**: Tasks are automatically rescheduled based on their defined interval after completion.
 * **Points System**: Each task has a complexity level (1-10); points are shared fairly among all participants upon completion.
 * **Pause & Custom Due Date**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date.
+* **Task Organization**: Assign tasks to specific areas and give them a unique icon.
+* **Task-specific Overdue Thresholds**: Override the global overdue setting for individual tasks.
 * **Roommate of the Month**: A podium system visualizes current standings. At the end of the month, points are archived, and a long-term history is maintained.
 * **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
 * **Configuration**: Manage global settings like colors and overdue thresholds
@@ -39,9 +41,13 @@ TaskOrganizer offers services that can be used in automations or scripts:
 ### `task_organizer.add_task`
 Creates a new task.
 * **name**: Name of the task.
+* **description**: (Optional) Additional information about the task.
+* **area**: (Optional) The area/room where the task applies.
 * **interval**: Interval in days.
 * **complexity**: Points (1-10).
+* **icon**: (Optional) An mdi-icon for the task (e.g., `mdi:broom`).
 * **assignees**: (Optional) List of user IDs.
+* **override_overdue_days**: (Optional) Overrides the global setting for the number of days after which this task is considered overdue.
 
 ### `task_organizer.complete_task_by_name`
 Marks a task as completed by its exact name.

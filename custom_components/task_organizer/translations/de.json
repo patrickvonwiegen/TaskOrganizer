@@ -65,7 +65,8 @@
         "interval": { "name": "Intervall (Tage)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
         "complexity": { "name": "Punkte (1-10)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
         "icon": { "name": "Icon", "description": "Ein mdi-Icon" },
-        "assignees": { "name": "Bearbeiter", "description": "Komma getrennte User-IDs." }
+        "assignees": { "name": "Bearbeiter", "description": "Komma getrennte User-IDs." },
+        "override_overdue_days": { "name": "Tage bis überfällig (optional)", "description": "Überschreibt die globale Einstellung für die Anzahl der Tage, nach denen diese Aufgabe als überfällig gilt." }
       }
     }
   }

@@ -220,6 +220,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Required("icon"): str,
     vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
+    vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
 })
 @websocket_api.async_response
 async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -249,7 +250,8 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
         "category": msg["category"], 
         "icon": msg["icon"],
         "due_date": due_date, 
-        "paused_until": msg.get("paused_until")
+        "paused_until": msg.get("paused_until"),
+        "override_overdue_days": msg.get("override_overdue_days")
     }
     
     data["tasks"][task_id] = new_task
@@ -271,6 +273,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Optional("icon"): str,
     vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
+    vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
 })
 @websocket_api.async_response
 async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -300,6 +303,9 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         
     if "paused_until" in msg:
         task_ref["paused_until"] = msg["paused_until"]
+
+    if "override_overdue_days" in msg:
+        task_ref["override_overdue_days"] = msg["override_overdue_days"]
         
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -628,7 +634,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "category": "General",
             "icon": call.data.get("icon", "mdi:broom"),
             "due_date": datetime.now().isoformat(), 
-            "paused_until": None
+            "paused_until": None,
+            "override_overdue_days": call.data.get("override_overdue_days")
         }
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)

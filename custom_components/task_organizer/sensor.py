@@ -104,8 +104,11 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
                         is_paused = True
 
                 due_date = datetime.fromisoformat(task["due_date"]).date()
+                task_overdue_days = task.get("override_overdue_days")
+                if task_overdue_days is None:
+                    task_overdue_days = overdue_days
                 # A task is due if its due date is today or in the past, but not yet past the overdue threshold.
-                if not is_paused and due_date <= now and due_date > (now - timedelta(days=overdue_days)):
+                if not is_paused and due_date <= now and due_date > (now - timedelta(days=task_overdue_days)):
                     due_tasks.append(task)
         return due_tasks
 
@@ -149,8 +152,11 @@ class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
                         is_paused = True
 
                 due_date = datetime.fromisoformat(task["due_date"]).date()
+                task_overdue_days = task.get("override_overdue_days")
+                if task_overdue_days is None:
+                    task_overdue_days = overdue_days
                 # A task is overdue if its due date is past the overdue threshold.
-                if not is_paused and due_date <= (now - timedelta(days=overdue_days)):
+                if not is_paused and due_date <= (now - timedelta(days=task_overdue_days)):
                     overdue_tasks.append(task)
         return overdue_tasks
 

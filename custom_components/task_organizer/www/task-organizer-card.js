@@ -10,10 +10,11 @@ const I18N_CARD = {
     in_days: "in {days} days", ago_days: "{days} days ago", points: "pts.", 
     no_desc: "No description", who_did_it: "Who did it?", fair_points: "Points are shared fairly.", 
     cancel: "Cancel", confirm: "Confirm", save: "Save", task: "Task", name_lbl: "Name", 
-    desc_lbl: "Description (optional)", desc_placeholder: "Additional info...", 
+    desc_lbl: "Description (optional)", desc_placeholder: "Additional info...",
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
     set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
+    override_overdue_lbl: "Task specific overdue", override_overdue_days_placeholder: "Days",
     prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks...",
     search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
   },
@@ -21,12 +22,13 @@ const I18N_CARD = {
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
     deleted: "Gelöscht", confirm_delete: "Aufgabe wirklich löschen?", today: "Heute", 
     in_days: "in {days} Tage(n)", ago_days: "vor {days} Tage(n)", points: "Pkt.", 
-    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Punkte werden fair geteilt.", 
+    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Punkte werden fair geteilt.",
     cancel: "Abbrechen", confirm: "Bestätigen", save: "Speichern", task: "Aufgabe", name_lbl: "Name", 
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
     set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
+    override_overdue_lbl: "Aufgabenspezifische Überfälligkeit", override_overdue_days_placeholder: "Tage",
     prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen...",
     search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
   }
@@ -366,6 +368,11 @@ class TaskOrganizerCard extends HTMLElement {
         this.shadowRoot.getElementById('f-pause-cb').checked = false;
         this.shadowRoot.getElementById('f-pause-date').value = "";
         this.shadowRoot.getElementById('f-pause-date').disabled = true;
+
+        this.shadowRoot.getElementById('f-override-overdue-cb').checked = false;
+        this.shadowRoot.getElementById('f-override-overdue-days').value = "";
+        this.shadowRoot.getElementById('f-override-overdue-days').disabled = true;
+
     }
     
     const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
@@ -374,6 +381,20 @@ class TaskOrganizerCard extends HTMLElement {
         setDueDateCb.checked = false;
         customDueDateInput.value = "";
         customDueDateInput.disabled = true;
+    }
+
+    const overrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb');
+    const overrideOverdueDays = this.shadowRoot.getElementById('f-override-overdue-days');
+    if (taskId && this.tasks[taskId]) {
+        const t = this.tasks[taskId];
+        if (t.override_overdue_days !== null && t.override_overdue_days !== undefined) {
+            overrideOverdueCb.checked = true;
+            overrideOverdueDays.value = t.override_overdue_days;
+            overrideOverdueDays.disabled = false;
+        } else {
+            overrideOverdueCb.checked = false;
+            overrideOverdueDays.disabled = true;
+        }
     }
 
     const picker = this.shadowRoot.getElementById('f-icon-picker');
@@ -406,6 +427,10 @@ class TaskOrganizerCard extends HTMLElement {
     const pauseDateVal = this.shadowRoot.getElementById('f-pause-date').value;
     const pausedUntil = (isPausedCb && pauseDateVal) ? pauseDateVal : null;
 
+    const isOverrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb').checked;
+    const overrideOverdueDaysVal = this.shadowRoot.getElementById('f-override-overdue-days').value;
+    const overrideOverdueDays = (isOverrideOverdueCb && overrideOverdueDaysVal) ? parseInt(overrideOverdueDaysVal) : null;
+
     const payload = {
       name: this.shadowRoot.getElementById('f-name').value, 
       description: this.shadowRoot.getElementById('f-description').value,
@@ -416,7 +441,8 @@ class TaskOrganizerCard extends HTMLElement {
       category: "Allgemein", 
       assignees: assignees,
       custom_due_date: customDueDate,
-      paused_until: pausedUntil
+      paused_until: pausedUntil,
+      override_overdue_days: overrideOverdueDays
     };
     
     const type = this._editingTaskId ? 'task_organizer/edit_task' : 'task_organizer/add_task';
@@ -559,6 +585,12 @@ class TaskOrganizerCard extends HTMLElement {
                             <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
                         </div>
                         <div style="display:flex; align-items:center; gap:16px;">
+                            <ha-formfield label="${this.localize('override_overdue_lbl')}">
+                                <ha-switch id="f-override-overdue-cb"></ha-switch>
+                            </ha-formfield>
+                            <ha-textfield id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-textfield>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:16px;">
                             <ha-formfield label="${this.localize('pause_until')}">
                                 <ha-switch id="f-pause-cb"></ha-switch>
                             </ha-formfield>
@@ -617,6 +649,17 @@ class TaskOrganizerCard extends HTMLElement {
             }
         });
     }
+
+    const overrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb');
+    const overrideOverdueDays = this.shadowRoot.getElementById('f-override-overdue-days');
+    if (overrideOverdueCb && overrideOverdueDays) {
+        overrideOverdueCb.addEventListener('change', (e) => {
+            overrideOverdueDays.disabled = !e.target.checked;
+            if (!e.target.checked) {
+                overrideOverdueDays.value = "";
+            }
+        });
+    }
   }
 
   _updateSearchVisibility() {
@@ -665,11 +708,13 @@ class TaskOrganizerCard extends HTMLElement {
         
         const diff = Math.round((d - nowForSort) / (1000 * 60 * 60 * 24));
         const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
-        const overdueThreshold = -this.settings.overdue_days;
+        const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined)
+            ? task.override_overdue_days : this.settings.overdue_days;
+        const overdueDiff = -overdueThreshold;
 
         if (filterBy === 'current_user' && !(task.assignees && task.assignees.includes(currentUserId))) return false;
-        if (filterBy === 'due' && (isPaused || diff > 0 || diff <= overdueThreshold)) return false;
-        if (filterBy === 'overdue' && (isPaused || diff > overdueThreshold)) return false;
+        if (filterBy === 'due' && (isPaused || diff > 0 || diff <= overdueDiff)) return false;
+        if (filterBy === 'overdue' && (isPaused || diff > overdueDiff)) return false;
         if (filterBy === 'due_and_overdue' && (isPaused || diff > 0)) return false;
         if (filterBy === 'active' && isPaused) return false;
         if (filterBy === 'inactive' && !isPaused) return false;
@@ -729,6 +774,9 @@ class TaskOrganizerCard extends HTMLElement {
       
       const diff = Math.round((d - now) / (1000 * 60 * 60 * 24));
       const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+      const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined)
+        ? task.override_overdue_days
+        : this.settings.overdue_days;
       
       let borderColor = this.settings.color_done;
       let timeText = this.localize('today');
@@ -738,7 +786,7 @@ class TaskOrganizerCard extends HTMLElement {
         timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
       } else {
         if (diff <= 0) borderColor = this.settings.color_due;
-        if (diff <= -this.settings.overdue_days) borderColor = this.settings.color_overdue;
+        if (diff <= -overdueThreshold) borderColor = this.settings.color_overdue;
         
         if (diff > 0) timeText = this.localize('in_days', {days: diff});
         else if (diff < 0) timeText = this.localize('ago_days', {days: Math.abs(diff)});

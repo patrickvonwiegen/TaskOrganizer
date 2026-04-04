@@ -5,6 +5,7 @@
 - Added yml configuration `show_add` and `show_edit` to `task-organizer-card`
 - Possibility to set a specific due date
 - Added area for task
+- Task specific overdue threshold
 
 ### 🐛 Bug Fixes
 - All tooltips in the cards have been translated
