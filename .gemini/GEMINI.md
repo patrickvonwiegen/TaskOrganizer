@@ -41,7 +41,7 @@ Please adhere to the following rules for every request:
 
 6.  **Translations**:
     *   For any user-facing text that is added or changed, the corresponding translations must be set.
-    *   For text within Lovelace cards (e.g., labels, buttons, tooltips), update the `I18N_...` object at the top of the respective JavaScript file (e.g., `task-organizer-card.js`).
-    *   For backend-generated names (sensors, services), update the files in the `custom_components/task_organizer/translations/` directory.
+    *   For text within Lovelace cards (e.g., labels, buttons, tooltips), update the `I18N_...` object at the top of the respective JavaScript file for both English (`en`) and German (`de`).
+    *   For backend-generated names (sensors, services), update both `en.json` and `de.json` in the `custom_components/task_organizer/translations/` directory.
 
 By following these guidelines, you will help maintain the quality, consistency, and documentation of the TaskOrganizer project.

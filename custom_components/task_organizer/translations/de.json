@@ -73,6 +73,21 @@
         "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." },
         "override_overdue_days": { "name": "Tage bis überfällig (optional)", "description": "Überschreibt die globale Einstellung für die Anzahl der Tage, nach denen diese Aufgabe als überfällig gilt." }
       }
+    },
+    "set_task_due_by_name": {
+      "name": "Aufgabe sofort fällig setzen",
+      "description": "Setzt eine Aufgabe anhand ihres exakten Namens sofort auf fällig.",
+      "fields": {
+        "task_name": { "name": "Aufgabenname", "description": "Der exakte Name der Aufgabe." }
+      }
+    },
+    "pause_task_by_name": {
+      "name": "Aufgabe pausieren",
+      "description": "Pausiert eine Aufgabe anhand ihres exakten Namens bis zu einem bestimmten Datum.",
+      "fields": {
+        "task_name": { "name": "Aufgabenname", "description": "Der exakte Name der Aufgabe." },
+        "pause_until": { "name": "Pausieren bis", "description": "Das Datum, bis zu dem die Aufgabe pausiert werden soll (z.B. '2024-12-31')." }
+      }
     }
   }
 }

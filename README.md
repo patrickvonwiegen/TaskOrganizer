@@ -2,6 +2,13 @@
 
 TaskOrganizer is a integration for Home Assistant designed to manage household tasks in a gamified way. It allows you to create tasks with intervals and complexity points, assign them to roommates, and crown a "Roommate of the Month".
 
+<p align="center">
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/288496e5-29f7-47c4-9430-b9baab65e9d3" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/be06b2cc-7153-4229-b9f9-986e03d836bd" />
+</p>
+
 Currently still in testing. Suggestions for improvement or bug reports are welcome.
 
 ## Features
@@ -17,114 +24,6 @@ Currently still in testing. Suggestions for improvement or bug reports are welco
 * **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates.
 
-## Sensors
-The integration provides the following sensors:
-
-| Sensor | Description |
-| :--- | :--- |
-| `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list is available as JSON in the attributes. |
-| `sensor.task_organizer_due_tasks` | Displays the number of tasks that are due but not yet overdue. |
-| `sensor.task_organizer_overdue_tasks` | Displays the number of overdue tasks. |
-| `sensor.task_organizer_due_and_overdue_tasks` | Displays the combined number of due and overdue tasks. |
-| `sensor.task_organizer_points` | Shows the current point standings for all users. Perfect for custom visualizations. |
-| `sensor.task_organizer_leaderboard` | Displays the name of the roommate currently in the lead. |
-| `sensor.task_organizer_templates` | Displays the number of available templates. The full template list is available as JSON in the attributes. |
-| `sensor.task_organizer_settings` | Provides the current configuration (colors, overdue thresholds). |
-
-## Buttons
-| Button | Description |
-| :--- | :--- |
-| `button.task_organizer_reset_month`| Triggers the monthly reset (archives points and starts a new period). |
-| `button.task_organizer_factory_reset` | Performs a factory reset (deletes all data). |
-
-## Services
-TaskOrganizer offers services that can be used in automations or scripts:
-
-### `task_organizer.add_task`
-Creates a new recurring or one-time task, optionally from a template.
-* **template**: (Optional) The name of a template to use. Fills in other fields if they are not provided.
-* **name**: (Optional if template is used) What should the task be called?
-* **description**: (Optional) Additional info.
-* **area**: (Optional) The area/room where the task applies.
-* **interval**: (Optional) How often does it need to be done? `0` for one-time tasks. If not set, taken from template or defaults to `7`.
-* **complexity**: (Optional) Points (1-10).
-* **icon**: (Optional) An mdi-icon for the task (e.g., `mdi:broom`).
-* **assignees**: (Optional) List of user IDs or person entities.
-* **override_overdue_days**: (Optional) Overrides the global setting for the number of days after which this task is considered overdue.
-
-### `task_organizer.complete_task_by_name`
-Marks a task as completed by its exact name.
-* **task_name**: The name of the task.
-* **user_id**: (Optional) Who completed the task.
-
-### `task_organizer.reset_monthly_points`
-Manually resets all points to 0 and saves the current month to the history.
-
-### `task_organizer.factory_reset`
-Deletes all tasks, history, and points, returning the integration to its initial state.
-
-# Events
-TaskOrganizer fires custom events to allow for advanced automations.
-
-## task_organizer_task_completed
-This event is fired whenever a task is marked as completed. It is useful for triggering notifications or other household automations.
-
-### Event Data:
-- **task_id**: The unique ID of the task.
-- **task_name**: The name of the task (e.g., "Take out the trash").
-- **completed_by**: A list of user IDs who completed the task.
-- **points_per_user**: Points awarded to each participant.
-- **total_points**: Total complexity points of the task.
-
-### Example Automation:
-Say "Thank you" via a media player when someone completes a specific task.
-
-```yml
-alias: "TaskOrganizer: Thank You Message"
-trigger:
-  - platform: event
-    event_type: "task_organizer_task_completed"
-condition:
-  - condition: template
-    value_template: "{{ trigger.event.data.task_name == 'Take out the trash' }}"
-action:
-  - service: tts.google_translate_say
-    data:
-      entity_id: media_player.living_room_speaker
-      message: "Thank you for taking out the trash!"
-```
-
-## task_organizer_leaderboard_changed
-This event is triggered whenever the ranking order within the Top 3 roommates changes. This can happen when a task is completed, points are manually edited, or the month is reset.
-
-### Event Data:
-
-- **old_leaderboard**: A list of the top 3 users before the change.
-
-- **new_leaderboard**: A list of the top 3 users after the change.
-
-Each list entry contains user_id, name (friendly name), and points.
-
-### Example Automation:
-Celebrate when a roommate takes the lead!
-
-```yml
-alias: "TaskOrganizer: New Leader Notification"
-trigger:
-  - platform: event
-    event_type: "task_organizer_leaderboard_changed"
-condition:
-  # Only trigger if the person in 1st place (index 0) has changed
-  - condition: template
-    value_template: "{{ trigger.event.data.old_leaderboard[0].user_id != trigger.event.data.new_leaderboard[0].user_id }}"
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: "New Ranking Leader!"
-      message: >
-        {{ trigger.event.data.new_leaderboard[0].name }} just took the lead 
-        with {{ trigger.event.data.new_leaderboard[0].points }} points!
-```
 ## Dashboard Cards
 The integration includes four specialized cards for the Lovelace dashboard.
 
@@ -181,6 +80,125 @@ Allows customization of colors, data export, and factory resets.
 type: custom:task-organizer-settings
 show_advanced: false    # Unlocks the reset and factory reset area (Default: false)
 ```
+
+## Sensors
+The integration provides the following sensors:
+
+| Sensor | Description |
+| :--- | :--- |
+| `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list is available as JSON in the attributes. |
+| `sensor.task_organizer_due_tasks` | Displays the number of tasks that are due but not yet overdue. |
+| `sensor.task_organizer_overdue_tasks` | Displays the number of overdue tasks. |
+| `sensor.task_organizer_due_and_overdue_tasks` | Displays the combined number of due and overdue tasks. |
+| `sensor.task_organizer_points` | Shows the current point standings for all users. Perfect for custom visualizations. |
+| `sensor.task_organizer_leaderboard` | Displays the name of the roommate currently in the lead. |
+| `sensor.task_organizer_templates` | Displays the number of available templates. The full template list is available as JSON in the attributes. |
+| `sensor.task_organizer_settings` | Provides the current configuration (colors, overdue thresholds). |
+
+## Buttons
+| Button | Description |
+| :--- | :--- |
+| `button.task_organizer_reset_month`| Triggers the monthly reset (archives points and starts a new period). |
+| `button.task_organizer_factory_reset` | Performs a factory reset (deletes all data). |
+
+## Services
+TaskOrganizer offers services that can be used in automations or scripts:
+
+### `task_organizer.add_task`
+Creates a new recurring or one-time task, optionally from a template.
+* **template**: (Optional) The name of a template to use. Fills in other fields if they are not provided.
+* **name**: (Optional if template is used) What should the task be called?
+* **description**: (Optional) Additional info.
+* **area**: (Optional) The area/room where the task applies.
+* **interval**: (Optional) How often does it need to be done? `0` for one-time tasks. If not set, taken from template or defaults to `7`.
+* **complexity**: (Optional) Points (1-10).
+* **icon**: (Optional) An mdi-icon for the task (e.g., `mdi:broom`).
+* **assignees**: (Optional) List of user IDs or person entities.
+* **override_overdue_days**: (Optional) Overrides the global setting for the number of days after which this task is considered overdue.
+
+### `task_organizer.complete_task_by_name`
+Marks a task as completed by its exact name.
+* **task_name**: The name of the task.
+* **user_id**: (Optional) Who completed the task.
+
+### `task_organizer.set_task_due_by_name`
+Marks a task as due immediately by its exact name.
+* **task_name**: The name of the task.
+
+### `task_organizer.pause_task_by_name`
+Pauses a task until a specific date.
+* **task_name**: The name of the task.
+* **pause_until**: The date until which the task should be paused (e.g., "2024-12-31").
+
+### `task_organizer.reset_monthly_points`
+Manually resets all points to 0 and saves the current month to the history.
+
+### `task_organizer.factory_reset`
+Deletes all tasks, history, and points, returning the integration to its initial state.
+
+## Events
+TaskOrganizer fires custom events to allow for advanced automations.
+
+### task_organizer_task_completed
+This event is fired whenever a task is marked as completed. It is useful for triggering notifications or other household automations.
+
+#### Event Data:
+- **task_id**: The unique ID of the task.
+- **task_name**: The name of the task (e.g., "Take out the trash").
+- **completed_by**: A list of user IDs who completed the task.
+- **points_per_user**: Points awarded to each participant.
+- **total_points**: Total complexity points of the task.
+
+#### Example Automation:
+Say "Thank you" via a media player when someone completes a specific task.
+
+```yml
+alias: "TaskOrganizer: Thank You Message"
+trigger:
+  - platform: event
+    event_type: "task_organizer_task_completed"
+condition:
+  - condition: template
+    value_template: "{{ trigger.event.data.task_name == 'Take out the trash' }}"
+action:
+  - service: tts.google_translate_say
+    data:
+      entity_id: media_player.living_room_speaker
+      message: "Thank you for taking out the trash!"
+```
+
+### task_organizer_leaderboard_changed
+This event is triggered whenever the ranking order within the Top 3 roommates changes. This can happen when a task is completed, points are manually edited, or the month is reset.
+
+#### Event Data:
+
+- **old_leaderboard**: A list of the top 3 users before the change.
+
+- **new_leaderboard**: A list of the top 3 users after the change.
+
+Each list entry contains user_id, name (friendly name), and points.
+
+#### Example Automation:
+Celebrate when a roommate takes the lead!
+
+```yml
+alias: "TaskOrganizer: New Leader Notification"
+trigger:
+  - platform: event
+    event_type: "task_organizer_leaderboard_changed"
+condition:
+  # Only trigger if the person in 1st place (index 0) has changed
+  - condition: template
+    value_template: "{{ trigger.event.data.old_leaderboard[0].user_id != trigger.event.data.new_leaderboard[0].user_id }}"
+action:
+  - service: notify.mobile_app_your_phone
+    data:
+      title: "New Ranking Leader!"
+      message: >
+        {{ trigger.event.data.new_leaderboard[0].name }} just took the lead 
+        with {{ trigger.event.data.new_leaderboard[0].points }} points!
+```
+
 
 ## Installation & Data Storage
 All data is stored securely in the internal Home Assistant database at .storage/task_organizer.storage.

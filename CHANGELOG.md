@@ -14,6 +14,8 @@
 - service `task_organizer.create_task` now with template support
 - New sensor `sensor.task_organizer_templates` to track available templates
 - New sensors for differenciation  `task_organizer_due_tasks` and `task_organizer_overdue_tasks`
+- New service `task_organizer.set_task_due_by_name` to set a task as due immediately.
+- New service `task_organizer.pause_task_by_name` to pause a task until a specific date.
 
 ### 🐛 Bug Fixes
 - All tooltips in the cards have been translated
