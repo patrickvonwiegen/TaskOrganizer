@@ -35,6 +35,9 @@ from .const import (
     WS_TYPE_PAUSE_TASK,
     WS_TYPE_UPDATE_POINTS,
     WS_TYPE_UPDATE_SETTINGS,
+    WS_TYPE_ADD_TEMPLATE,
+    WS_TYPE_EDIT_TEMPLATE,
+    WS_TYPE_DELETE_TEMPLATE,
     SERVICE_ADD_TASK,
     SERVICE_COMPLETE_TASK_BY_NAME,
     SERVICE_RESET_MONTHLY_POINTS,
@@ -189,10 +192,16 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
         }
         data["history"].insert(0, history_entry)
     
-    interval = task.get("interval", 1)
-    task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
-    task["paused_until"] = None 
-    
+    interval = task.get("interval", 7)
+    # If recurring, update due date. If one-time, it will be deleted.
+    if interval > 0:
+        task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
+        task["paused_until"] = None
+
+    # Now, if it was a one-time task, delete it from the main dictionary
+    if interval == 0:
+        del data["tasks"][task_id]
+
     # Trigger events
     _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
     hass.bus.async_fire(EVENT_TASK_COMPLETED, {
@@ -453,6 +462,90 @@ async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveC
     hass.bus.async_fire(EVENT_TASK_UPDATED)
     connection.send_result(msg["id"], {"success": True})
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_ADD_TEMPLATE,
+    vol.Required("name"): str,
+    vol.Optional("description", default=""): str,
+    vol.Optional("area", default=""): str,
+    vol.Required("complexity"): vol.All(int, vol.Range(min=1, max=10)),
+    vol.Required("icon"): str,
+    vol.Optional("interval", default=7): int,
+    vol.Optional("assignees", default=[]): cv.ensure_list,
+})
+@websocket_api.async_response
+async def ws_add_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """Create a new template via websocket."""
+    data = hass.data[DOMAIN]["data"]
+    template_id = str(uuid.uuid4())
+    
+    new_template = {
+        "id": template_id, 
+        "name": msg["name"], 
+        "description": msg.get("description", ""),
+        "area": msg.get("area", ""),
+        "complexity": msg["complexity"],
+        "icon": msg["icon"],
+        "interval": msg.get("interval"),
+        "assignees": msg.get("assignees"),
+    }
+    
+    data["templates"][template_id] = new_template
+    await hass.data[DOMAIN]["store"].async_save(data)
+    hass.bus.async_fire(EVENT_TASK_UPDATED) # Fire update to sync clients
+    connection.send_result(msg["id"], {"success": True, "template_id": template_id})
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_EDIT_TEMPLATE,
+    vol.Required("template_id"): str, 
+    vol.Optional("name"): str,
+    vol.Optional("description"): str,
+    vol.Optional("area"): str,
+    vol.Optional("complexity"): vol.All(int, vol.Range(min=1, max=10)),
+    vol.Optional("icon"): str,
+    vol.Optional("interval"): int,
+    vol.Optional("assignees"): cv.ensure_list,
+})
+@websocket_api.async_response
+async def ws_edit_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """Edit an existing template via websocket."""
+    data = hass.data[DOMAIN]["data"]
+    template_id = msg["template_id"]
+    
+    if template_id not in data.get("templates", {}):
+        connection.send_error(msg["id"], "not_found", "Template not found")
+        return
+        
+    template_ref = data["templates"][template_id]
+    keys_to_update = ["name", "description", "area", "complexity", "icon", "interval", "assignees"]
+    
+    for key in keys_to_update:
+        if key in msg: 
+            template_ref[key] = msg[key]
+            
+    await hass.data[DOMAIN]["store"].async_save(data)
+    hass.bus.async_fire(EVENT_TASK_UPDATED)
+    connection.send_result(msg["id"], {"success": True})
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_DELETE_TEMPLATE,
+    vol.Required("template_id"): str,
+})
+@websocket_api.async_response
+async def ws_delete_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """Delete a template via websocket."""
+    data = hass.data[DOMAIN]["data"]
+    template_id = msg["template_id"]
+    
+    if "templates" not in data:
+        data["templates"] = {}
+
+    if template_id in data.get("templates", {}):
+        del data["templates"][template_id]
+        await hass.data[DOMAIN]["store"].async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+    
+    connection.send_result(msg["id"], {"success": True})
+
 
 async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
     """
@@ -500,13 +593,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
             "monthly_history": {}, "current_month": datetime.now().strftime("%Y-%m"), 
-            "current_period_start": datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat()
+            "current_period_start": datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat(),
+            "templates": {}
         }
     
     # Ensure all required keys exist
     data.setdefault("monthly_history", {})
     data.setdefault("current_month", datetime.now().strftime("%Y-%m"))
     data.setdefault("current_period_start", datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat())
+    data.setdefault("templates", {})
 
     # IMPORTANT: Ensure settings from config entry options are always reflected in data
     data["settings"] = dict(entry.options)
@@ -608,16 +703,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.bus.async_fire(EVENT_TASK_UPDATED)
 
     async def handle_add_task(call: ServiceCall):
-        """Service handle to add a new task from an automation."""
-        assignees_input = call.data.get("assignees", [])
+        """Service handle to create a new task from an automation, with template support."""
+        data = hass.data[DOMAIN]["data"]
+        store = hass.data[DOMAIN]["store"]
+        
+        template_name = call.data.get("template")
+        template = None
+        
+        if template_name:
+            template = next(
+                (t for t in data.get("templates", {}).values() if t["name"].lower() == template_name.lower()),
+                None
+            )
+            if not template:
+                _LOGGER.warning("Template '%s' not found.", template_name)
+    
+        # Use call data, fallback to template data, fallback to default
+        name = call.data.get("name") or (template.get("name") if template else None)
+        if not name:
+            _LOGGER.error("Task name is required when not using a valid template.")
+            return
+            
+        interval = call.data.get("interval")
+        if interval is None:
+            interval = template.get("interval") if template else 7
+            
+        assignees_input = call.data.get("assignees")
+        if assignees_input is None and template:
+            assignees_input = template.get("assignees", [])
+        if assignees_input is None:
+            assignees_input = []
+            
         if isinstance(assignees_input, str):
             assignees_input = [x.strip() for x in assignees_input.split(",")]
             
-        assignees = []
-        for assignee in assignees_input:
-            uid = _get_user_id(hass, assignee)
-            if uid: 
-                assignees.append(uid)
+        assignees = [_get_user_id(hass, assignee) for assignee in assignees_input if _get_user_id(hass, assignee)]
             
         if not assignees and call.context.user_id:
             assignees = [call.context.user_id]
@@ -625,14 +745,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         task_id = str(uuid.uuid4())
         data["tasks"][task_id] = {
             "id": task_id, 
-            "name": call.data.get("name", "New task"),
-            "description": call.data.get("description", ""),
-            "area": call.data.get("area", ""),
-            "interval": call.data.get("interval", 7),
+            "name": name,
+            "description": call.data.get("description") or (template.get("description", "") if template else ""),
+            "area": call.data.get("area") or (template.get("area", "") if template else ""),
+            "interval": interval,
             "assignees": assignees,
-            "complexity": call.data.get("complexity", 5),
+            "complexity": call.data.get("complexity") or (template.get("complexity", 5) if template else 5),
             "category": "General",
-            "icon": call.data.get("icon", "mdi:broom"),
+            "icon": call.data.get("icon") or (template.get("icon", "mdi:broom") if template else "mdi:broom"),
             "due_date": datetime.now().isoformat(), 
             "paused_until": None,
             "override_overdue_days": call.data.get("override_overdue_days")
@@ -657,6 +777,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     websocket_api.async_register_command(hass, ws_delete_history_item)
     websocket_api.async_register_command(hass, ws_edit_history_item)
     websocket_api.async_register_command(hass, ws_import_tasks)
+    websocket_api.async_register_command(hass, ws_add_template)
+    websocket_api.async_register_command(hass, ws_edit_template)
+    websocket_api.async_register_command(hass, ws_delete_template)
     
     # Register static path for frontend cards
     frontend_path = hass.config.path(f"custom_components/{DOMAIN}/www")

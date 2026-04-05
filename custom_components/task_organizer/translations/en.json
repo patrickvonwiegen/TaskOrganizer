@@ -56,16 +56,17 @@
       }
     },
     "add_task": {
-      "name": "Add new task",
-      "description": "Creates a new task in the Task Organizer.",
+      "name": "Add task",
+      "description": "Creates a new recurring or one-time task. Can be created from scratch or based on a template.",
       "fields": {
-        "name": { "name": "Name", "description": "What should the task be called?" },
-        "description": { "name": "Description", "description": "Additional info." },
-        "area": { "name": "Area", "description": "In which room/area does the task apply?" },
-        "interval": { "name": "Interval (Days)", "description": "How often does it need to be done?" },
-        "complexity": { "name": "Points (1-10)", "description": "How many points is it worth?" },
-        "icon": { "name": "Icon", "description": "An mdi-icon" },
-        "assignees": { "name": "Assignees", "description": "Comma separated user IDs." },
+        "template": { "name": "Template (Optional)", "description": "The name of a template to use. Fills in other fields if they are not provided." },
+        "name": { "name": "Name (Optional if template is used)", "description": "What should the task be called?" },
+        "description": { "name": "Description (Optional)", "description": "Additional info." },
+        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done? 0 for one-time tasks. If not set, taken from template or defaults to 7." },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
         "override_overdue_days": { "name": "Days until overdue (optional)", "description": "Overrides the global setting for the number of days after which this task is considered overdue." }
       }
     }

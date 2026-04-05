@@ -34,6 +34,9 @@ WS_TYPE_UPDATE_SETTINGS = "task_organizer/update_settings"
 WS_TYPE_DELETE_HISTORY_ITEM = "task_organizer/delete_history_item"
 WS_TYPE_EDIT_HISTORY_ITEM = "task_organizer/edit_history_item"
 WS_TYPE_IMPORT_TASKS = "task_organizer/import_tasks"
+WS_TYPE_ADD_TEMPLATE = "task_organizer/add_template"
+WS_TYPE_EDIT_TEMPLATE = "task_organizer/edit_template"
+WS_TYPE_DELETE_TEMPLATE = "task_organizer/delete_template"
 
 # Service Names
 SERVICE_RESET_MONTHLY_POINTS = "reset_monthly_points"

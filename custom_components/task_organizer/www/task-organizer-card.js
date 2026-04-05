@@ -13,6 +13,8 @@ const I18N_CARD = {
     desc_lbl: "Description (optional)", desc_placeholder: "Additional info...",
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
+    task_type: "Task Type", onetime: "One-time", recurring: "Recurring",
+    recreate_task_prompt: "Create '{taskName}' from a template?",
     set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
     override_overdue_lbl: "Task specific overdue", override_overdue_days_placeholder: "Days",
     prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks...",
@@ -27,6 +29,8 @@ const I18N_CARD = {
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
+    task_type: "Aufgabentyp", onetime: "Einmalig", recurring: "Wiederkehrend",
+    recreate_task_prompt: "Möchtest du '{taskName}' aus einer Vorlage erstellen?",
     set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
     override_overdue_lbl: "Aufgabenspezifische Überfälligkeit", override_overdue_days_placeholder: "Tage",
     prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen...",
@@ -50,6 +54,7 @@ class TaskOrganizerCard extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this.tasks = {}; 
+    this.templates = {};
     this.users = {};
     
     // Default colors: Green, Yellow/Orange, Red
@@ -186,6 +191,7 @@ class TaskOrganizerCard extends HTMLElement {
   _fetchData() {
     this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => {
       this.tasks = data.tasks || {};
+      this.templates = data.templates || {};
       if (data.settings) {
           this.settings = { ...this.settings, ...data.settings };
       }
@@ -195,7 +201,7 @@ class TaskOrganizerCard extends HTMLElement {
 
   _handleCardClick(ev) {
     const path = ev.composedPath();
-    const target = path.find(el => el.id?.startsWith('btn-') || el.classList?.contains('action-btn'));
+    const target = path.find(el => el.id?.startsWith('btn-') || el.classList?.contains('action-btn') || el.classList?.contains('suggestion-item'));
     
     if (!target) return;
     
@@ -229,6 +235,7 @@ class TaskOrganizerCard extends HTMLElement {
     else if (target.id === 'btn-modal-save') this._saveTask();
     else if (target.id === 'btn-choice-cancel') this._closeChoiceModal();
     else if (target.id === 'btn-choice-confirm') this._confirmCompletion();
+    else if (target.classList?.contains('suggestion-item')) this._applyTemplate(target.dataset.id);
     else if (target.id === 'btn-prev-page') {
         this.currentPage = Math.max(1, this.currentPage - 1);
         this._renderTaskList();
@@ -336,12 +343,17 @@ class TaskOrganizerCard extends HTMLElement {
         this.shadowRoot.getElementById('f-description').value = t.description || "";
         this.shadowRoot.getElementById('f-area').value = t.area || "";
         this.shadowRoot.getElementById('f-interval').value = t.interval;
+        this.shadowRoot.getElementById('f-interval').value = t.interval || 7;
         this.shadowRoot.getElementById('f-complexity').value = t.complexity;
         this._currentIcon = t.icon || "mdi:broom";
         
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
             cb.checked = t.assignees && t.assignees.includes(cb.value);
         });
+        
+        const isOnetime = t.interval === 0;
+        this._updateTaskTypeUI(isOnetime);
+        this.shadowRoot.getElementById('template-suggestions').style.display = 'none';
         
         const now = new Date();
         now.setHours(0, 0, 0, 0); 
@@ -363,6 +375,9 @@ class TaskOrganizerCard extends HTMLElement {
         this.shadowRoot.getElementById('f-complexity').value = 5; 
         this._currentIcon = "mdi:broom";
         
+        this._updateTaskTypeUI(false); // Default to recurring
+        this.shadowRoot.getElementById('template-suggestions').style.display = 'block';
+        this.shadowRoot.getElementById('template-suggestions').innerHTML = '';
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => cb.checked = false);        
 
         this.shadowRoot.getElementById('f-pause-cb').checked = false;
@@ -409,12 +424,14 @@ class TaskOrganizerCard extends HTMLElement {
 
   _saveTask() {
     const assignees = [];
+    const isOnetime = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
     this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
         if (cb.checked) assignees.push(cb.value);
     });
     
     const setCustomDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb').checked;
     const customDueDateVal = this.shadowRoot.getElementById('f-custom-due-date').value;
+
     let customDueDate = null;
     if (setCustomDueDateCb) {
         if (customDueDateVal) customDueDate = customDueDateVal;
@@ -423,6 +440,7 @@ class TaskOrganizerCard extends HTMLElement {
             customDueDate = today.toISOString().split('T')[0];
         }
     }
+
     const isPausedCb = this.shadowRoot.getElementById('f-pause-cb').checked;
     const pauseDateVal = this.shadowRoot.getElementById('f-pause-date').value;
     const pausedUntil = (isPausedCb && pauseDateVal) ? pauseDateVal : null;
@@ -435,7 +453,7 @@ class TaskOrganizerCard extends HTMLElement {
       name: this.shadowRoot.getElementById('f-name').value, 
       description: this.shadowRoot.getElementById('f-description').value,
       area: this.shadowRoot.getElementById('f-area').value,
-      interval: parseInt(this.shadowRoot.getElementById('f-interval').value),
+      interval: isOnetime ? 0 : parseInt(this.shadowRoot.getElementById('f-interval').value) || 7,
       complexity: parseInt(this.shadowRoot.getElementById('f-complexity').value), 
       icon: this.shadowRoot.getElementById('f-icon-picker').value,
       category: "Allgemein", 
@@ -503,6 +521,14 @@ class TaskOrganizerCard extends HTMLElement {
           .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); } 
           
           .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
+          .task-type-selector { display: flex; border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+          .type-btn { flex: 1; padding: 12px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 14px; font-weight: 500; transition: background-color 0.2s, color 0.2s; }
+          .type-btn.active { background: var(--primary-color); color: var(--text-primary-color, white); }
+          .form-row { display: flex; gap: 16px; }
+          .form-col { flex: 1; }
+          .template-suggestions { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+          .suggestion-item { background: transparent; border: none; color: var(--primary-color); cursor: pointer; text-align: left; padding: 4px 0; font-size: 14px; }
+          .suggestion-item:hover { text-decoration: underline; }
         </style>
       `;
   }
@@ -547,25 +573,34 @@ class TaskOrganizerCard extends HTMLElement {
             <div class="modal-content">
                 <h2 style="margin: 0 0 20px 0;">${this.localize('task')}</h2>
                 
+                <div class="task-type-selector">
+                    <button class="type-btn" id="btn-type-recurring">${this.localize('recurring')}</button>
+                    <button class="type-btn" id="btn-type-onetime">${this.localize('onetime')}</button>
+                </div>
+
                 <div style="display:flex; flex-direction:column; gap:16px;">
-                    <ha-textfield id="f-name" label="${this.localize('name_lbl')}"></ha-textfield>
+                    <div>
+                        <ha-textfield id="f-name" label="${this.localize('name_lbl')}" style="width: 100%;"></ha-textfield>
+                        <div id="template-suggestions"></div>
+                    </div>
                     <ha-textfield id="f-description" label="${this.localize('desc_lbl')}"></ha-textfield>
                     
-                    <div style="display:flex; gap:16px;">
-                        <ha-textfield id="f-interval" type="number" label="${this.localize('interval_lbl')}" style="flex:1;"></ha-textfield>
-                        <ha-textfield id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" style="flex:1;"></ha-textfield>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">${this.localize('icon_lbl')}</label>
-                        <ha-icon-picker id="f-icon-picker"></ha-icon-picker>
+                    <div class="form-row">
+                        <ha-textfield id="f-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col"></ha-textfield>
+                        <ha-textfield id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" class="form-col"></ha-textfield>
                     </div>
 
-                    <div>
-                        <label class="form-label">${this.localize('area_lbl')}</label>
-                        <ha-area-picker id="f-area"></ha-area-picker>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label class="form-label">${this.localize('icon_lbl')}</label>
+                            <ha-icon-picker id="f-icon-picker"></ha-icon-picker>
+                        </div>
+                        <div class="form-col">
+                            <label class="form-label">${this.localize('area_lbl')}</label>
+                            <ha-area-picker id="f-area"></ha-area-picker>
+                        </div>
                     </div>
-                    
+
                     <div>
                         <label class="form-label">${this.localize('assignees_lbl')}</label>
                         <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
@@ -618,7 +653,15 @@ class TaskOrganizerCard extends HTMLElement {
             this._renderTaskList();
         });
     }
+    
+    this.shadowRoot.getElementById('btn-type-recurring').addEventListener('click', () => this._updateTaskTypeUI(false));
+    this.shadowRoot.getElementById('btn-type-onetime').addEventListener('click', () => this._updateTaskTypeUI(true));
 
+    const nameField = this.shadowRoot.getElementById('f-name');
+    if (nameField) {
+        nameField.addEventListener('input', (e) => this._handleTemplateSuggestions(e));
+    }
+    
     const iconPicker = this.shadowRoot.getElementById('f-icon-picker');
     if (iconPicker) iconPicker.hass = this._hass; 
     
@@ -658,6 +701,71 @@ class TaskOrganizerCard extends HTMLElement {
             if (!e.target.checked) {
                 overrideOverdueDays.value = "";
             }
+        });
+    }
+  }
+
+  _updateTaskTypeUI(isOnetime) {
+    const intervalField = this.shadowRoot.getElementById('f-interval');
+    const btnOnetime = this.shadowRoot.getElementById('btn-type-onetime');
+    const btnRecurring = this.shadowRoot.getElementById('btn-type-recurring');
+
+    if (isOnetime) {
+        intervalField.disabled = true;
+        intervalField.value = 0;
+        btnOnetime.classList.add('active');
+        btnRecurring.classList.remove('active');
+    } else {
+        intervalField.disabled = false;
+        if (intervalField.value == 0) intervalField.value = 7;
+        btnOnetime.classList.remove('active');
+        btnRecurring.classList.add('active');
+    }
+  }
+
+  _handleTemplateSuggestions(e) {
+    const input = e.target.value.toLowerCase();
+    const suggestionsContainer = this.shadowRoot.getElementById('template-suggestions');
+    suggestionsContainer.innerHTML = '';
+
+    if (this._editingTaskId || input.length < 3) {
+        return;
+    }
+
+    const matchingTemplates = Object.values(this.templates).filter(t => 
+        t.name.toLowerCase().includes(input)
+    );
+
+    if (matchingTemplates.length > 0) {
+        matchingTemplates.slice(0, 5).forEach(template => {
+            const suggestionEl = document.createElement('button');
+            suggestionEl.className = 'suggestion-item';
+            suggestionEl.dataset.id = template.id;
+            suggestionEl.textContent = this.localize('recreate_task_prompt', { taskName: template.name });
+            suggestionsContainer.appendChild(suggestionEl);
+        });
+    }
+  }
+
+  _applyTemplate(templateId) {
+    if (templateId && this.templates[templateId]) {
+        const t = this.templates[templateId];
+        this.shadowRoot.getElementById('f-name').value = t.name;
+        this.shadowRoot.getElementById('f-description').value = t.description || '';
+        this.shadowRoot.getElementById('f-area').value = t.area || '';
+        this.shadowRoot.getElementById('f-complexity').value = t.complexity || 5;
+        this.shadowRoot.getElementById('f-icon-picker').value = t.icon || 'mdi:broom';
+        this.shadowRoot.getElementById('template-suggestions').innerHTML = '';
+
+        const isOnetimeSelected = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
+        if (isOnetimeSelected) {
+            this.shadowRoot.getElementById('f-interval').value = 0;
+        } else {
+            this.shadowRoot.getElementById('f-interval').value = t.interval > 0 ? t.interval : 7;
+        }
+
+        this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
+            cb.checked = t.assignees && t.assignees.includes(cb.value);
         });
     }
   }

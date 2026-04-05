@@ -23,6 +23,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
         TaskOrganizerSettingsSensor(hass),
         TaskOrganizerPointsSensor(hass),
         TaskOrganizerLeaderboardSensor(hass),
+        TaskOrganizerTemplatesSensor(hass),
     ]
     async_add_entities(sensors)
 
@@ -292,3 +293,26 @@ class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
                     break
             leaderboard.append({"user_id": uid, "name": name, "points": pts})
         return {"json_string": json.dumps(leaderboard), "data": leaderboard}
+
+
+class TaskOrganizerTemplatesSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the total number of templates."""
+
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the sensor for templates."""
+        super().__init__(hass, "task_organizer_templates", "templates")
+        self._attr_icon = "mdi:file-document-multiple-outline"
+
+    @property
+    def state(self) -> int:
+        """Return the total amount of templates."""
+        return len(self._data.get("templates", {}))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return template array as state attributes."""
+        templates_list = list(self._data.get("templates", {}).values())
+        return {
+            "json_string": json.dumps(templates_list),
+            "data": templates_list
+        }

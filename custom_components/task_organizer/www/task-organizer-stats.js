@@ -3,14 +3,16 @@
  * en: English translations.
  * de: German translations.
  */
-const I18N_STATS = {
-  en: { 
-    title: "Household Log", empty: "No entries.", unknown: "Unknown", 
-    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points", 
+const I18N_STATS = { 
+  en: {
+    title: "Household Log", empty: "No entries.", unknown: "Unknown",
+    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points",
     user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All",
     prev: "Previous", next: "Next", page: "Page",
     edit_hover: "Edit entry",
-    delete_hover: "Delete entry"
+    delete_hover: "Delete entry",
+    entry_saved: "Entry saved!",
+    entry_deleted: "Entry deleted!"
   },
   de: { 
     title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
@@ -18,7 +20,9 @@ const I18N_STATS = {
     user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle",
     prev: "Zurück", next: "Weiter", page: "Seite",
     edit_hover: "Eintrag bearbeiten",
-    delete_hover: "Eintrag löschen"
+    delete_hover: "Eintrag löschen",
+    entry_saved: "Eintrag gespeichert!",
+    entry_deleted: "Eintrag gelöscht!"
   }
 };
 
@@ -251,9 +255,24 @@ class TaskOrganizerStats extends HTMLElement {
       points: points, 
       user_id: userId 
     }).then(() => { 
-      this.closeModal(); 
-      this.fetchData(); 
+      this._showToast(this.localize('entry_saved'));
+      this.closeModal();
+      this.fetchData();
     }); 
+  }
+
+  _showToast(message) {
+    const event = new CustomEvent("hass-notification", {
+        detail: { message: message, duration: 3000 },
+        bubbles: true,
+        composed: true
+    });
+    this.dispatchEvent(event);
+    
+    const root = document.querySelector("home-assistant");
+    if (root) { 
+        root.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: message, duration: 3000 } })); 
+    }
   }
 
   /**
@@ -265,7 +284,10 @@ class TaskOrganizerStats extends HTMLElement {
       this._hass.callWS({ 
         type: 'task_organizer/delete_history_item', 
         entry_id: entryId 
-      }).then(() => this.fetchData()); 
+      }).then(() => {
+        this._showToast(this.localize('entry_deleted'));
+        this.fetchData();
+      });
     } 
   }
 

@@ -1,21 +1,25 @@
 ﻿﻿# Changelog
 
-## [1.2.0] - 2024-04-03
+## [1.2.0] - 2024-04-05
+### ⚠️ Breaking Changes
+- Sensor `task_organizer_due_tasks` transfered into new sensor `task_organizer_due_and_overdue_tasks`
+
 ### 🚀 New Features
 - Added yml configuration `show_add` and `show_edit` to `task-organizer-card`
 - Possibility to set a specific due date
 - Added area for task
 - Task specific overdue threshold
+- Added support for one-time tasks
+- Added a template system to quickly create tasks
+- service `task_organizer.create_task` now with template support
+- New sensor `sensor.task_organizer_templates` to track available templates
+- New sensors for differenciation  `task_organizer_due_tasks` and `task_organizer_overdue_tasks`
 
 ### 🐛 Bug Fixes
 - All tooltips in the cards have been translated
 - All cards now have a customizable title
-- Sensor `task_organizer_due_tasks` transfered into new sensor `task_organizer_due_and_overdue_tasks` and new sensors for differenciation  `task_organizer_due_tasks` and `task_organizer_overdue_tasks` (without paused tasks)
 - Design adapted to home assistant
-
-### ⚠️ Breaking Changes
-No breaking changes
-
+- Replaced browser alerts with Home Assistant toast notifications for better user experience
 
 ## [1.1.0] - 2024-03-30
 ### 🚀 New Features
@@ -28,6 +32,3 @@ No breaking changes
 
 ### 🐛 Bug Fixes
 - Display options for task organizer card adjusted
-
-### ⚠️ Breaking Changes
-No breaking changes

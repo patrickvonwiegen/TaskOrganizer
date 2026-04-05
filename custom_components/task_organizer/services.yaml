@@ -19,15 +19,21 @@ complete_task_by_name:
       required: false
       selector:
         text:
-        
+
 add_task:
-  name: Add new task
-  description: Creates a new task in the Task Organizer.
+  name: Add task
+  description: Creates a new recurring or one-time task. Can be created from scratch or based on a template.
   fields:
+    template:
+      name: Template (Optional)
+      description: The name of a template to use. Fills in other fields if they are not provided.
+      required: false
+      selector:
+        text:
     name:
-      name: Name
+      name: Name (Optional if template is used)
       description: What should the task be called?
-      required: true
+      required: false
       selector:
         text:
     description:
@@ -36,20 +42,24 @@ add_task:
       required: false
       selector:
         text:
+    area:
+      name: Area (Optional)
+      description: Which area does the task belong to?
+      required: false
+      selector:
+        area:
     interval:
-      name: Interval (Days)
-      description: How often does it need to be done?
-      required: true
-      default: 7
+      name: Interval (Days, Optional)
+      description: How often does it need to be done? 0 for one-time tasks. If not set, taken from template or defaults to 7.
+      required: false
       selector:
         number:
-          min: 1
+          min: 0
           max: 365
     complexity:
-      name: Points (1-10)
+      name: Points (1-10, Optional)
       description: How many points is it worth?
-      required: true
-      default: 5
+      required: false
       selector:
         number:
           min: 1
@@ -58,12 +68,19 @@ add_task:
       name: Icon (Optional)
       description: An mdi-icon, e.g. mdi:broom
       required: false
-      default: "mdi:broom"
       selector:
         icon:
     assignees:
       name: Assignees (Optional)
-      description: Who is responsible? (Comma separated user IDs or person.name entities). If left empty, the executing user is assigned.
+      description: Who is responsible? (Comma separated user IDs or person.name entities).
       required: false
       selector:
         text:
+    override_overdue_days:
+      name: Overdue after (Days, Optional)
+      description: Overrides the global setting for the number of days after which this task is considered overdue.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999

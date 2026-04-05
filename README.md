@@ -7,14 +7,15 @@ Currently still in testing. Suggestions for improvement or bug reports are welco
 ## Features
 * **Task Management**: Create, edit, and delete tasks directly from your dashboard.
 * **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
-* **Dynamic Due Dates**: Tasks are automatically rescheduled based on their defined interval after completion.
+* **One-time & Recurring Tasks**: Supports both recurring tasks with an interval and one-time tasks that are deleted upon completion.
+* **Task Templates**: Create and manage templates to quickly add frequently used tasks.
 * **Points System**: Each task has a complexity level (1-10); points are shared fairly among all participants upon completion.
 * **Pause & Custom Due Date**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date.
 * **Task Organization**: Assign tasks to specific areas and give them a unique icon.
 * **Task-specific Overdue Thresholds**: Override the global overdue setting for individual tasks.
 * **Roommate of the Month**: A podium system visualizes current standings. At the end of the month, points are archived, and a long-term history is maintained.
 * **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
-* **Configuration**: Manage global settings like colors and overdue thresholds
+* **Configuration**: Manage global settings, colors, overdue thresholds, and task templates.
 
 ## Sensors
 The integration provides the following sensors:
@@ -27,6 +28,7 @@ The integration provides the following sensors:
 | `sensor.task_organizer_due_and_overdue_tasks` | Displays the combined number of due and overdue tasks. |
 | `sensor.task_organizer_points` | Shows the current point standings for all users. Perfect for custom visualizations. |
 | `sensor.task_organizer_leaderboard` | Displays the name of the roommate currently in the lead. |
+| `sensor.task_organizer_templates` | Displays the number of available templates. The full template list is available as JSON in the attributes. |
 | `sensor.task_organizer_settings` | Provides the current configuration (colors, overdue thresholds). |
 
 ## Buttons
@@ -39,14 +41,15 @@ The integration provides the following sensors:
 TaskOrganizer offers services that can be used in automations or scripts:
 
 ### `task_organizer.add_task`
-Creates a new task.
-* **name**: Name of the task.
-* **description**: (Optional) Additional information about the task.
+Creates a new recurring or one-time task, optionally from a template.
+* **template**: (Optional) The name of a template to use. Fills in other fields if they are not provided.
+* **name**: (Optional if template is used) What should the task be called?
+* **description**: (Optional) Additional info.
 * **area**: (Optional) The area/room where the task applies.
-* **interval**: Interval in days.
-* **complexity**: Points (1-10).
+* **interval**: (Optional) How often does it need to be done? `0` for one-time tasks. If not set, taken from template or defaults to `7`.
+* **complexity**: (Optional) Points (1-10).
 * **icon**: (Optional) An mdi-icon for the task (e.g., `mdi:broom`).
-* **assignees**: (Optional) List of user IDs.
+* **assignees**: (Optional) List of user IDs or person entities.
 * **override_overdue_days**: (Optional) Overrides the global setting for the number of days after which this task is considered overdue.
 
 ### `task_organizer.complete_task_by_name`
