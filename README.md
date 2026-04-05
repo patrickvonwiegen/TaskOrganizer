@@ -57,6 +57,15 @@ Marks a task as completed by its exact name.
 * **task_name**: The name of the task.
 * **user_id**: (Optional) Who completed the task.
 
+### `task_organizer.set_task_due_by_name`
+Marks a task as due immediately by its exact name.
+* **task_name**: The name of the task.
+
+### `task_organizer.pause_task_by_name`
+Pauses a task until a specific date.
+* **task_name**: The name of the task.
+* **pause_until**: The date until which the task should be paused (e.g., "2024-12-31").
+
 ### `task_organizer.reset_monthly_points`
 Manually resets all points to 0 and saves the current month to the history.
 

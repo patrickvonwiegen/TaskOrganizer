@@ -42,6 +42,8 @@ from .const import (
     SERVICE_COMPLETE_TASK_BY_NAME,
     SERVICE_RESET_MONTHLY_POINTS,
     SERVICE_FACTORY_RESET,
+    SERVICE_SET_TASK_DUE_BY_NAME,
+    SERVICE_PAUSE_TASK_BY_NAME,
 )
 
 # Global logger for the integration
@@ -760,11 +762,57 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
 
+    async def handle_set_task_due_by_name(call: ServiceCall):
+        """Service handle to set a task as due immediately by its name."""
+        task_name = call.data.get("task_name")
+        
+        target_task_id = next(
+            (tid for tid, t in data["tasks"].items() if t["name"].lower() == task_name.lower()), 
+            None
+        )
+                
+        if not target_task_id:
+            _LOGGER.warning("Task '%s' not found for setting due.", task_name)
+            return
+            
+        task = data["tasks"][target_task_id]
+        task["due_date"] = datetime.now().isoformat()
+        task["paused_until"] = None
+        
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_pause_task_by_name(call: ServiceCall):
+        """Service handle to pause a task by its name."""
+        task_name = call.data.get("task_name")
+        pause_until = call.data.get("pause_until")
+        
+        target_task_id = next(
+            (tid for tid, t in data["tasks"].items() if t["name"].lower() == task_name.lower()), 
+            None
+        )
+                
+        if not target_task_id:
+            _LOGGER.warning("Task '%s' not found for pausing.", task_name)
+            return
+
+        if not pause_until:
+            _LOGGER.warning("Pause until date not provided for task '%s'.", task_name)
+            return
+            
+        task = data["tasks"][target_task_id]
+        task["paused_until"] = datetime.fromisoformat(pause_until).isoformat()
+
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_RESET_MONTHLY_POINTS, handle_manual_reset)
     hass.services.async_register(DOMAIN, SERVICE_FACTORY_RESET, handle_factory_reset)
     hass.services.async_register(DOMAIN, SERVICE_COMPLETE_TASK_BY_NAME, handle_complete_task_by_name)
     hass.services.async_register(DOMAIN, SERVICE_ADD_TASK, handle_add_task)
+    hass.services.async_register(DOMAIN, SERVICE_SET_TASK_DUE_BY_NAME, handle_set_task_due_by_name)
+    hass.services.async_register(DOMAIN, SERVICE_PAUSE_TASK_BY_NAME, handle_pause_task_by_name)
     
     # Register websocket API commands
     websocket_api.async_register_command(hass, ws_get_data)
