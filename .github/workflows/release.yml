@@ -84,9 +84,25 @@ jobs:
             done < tags_to_delete.txt
           fi
 
+      - name: Get Changelog Body
+        if: env.TYPE == 'stable' || env.TYPE == 'beta'
+        run: |
+          CHANGELOG_CONTENT=$(awk -v version="$VERSION" '
+            BEGIN { p = 0 }
+            $0 ~ "^## \\[" version "\\]" { p = 1; next }
+            $0 ~ "^## \\[" { if (p == 1) exit }
+            p { print }
+          ' CHANGELOG.md)
+
+          echo "CHANGELOG_BODY<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - if: env.TYPE != 'unknown'
+        name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGELOG: ${{ env.CHANGELOG_BODY }}
         run: |
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "ℹ️ Release ${TAG} already exists. No new release needed. Skipping creation..."
@@ -97,4 +113,14 @@ jobs:
           if [ "$PRERELEASE" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
-          gh release create "${TAG}" -t "${TITLE}" --generate-notes ${PRERELEASE_FLAG}
+
+          TARGET_REF="${{ github.ref_name }}"
+          if [[ "$TYPE" == "nightly" ]]; then
+            TARGET_REF="develop"
+          fi
+
+          if [[ "$TYPE" == "stable" || "$TYPE" == "beta" ]]; then
+            gh release create "${TAG}" -t "${TITLE}" --notes "${CHANGELOG}" ${PRERELEASE_FLAG} --target "${TARGET_REF}"
+          else
+            gh release create "${TAG}" -t "${TITLE}" --generate-notes ${PRERELEASE_FLAG} --target "${TARGET_REF}"
+          fi
