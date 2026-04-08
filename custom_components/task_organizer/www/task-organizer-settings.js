@@ -402,10 +402,22 @@ class TaskOrganizerSettings extends HTMLElement {
         .template-meta { font-size: 12px; color: var(--secondary-text-color); }
         .template-actions { display: flex; gap: 0; align-items: center; }
         .templates-desc { font-size: 14px; color: var(--secondary-text-color); margin: 0; }
-        .no-templates-msg { text-align: center; color: var(--secondary-text-color); padding: 10px; } .icon-button { padding: 0; background: transparent; border: none; cursor: pointer; color: var(--primary-text-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: background-color 0.2s, transform 0.1s; }
+        .no-templates-msg { text-align: center; color: var(--secondary-text-color); padding: 10px; }
+        .icon-button { padding: 0; background: transparent; border: none; cursor: pointer; color: var(--primary-text-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: background-color 0.2s, transform 0.1s; flex-shrink: 0; }
         .icon-button:hover { background-color: var(--secondary-background-color); }
         .add-button { background: var(--primary-color, #2196F3) !important; color: white !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .add-button:hover { background: var(--dark-primary-color, #1976D2) !important; transform: scale(1.05); }
+        
+        /* Ensure icons maintain aspect ratio and scale flexibly within their buttons */
+        .icon-button ha-icon {
+          width: auto;
+          height: auto;
+          max-width: 100%;
+          max-height: 100%;
+          font-size: 24px; /* Default size, will scale down if container shrinks */
+          line-height: 1; /* Ensures proper vertical alignment for font icons */
+          --mdc-icon-size: 24px; /* For consistency with Home Assistant's Material Design Icons */
+        }
         .action-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; color: var(--secondary-text-color); transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
         .action-btn:hover { background-color: var(--divider-color); color: var(--primary-text-color); }
         .btn-edit-template { color: var(--info-color, #2196F3); } 
