@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - develop
-      - 'feature/*'
       - 'release/*'
   schedule:
     - cron: '0 0 * * *'
@@ -29,25 +28,7 @@ jobs:
 
       - id: release_info
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            LATEST_NIGHTLY=$(git tag -l "nightly-*" | sort -r | head -n 1)
-            
-            if [ -n "$LATEST_NIGHTLY" ]; then
-              CHANGES=$(git log $LATEST_NIGHTLY..HEAD --oneline)
-            else
-              CHANGES="initial_run"
-            fi
-
-            if [ -z "$CHANGES" ]; then
-              echo "ℹ️ No changes since last nightly ($LATEST_NIGHTLY). Skip release."
-              echo "TYPE=unknown" >> $GITHUB_ENV
-            else
-              echo "TYPE=nightly" >> $GITHUB_ENV
-              echo "TAG=nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
-              echo "TITLE=TaskOrganizer-nightly$(date +'%Y%m%d')" >> $GITHUB_ENV
-              echo "PRERELEASE=true" >> $GITHUB_ENV
-            fi
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TYPE=stable" >> $GITHUB_ENV
             echo "TAG=v${VERSION}" >> $GITHUB_ENV
             echo "TITLE=TaskOrganizerV${VERSION}" >> $GITHUB_ENV
@@ -57,6 +38,19 @@ jobs:
             echo "TAG=v${VERSION}-beta" >> $GITHUB_ENV
             echo "TITLE=TaskOrganizerV${VERSION}-beta" >> $GITHUB_ENV
             echo "PRERELEASE=true" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" || "${{ github.event_name }}" == "schedule" ]]; then
+            LATEST_NIGHTLY=$(git tag -l "nightly-*" | sort -r | head -n 1)
+            CHANGES=$(if [ -n "$LATEST_NIGHTLY" ]; then git log $LATEST_NIGHTLY..HEAD --oneline; else echo "initial_run"; fi)
+
+            if [ -z "$CHANGES" ]; then
+              echo "ℹ️ No changes since last nightly ($LATEST_NIGHTLY). Skip release."
+              echo "TYPE=unknown" >> $GITHUB_ENV
+            else
+              echo "TYPE=nightly" >> $GITHUB_ENV
+              echo "TAG=nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
+              echo "TITLE=TaskOrganizer-nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
+              echo "PRERELEASE=true" >> $GITHUB_ENV
+            fi
           else
             echo "TYPE=unknown" >> $GITHUB_ENV
           fi
@@ -66,18 +60,29 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "ℹ️ Beta release ${TAG} exists. Deleting to recreate and update."
             gh release delete "${TAG}" --cleanup-tag -y || true
+            git push --delete origin "${TAG}" || true
           fi
-          git push --delete origin "${TAG}" || true
 
       - if: env.TYPE == 'nightly'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # First, delete today's nightly if it exists, to allow for updates on new pushes.
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "ℹ️ Nightly release ${TAG} exists. Deleting to recreate and update."
+            gh release delete "${TAG}" --cleanup-tag -y || true
+            # The local tag is deleted by gh. We also need to delete the remote tag.
+            git push --delete origin "${TAG}" || true
+          fi
+
           git tag -l "nightly-*" | sort -r > nightly_tags.txt
           COUNT=$(wc -l < nightly_tags.txt)
           if [ "$COUNT" -ge 25 ]; then
             tail -n +25 nightly_tags.txt > tags_to_delete.txt
+          if [ "$COUNT" -ge 8 ]; then
+            tail -n +8 nightly_tags.txt > tags_to_delete.txt
             while read -r tag_to_delete; do
               gh release delete "$tag_to_delete" --cleanup-tag -y || true
               git push --delete origin "$tag_to_delete" || true
