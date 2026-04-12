@@ -70,7 +70,7 @@ show_add: true           # Shows the add task button (Default true)
 ### 2. Roommate of the Month (task-organizer-leaderboard)
 Displays the winner's podium and an optional history of previous months.
 
-<img width="388" height="228" alt="image" src="https://github.com/user-attachments/assets/288496e5-29f7-47c4-9430-b9baab65e9d3" />
+<img width="383" height="369" alt="image" src="https://github.com/user-attachments/assets/297ff495-9156-43d8-b5ba-f704829fddfb" />
 
 **YAML Configuration:**
 ```yaml
