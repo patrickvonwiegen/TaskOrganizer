@@ -21,7 +21,9 @@ TaskOrganizer is a custom integration for Home Assistant that allows users to ma
 
 Please adhere to the following rules for every request:
 
-1.  **English Comments**: All new or modified functions and classes in the Python and JavaScript code must have clear and concise comments in English explaining their purpose, parameters, and return values.
+1.  **English Comments**: 
+    * All new or modified functions and classes in the Python and JavaScript code must have clear and concise comments in English explaining their purpose, parameters, and return values.
+    * No Inline-Comments for github workflows
 
 2.  **Focused Changes**: Only modify the parts of the code that are directly related to the user's request. If a request is unclear, ask for clarification before proceeding.
 
