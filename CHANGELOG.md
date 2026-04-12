@@ -1,6 +1,10 @@
 ﻿﻿# Changelog
 
-## [1.2.0] - 2024-04-05
+## [1.2.1] - 2024-04-12
+### 🐛 Bug Fixes
+- Dynamic and redesigned leaderboard
+
+## [1.2.0] - 2024-04-12
 ### ⚠️ Breaking Changes
 - Sensor `task_organizer_due_tasks` transfered into new sensor `task_organizer_due_and_overdue_tasks`
 
