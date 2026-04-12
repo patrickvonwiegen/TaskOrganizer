@@ -799,7 +799,12 @@ class TaskOrganizerCard extends HTMLElement {
     const wrapper = this.shadowRoot.getElementById('task-list-wrapper');
     if (!wrapper) return;
 
-    const filterBy = this._config.filter_by || 'none'; 
+    let filters = [];
+    if (Array.isArray(this._config.filter_by)) {
+        filters = this._config.filter_by;
+    } else if (typeof this._config.filter_by === 'string' && this._config.filter_by !== 'none') {
+        filters = this._config.filter_by.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
     const sortBy = this._config.sort_by || 'due_date';
     const sortOrder = this._config.sort_order || 'default';
     const itemsPerPage = this._config.items_per_page;
@@ -820,13 +825,37 @@ class TaskOrganizerCard extends HTMLElement {
             ? task.override_overdue_days : this.settings.overdue_days;
         const overdueDiff = -overdueThreshold;
 
-        if (filterBy === 'current_user' && !(task.assignees && task.assignees.includes(currentUserId))) return false;
-        if (filterBy === 'due' && (isPaused || diff > 0 || diff <= overdueDiff)) return false;
-        if (filterBy === 'overdue' && (isPaused || diff > overdueDiff)) return false;
-        if (filterBy === 'due_and_overdue' && (isPaused || diff > 0)) return false;
-        if (filterBy === 'active' && isPaused) return false;
-        if (filterBy === 'inactive' && !isPaused) return false;
-        if (filterBy === 'unassigned' && task.assignees && task.assignees.length > 0) return false;
+        const isCurrentUser = task.assignees && task.assignees.includes(currentUserId);
+        const isAssigned = task.assignees && task.assignees.length > 0;
+        const isDone = !isPaused && diff > 0;
+        const isDue = !isPaused && diff <= 0 && diff > overdueDiff;
+        const isOverdue = !isPaused && diff <= overdueDiff;
+        const isPausedFilter = isPaused;
+        const isOnetime = task.interval === 0;
+
+        let keep = true;
+        for (const f of filters) {
+            let negate = f.startsWith('!');
+            let filterName = negate ? f.substring(1) : f;
+            let match = false;
+
+            if (filterName === 'current_user') match = isCurrentUser;
+            else if (filterName === 'assigned') match = isAssigned;
+            else if (filterName === 'done') match = isDone;
+            else if (filterName === 'due') match = isDue;
+            else if (filterName === 'overdue') match = isOverdue;
+            else if (filterName === 'paused') match = isPausedFilter;
+            else if (filterName === 'onetime') match = isOnetime;
+            else match = true; // unknown filter, ignore
+
+            if (negate) match = !match;
+
+            if (!match) {
+                keep = false;
+                break;
+            }
+        }
+        if (!keep) return false;
 
         if (this._searchTerm) {
             const term = this._searchTerm.toLowerCase();

@@ -39,13 +39,33 @@ type: custom:task-organizer-card
 title: "Household Tasks" # Custom title for the card (Default: Household Tasks)
 sort_by: due_date        # Options: due_date, points, assignee, alphabet (default due_date)
 sort_order: desc         # Options: default, asc, desc (default default)
-filter_by: none          # Options: none, current_user, due, overdue, due_and_overdue, active, inactive, unassigned (default none)
+filter_by: none          # Options: see filter options below
 items_per_page: 10       # Number of displayed items
 show_edit: true          # Shows the task edit symbol (Default true)
 show_delete: true        # Shows the task delete symbol (Default true)
 show_search: true        # Shows the search icon and bar (Default true)
 show_add: true           # Shows the add task button (Default true)
 ```
+
+#### Available Filters:
+ Multiple filters are AND-linked.
+ Supports comma-separated lists and negations (!), e.g. "!done, !paused". 
+- `current_user`: Tasks assigned to the currently logged-in Home Assistant user.
+- `assigned`: Tasks that have at least one assignee.
+- `done`: Tasks where the next due date is in the future.
+- `due`: Tasks that are due today or in the past, but not yet overdue.
+- `overdue`: Tasks that have exceeded their overdue threshold.
+- `paused`: Tasks that are currently paused until a specific date. You can use `!paused` to only show active tasks.
+- `onetime`: Tasks that do not repeat.
+
+#### Filter Examples:
+- `filter_by: "current_user, due"` (Only my due tasks)
+- `filter_by: "overdue"` (All overdue tasks)
+- `filter_by: "done"` (All completed tasks, where the next due date is in the future)
+- `filter_by: "!due, !paused"` (All active tasks except due ones)
+- `filter_by: "!assigned, !done"` (All unassigned tasks that are due or overdue)
+- `filter_by: "!done, !paused"` (All active tasks that are due or overdue)
+- `filter_by: "onetime, !done"` (All pending one-time tasks)
 
 ### 2. Roommate of the Month (task-organizer-leaderboard)
 Displays the winner's podium and an optional history of previous months.
