@@ -452,14 +452,49 @@ async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.Ac
 
 @websocket_api.websocket_command({
     vol.Required("type"): WS_TYPE_IMPORT_TASKS,
-    vol.Required("tasks"): dict,
+    vol.Optional("tasks"): dict,
+    vol.Optional("templates"): dict,
+    vol.Optional("history"): list,
+    vol.Optional("points"): dict,
+    vol.Optional("monthly_history"): dict,
+    vol.Optional("current_month"): str,
+    vol.Optional("current_period_start"): str,
 })
 @websocket_api.async_response
 async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
     data = hass.data[DOMAIN]["data"]
-    imported = msg["tasks"]
-    for tid, tdata in imported.items():
-        data["tasks"][tid] = tdata
+    
+    if "tasks" in msg:
+        imported = msg["tasks"]
+        for tid, tdata in imported.items():
+            data["tasks"][tid] = tdata
+            
+    if "templates" in msg:
+        imported_templates = msg["templates"]
+        for tid, tdata in imported_templates.items():
+            data.setdefault("templates", {})[tid] = tdata
+            
+    if "history" in msg:
+        existing_history_ids = {h["id"] for h in data.setdefault("history", [])}
+        for h_entry in msg["history"]:
+            if h_entry.get("id") not in existing_history_ids:
+                data["history"].append(h_entry)
+        data["history"].sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+    if "points" in msg:
+        for uid, pts in msg["points"].items():
+            data.setdefault("points", {})[uid] = pts
+
+    if "monthly_history" in msg:
+        for month, m_data in msg["monthly_history"].items():
+            data.setdefault("monthly_history", {})[month] = m_data
+
+    if "current_month" in msg:
+        data["current_month"] = msg["current_month"]
+
+    if "current_period_start" in msg:
+        data["current_period_start"] = msg["current_period_start"]
+            
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
     connection.send_result(msg["id"], {"success": True})
