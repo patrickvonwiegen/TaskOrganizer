@@ -4,9 +4,9 @@ TaskOrganizer is a integration for Home Assistant designed to manage household t
 
 <p align="center">
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/288496e5-29f7-47c4-9430-b9baab65e9d3" />
+  <img width="24% alt="image" src="https://github.com/user-attachments/assets/297ff495-9156-43d8-b5ba-f704829fddfb" />
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/be06b2cc-7153-4229-b9f9-986e03d836bd" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
 </p>
 
 Currently still in testing. Suggestions for improvement or bug reports are welcome.
@@ -93,7 +93,7 @@ items_per_page: 10  # Number of displayed items
 ### 4. Settings (task-organizer-settings)
 Allows customization of colors, data export, and factory resets.
 
-<img width="385" height="327" alt="image" src="https://github.com/user-attachments/assets/be06b2cc-7153-4229-b9f9-986e03d836bd" />
+<img width="385" height="713" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
 
 **YAML Configuration:**
 ```yaml
