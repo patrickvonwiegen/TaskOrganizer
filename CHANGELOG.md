@@ -1,6 +1,9 @@
 ﻿﻿# Changelog
 
 ## [1.2.1] - 2024-04-12
+### 🚀 New Features
+- New event `task_organizer_task_created` that is fired when a new task is created
+
 ### 🐛 Bug Fixes
 - Dynamic and redesigned leaderboard
 

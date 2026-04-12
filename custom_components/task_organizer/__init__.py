@@ -21,6 +21,7 @@ from .const import (
     EVENT_TASK_UPDATED,
     EVENT_LEADERBOARD_CHANGED,
     EVENT_TASK_COMPLETED,
+    EVENT_TASK_CREATED,
     STORAGE_KEY,
     STORAGE_VERSION,
     WS_TYPE_ADD_TASK,
@@ -266,6 +267,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     }
     
     data["tasks"][task_id] = new_task
+    hass.bus.async_fire(EVENT_TASK_CREATED, new_task)
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
     connection.send_result(msg["id"], {"success": True, "task_id": task_id})
@@ -780,7 +782,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             assignees = [call.context.user_id]
             
         task_id = str(uuid.uuid4())
-        data["tasks"][task_id] = {
+        new_task_data = {
             "id": task_id, 
             "name": name,
             "description": call.data.get("description") or (template.get("description", "") if template else ""),
@@ -794,6 +796,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "paused_until": None,
             "override_overdue_days": call.data.get("override_overdue_days")
         }
+        data["tasks"][task_id] = new_task_data
+        hass.bus.async_fire(EVENT_TASK_CREATED, new_task_data)
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
 

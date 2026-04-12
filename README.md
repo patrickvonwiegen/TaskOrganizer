@@ -199,6 +199,41 @@ action:
         with {{ trigger.event.data.new_leaderboard[0].points }} points!
 ```
 
+### task_organizer_task_created
+This event is fired whenever a new task is created. It is useful for notifying roommates about new tasks or triggering other automations.
+
+#### Event Data:
+- **id**: The unique ID of the newly created task.
+- **name**: The name of the task.
+- **description**: Additional info about the task.
+- **area**: The area/room where the task applies.
+- **interval**: The interval of the task in days (0 for one-time tasks).
+- **assignees**: A list of user IDs or person entities assigned to the task.
+- **complexity**: Points (1-10) for the task.
+- **category**: The category of the task.
+- **icon**: The mdi-icon for the task.
+- **due_date**: The initial due date of the task.
+- **paused_until**: Date until the task is paused (if applicable).
+- **override_overdue_days**: Custom overdue threshold for the task (if applicable).
+
+#### Example Automation:
+Send a notification when a new high-complexity task is created.
+
+```yml
+alias: "TaskOrganizer: New High-Complexity Task Notification"
+trigger:
+  - platform: event
+    event_type: "task_organizer_task_created"
+condition:
+  - condition: template
+    value_template: "{{ trigger.event.data.complexity >= 8 }}"
+action:
+  - service: notify.notify
+    data:
+      title: "Important New Task!"
+      message: "A new difficult task '{{ trigger.event.data.name }}' has been added."
+```
+
 
 ## Installation & Data Storage
 All data is stored securely in the internal Home Assistant database at .storage/task_organizer.storage.
