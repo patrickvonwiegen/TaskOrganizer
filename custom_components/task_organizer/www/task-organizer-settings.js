@@ -23,7 +23,8 @@ const I18N_SETTINGS = {
     edit_template_hover: "Edit template", delete_template_hover: "Delete template",
     save_hover: "Saves the current color and day settings.",
     export_hover: "Downloads all current tasks as a JSON file.",
-    import_hover: "Opens a dialog to select a JSON file for importing tasks."
+    import_hover: "Opens a dialog to select a JSON file for importing tasks.",
+    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
@@ -44,7 +45,8 @@ const I18N_SETTINGS = {
     edit_template_hover: "Vorlage bearbeiten", delete_template_hover: "Vorlage löschen",
     save_hover: "Speichert die aktuellen Farb- und Tageseinstellungen.",
     export_hover: "Lädt alle aktuellen Aufgaben als JSON-Datei herunter.",
-    import_hover: "Öffnet einen Dialog zur Auswahl einer JSON-Datei für den Import von Aufgaben."
+    import_hover: "Öffnet einen Dialog zur Auswahl einer JSON-Datei für den Import von Aufgaben.",
+    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie"
   }
 };
 
@@ -72,6 +74,11 @@ class TaskOrganizerSettings extends HTMLElement {
     this.tasks = {};
     this.users = {};
     this.templates = {};
+    this.history = [];
+    this.points = {};
+    this.monthly_history = {};
+    this.current_month = null;
+    this.current_period_start = null;
     this._dataLoaded = false; 
     this._advancedOpen = false; 
     this._ieOpen = false; 
@@ -195,6 +202,11 @@ class TaskOrganizerSettings extends HTMLElement {
       } 
       this.tasks = data.tasks || {};
       this.templates = data.templates || {};
+      this.history = data.history || [];
+      this.points = data.points || {};
+      this.monthly_history = data.monthly_history || {};
+      this.current_month = data.current_month;
+      this.current_period_start = data.current_period_start;
       this._render(); 
     }); 
   }
@@ -332,10 +344,25 @@ class TaskOrganizerSettings extends HTMLElement {
    * Generates a JSON file containing all tasks and prompts a download.
    */
   _exportTasks() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.tasks, null, 2));
+    const exportTasks = this.shadowRoot.getElementById('cb-export-tasks').checked;
+    const exportTemplates = this.shadowRoot.getElementById('cb-export-templates').checked;
+    const exportHistory = this.shadowRoot.getElementById('cb-export-history').checked;
+    
+    let dataToExport = {};
+    if (exportTasks) dataToExport.tasks = this.tasks;
+    if (exportTemplates) dataToExport.templates = this.templates;
+    if (exportHistory) {
+      dataToExport.history = this.history;
+      dataToExport.points = this.points;
+      dataToExport.monthly_history = this.monthly_history;
+      dataToExport.current_month = this.current_month;
+      dataToExport.current_period_start = this.current_period_start;
+    }
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "task_organizer_tasks.json");
+    downloadAnchorNode.setAttribute("download", "task_organizer_export.json");
     
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
@@ -355,8 +382,27 @@ class TaskOrganizerSettings extends HTMLElement {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const importedTasks = JSON.parse(e.target.result);
-        this._hass.callWS({ type: 'task_organizer/import_tasks', tasks: importedTasks }).then(() => {
+        const importedData = JSON.parse(e.target.result);
+        
+        let payload = { type: 'task_organizer/import_tasks' };
+        
+        // Detect if it's the new format containing tasks, templates, or history
+        if (importedData.tasks || importedData.templates || importedData.history) {
+            if (importedData.tasks) payload.tasks = importedData.tasks;
+            if (importedData.templates) payload.templates = importedData.templates;
+            if (importedData.history) {
+                payload.history = importedData.history;
+                if (importedData.points) payload.points = importedData.points;
+                if (importedData.monthly_history) payload.monthly_history = importedData.monthly_history;
+                if (importedData.current_month) payload.current_month = importedData.current_month;
+                if (importedData.current_period_start) payload.current_period_start = importedData.current_period_start;
+            }
+        } else {
+            // Assume old format containing only tasks directly at root
+            payload.tasks = importedData;
+        }
+
+        this._hass.callWS(payload).then(() => {
           this._showToast(this.localize('import_success'));
           this._fetchData();
         });
@@ -472,9 +518,22 @@ class TaskOrganizerSettings extends HTMLElement {
           <ha-icon icon="${this._ieOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
         </div>
         <div class="collapsible-content ${this._ieOpen ? 'open' : ''}">
-          <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
-          <input type="file" id="file-import" accept=".json" style="display:none;">
-          <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
+          <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+            <ha-formfield label="${this.localize('export_tasks_cb')}">
+              <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
+            </ha-formfield>
+            <ha-formfield label="${this.localize('export_templates_cb')}">
+              <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
+            </ha-formfield>
+            <ha-formfield label="${this.localize('export_history_cb')}">
+              <ha-checkbox id="cb-export-history"></ha-checkbox>
+            </ha-formfield>
+          </div>
+          <div style="display: flex; gap: 10px; width: 100%;">
+            <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
+            <input type="file" id="file-import" accept=".json" style="display:none;">
+            <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
+          </div>
         </div>
 
         <div class="collapsible-header" id="templates-toggle">
