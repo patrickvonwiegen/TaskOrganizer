@@ -1,11 +1,11 @@
 """Sensoren für den TaskOrganizer."""
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, EVENT_TASK_UPDATED
+from .const import DEFAULT_OVERDUE_DAYS, DOMAIN, EVENT_TASK_UPDATED
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     """
@@ -18,9 +18,12 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     sensors = [
         TaskOrganizerAllTasksSensor(hass),
         TaskOrganizerDueTasksSensor(hass),
+        TaskOrganizerOverdueTasksSensor(hass),
+        TaskOrganizerDueAndOverdueTasksSensor(hass),
         TaskOrganizerSettingsSensor(hass),
         TaskOrganizerPointsSensor(hass),
         TaskOrganizerLeaderboardSensor(hass),
+        TaskOrganizerTemplatesSensor(hass),
     ]
     async_add_entities(sensors)
 
@@ -81,17 +84,32 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the number of currently due tasks."""
     
     def __init__(self, hass: HomeAssistant):
+        """Initialize the sensor for due tasks."""
         super().__init__(hass, "task_organizer_due_tasks", "due_tasks")
         self._attr_icon = "mdi:calendar-check"
 
     def _get_due_tasks(self) -> list:
-        """Helper to extract tasks that are due today or earlier."""
+        """Helper to extract tasks that are due but not overdue."""
         now = datetime.now().date()
+        settings = self._data.get("settings", {})
+        overdue_days = settings.get("overdue_days", DEFAULT_OVERDUE_DAYS)
+
         due_tasks = []
         for task in self._data.get("tasks", {}).values():
             if task.get("due_date"):
+                paused_until_str = task.get("paused_until")
+                is_paused = False
+                if paused_until_str:
+                    paused_date = datetime.fromisoformat(paused_until_str).date()
+                    if now <= paused_date:
+                        is_paused = True
+
                 due_date = datetime.fromisoformat(task["due_date"]).date()
-                if due_date <= now:
+                task_overdue_days = task.get("override_overdue_days")
+                if task_overdue_days is None:
+                    task_overdue_days = overdue_days
+                # A task is due if its due date is today or in the past, but not yet past the overdue threshold.
+                if not is_paused and due_date <= now and due_date > (now - timedelta(days=task_overdue_days)):
                     due_tasks.append(task)
         return due_tasks
 
@@ -108,6 +126,91 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
             "json_string": json.dumps(due_tasks), 
             "data": due_tasks
         }
+
+
+class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the number of overdue tasks."""
+
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the sensor for overdue tasks."""
+        super().__init__(hass, "task_organizer_overdue_tasks", "overdue_tasks")
+        self._attr_icon = "mdi:calendar-alert"
+
+    def _get_overdue_tasks(self) -> list:
+        """Helper to extract tasks that are overdue."""
+        now = datetime.now().date()
+        settings = self._data.get("settings", {})
+        overdue_days = settings.get("overdue_days", DEFAULT_OVERDUE_DAYS)
+
+        overdue_tasks = []
+        for task in self._data.get("tasks", {}).values():
+            if task.get("due_date"):
+                paused_until_str = task.get("paused_until")
+                is_paused = False
+                if paused_until_str:
+                    paused_date = datetime.fromisoformat(paused_until_str).date()
+                    if now <= paused_date:
+                        is_paused = True
+
+                due_date = datetime.fromisoformat(task["due_date"]).date()
+                task_overdue_days = task.get("override_overdue_days")
+                if task_overdue_days is None:
+                    task_overdue_days = overdue_days
+                # A task is overdue if its due date is past the overdue threshold.
+                if not is_paused and due_date <= (now - timedelta(days=task_overdue_days)):
+                    overdue_tasks.append(task)
+        return overdue_tasks
+
+    @property
+    def state(self) -> int:
+        """Return the count of overdue tasks."""
+        return len(self._get_overdue_tasks())
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return overdue tasks array as state attributes."""
+        overdue_tasks = self._get_overdue_tasks()
+        return {"json_string": json.dumps(overdue_tasks), "data": overdue_tasks}
+
+
+class TaskOrganizerDueAndOverdueTasksSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the number of due and overdue tasks combined."""
+
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the sensor for due and overdue tasks."""
+        super().__init__(
+            hass, "task_organizer_due_and_overdue_tasks", "due_and_overdue_tasks"
+        )
+        self._attr_icon = "mdi:calendar-multiple-check"
+
+    def _get_due_and_overdue_tasks(self) -> list:
+        """Helper to extract tasks that are due today or earlier."""
+        now = datetime.now().date()
+        due_tasks = []
+        for task in self._data.get("tasks", {}).values():
+            if task.get("due_date"):
+                paused_until_str = task.get("paused_until")
+                is_paused = False
+                if paused_until_str:
+                    paused_date = datetime.fromisoformat(paused_until_str).date()
+                    if now <= paused_date:
+                        is_paused = True
+
+                due_date = datetime.fromisoformat(task["due_date"]).date()
+                if not is_paused and due_date <= now:
+                    due_tasks.append(task)
+        return due_tasks
+
+    @property
+    def state(self) -> int:
+        """Return the count of due and overdue tasks."""
+        return len(self._get_due_and_overdue_tasks())
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return due and overdue tasks array as state attributes."""
+        due_tasks = self._get_due_and_overdue_tasks()
+        return {"json_string": json.dumps(due_tasks), "data": due_tasks}
 
 
 class TaskOrganizerSettingsSensor(TaskOrganizerBaseSensor):
@@ -190,3 +293,26 @@ class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
                     break
             leaderboard.append({"user_id": uid, "name": name, "points": pts})
         return {"json_string": json.dumps(leaderboard), "data": leaderboard}
+
+
+class TaskOrganizerTemplatesSensor(TaskOrganizerBaseSensor):
+    """Sensor tracking the total number of templates."""
+
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the sensor for templates."""
+        super().__init__(hass, "task_organizer_templates", "templates")
+        self._attr_icon = "mdi:file-document-multiple-outline"
+
+    @property
+    def state(self) -> int:
+        """Return the total amount of templates."""
+        return len(self._data.get("templates", {}))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return template array as state attributes."""
+        templates_list = list(self._data.get("templates", {}).values())
+        return {
+            "json_string": json.dumps(templates_list),
+            "data": templates_list
+        }

@@ -35,10 +35,15 @@ from .const import (
     WS_TYPE_PAUSE_TASK,
     WS_TYPE_UPDATE_POINTS,
     WS_TYPE_UPDATE_SETTINGS,
+    WS_TYPE_ADD_TEMPLATE,
+    WS_TYPE_EDIT_TEMPLATE,
+    WS_TYPE_DELETE_TEMPLATE,
     SERVICE_ADD_TASK,
     SERVICE_COMPLETE_TASK_BY_NAME,
     SERVICE_RESET_MONTHLY_POINTS,
     SERVICE_FACTORY_RESET,
+    SERVICE_SET_TASK_DUE_BY_NAME,
+    SERVICE_PAUSE_TASK_BY_NAME,
 )
 
 # Global logger for the integration
@@ -50,6 +55,9 @@ PLATFORMS = ["sensor", "button"]
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Called when options are changed via the UI gear icon."""
+    # Update the settings in the main data structure
+    hass.data[DOMAIN]["data"]["settings"] = dict(entry.options)
+
     hass.bus.async_fire(EVENT_TASK_UPDATED)
 
 
@@ -186,10 +194,16 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
         }
         data["history"].insert(0, history_entry)
     
-    interval = task.get("interval", 1)
-    task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
-    task["paused_until"] = None 
-    
+    interval = task.get("interval", 7)
+    # If recurring, update due date. If one-time, it will be deleted.
+    if interval > 0:
+        task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
+        task["paused_until"] = None
+
+    # Now, if it was a one-time task, delete it from the main dictionary
+    if interval == 0:
+        del data["tasks"][task_id]
+
     # Trigger events
     _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
     hass.bus.async_fire(EVENT_TASK_COMPLETED, {
@@ -209,13 +223,15 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Required("type"): WS_TYPE_ADD_TASK,
     vol.Required("name"): str, 
     vol.Optional("description", default=""): str,
+    vol.Optional("area", default=""): str,
     vol.Required("interval"): int,
     vol.Optional("assignees"): cv.ensure_list,
     vol.Required("complexity"): vol.All(int, vol.Range(min=1, max=10)),
     vol.Required("category"): str, 
     vol.Required("icon"): str,
-    vol.Optional("set_due_today", default=False): bool,
+    vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
+    vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
 })
 @websocket_api.async_response
 async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -228,19 +244,25 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     """
     data = hass.data[DOMAIN]["data"]
     task_id = str(uuid.uuid4())
-    due_date = datetime.now().isoformat()
+    custom_due_date_str = msg.get("custom_due_date")
+    if custom_due_date_str:
+        due_date = datetime.fromisoformat(custom_due_date_str).isoformat()
+    else:
+        due_date = datetime.now().isoformat() # Default if no custom date is provided
     
     new_task = {
         "id": task_id, 
         "name": msg["name"], 
         "description": msg.get("description", ""),
+        "area": msg.get("area", ""),
         "interval": msg["interval"],
         "assignees": msg.get("assignees", []), 
         "complexity": msg["complexity"],
         "category": msg["category"], 
         "icon": msg["icon"],
         "due_date": due_date, 
-        "paused_until": msg.get("paused_until")
+        "paused_until": msg.get("paused_until"),
+        "override_overdue_days": msg.get("override_overdue_days")
     }
     
     data["tasks"][task_id] = new_task
@@ -254,13 +276,15 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Required("task_id"): str, 
     vol.Optional("name"): str,
     vol.Optional("description"): str,
+    vol.Optional("area"): str,
     vol.Optional("interval"): int, 
     vol.Optional("assignees"): cv.ensure_list,
     vol.Optional("complexity"): vol.All(int, vol.Range(min=1, max=10)),
     vol.Optional("category"): str, 
     vol.Optional("icon"): str,
-    vol.Optional("set_due_today"): bool,
+    vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
+    vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
 })
 @websocket_api.async_response
 async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -279,17 +303,20 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         return
         
     task_ref = data["tasks"][task_id]
-    keys_to_update = ["name", "description", "interval", "assignees", "complexity", "category", "icon"]
+    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon"]
     
     for key in keys_to_update:
         if key in msg: 
             task_ref[key] = msg[key]
-        
-    if msg.get("set_due_today"):
-        task_ref["due_date"] = datetime.now().isoformat()
+
+    if msg.get("custom_due_date"):
+        task_ref["due_date"] = datetime.fromisoformat(msg["custom_due_date"]).isoformat()
         
     if "paused_until" in msg:
         task_ref["paused_until"] = msg["paused_until"]
+
+    if "override_overdue_days" in msg:
+        task_ref["override_overdue_days"] = msg["override_overdue_days"]
         
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -425,16 +452,135 @@ async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.Ac
 
 @websocket_api.websocket_command({
     vol.Required("type"): WS_TYPE_IMPORT_TASKS,
-    vol.Required("tasks"): dict,
+    vol.Optional("tasks"): dict,
+    vol.Optional("templates"): dict,
+    vol.Optional("history"): list,
+    vol.Optional("points"): dict,
+    vol.Optional("monthly_history"): dict,
+    vol.Optional("current_month"): str,
+    vol.Optional("current_period_start"): str,
 })
 @websocket_api.async_response
 async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
     data = hass.data[DOMAIN]["data"]
-    imported = msg["tasks"]
-    for tid, tdata in imported.items():
-        data["tasks"][tid] = tdata
+    
+    if "tasks" in msg:
+        imported = msg["tasks"]
+        for tid, tdata in imported.items():
+            data["tasks"][tid] = tdata
+            
+    if "templates" in msg:
+        imported_templates = msg["templates"]
+        for tid, tdata in imported_templates.items():
+            data.setdefault("templates", {})[tid] = tdata
+            
+    if "history" in msg:
+        existing_history_ids = {h["id"] for h in data.setdefault("history", [])}
+        for h_entry in msg["history"]:
+            if h_entry.get("id") not in existing_history_ids:
+                data["history"].append(h_entry)
+        data["history"].sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+    if "points" in msg:
+        for uid, pts in msg["points"].items():
+            data.setdefault("points", {})[uid] = pts
+
+    if "monthly_history" in msg:
+        for month, m_data in msg["monthly_history"].items():
+            data.setdefault("monthly_history", {})[month] = m_data
+
+    if "current_month" in msg:
+        data["current_month"] = msg["current_month"]
+
+    if "current_period_start" in msg:
+        data["current_period_start"] = msg["current_period_start"]
+            
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
+    connection.send_result(msg["id"], {"success": True})
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_ADD_TEMPLATE,
+    vol.Required("name"): str,
+    vol.Optional("description", default=""): str,
+    vol.Optional("area", default=""): str,
+    vol.Required("complexity"): vol.All(int, vol.Range(min=1, max=10)),
+    vol.Required("icon"): str,
+    vol.Optional("interval", default=7): int,
+    vol.Optional("assignees", default=[]): cv.ensure_list,
+})
+@websocket_api.async_response
+async def ws_add_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """Create a new template via websocket."""
+    data = hass.data[DOMAIN]["data"]
+    template_id = str(uuid.uuid4())
+    
+    new_template = {
+        "id": template_id, 
+        "name": msg["name"], 
+        "description": msg.get("description", ""),
+        "area": msg.get("area", ""),
+        "complexity": msg["complexity"],
+        "icon": msg["icon"],
+        "interval": msg.get("interval"),
+        "assignees": msg.get("assignees"),
+    }
+    
+    data["templates"][template_id] = new_template
+    await hass.data[DOMAIN]["store"].async_save(data)
+    hass.bus.async_fire(EVENT_TASK_UPDATED) # Fire update to sync clients
+    connection.send_result(msg["id"], {"success": True, "template_id": template_id})
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_EDIT_TEMPLATE,
+    vol.Required("template_id"): str, 
+    vol.Optional("name"): str,
+    vol.Optional("description"): str,
+    vol.Optional("area"): str,
+    vol.Optional("complexity"): vol.All(int, vol.Range(min=1, max=10)),
+    vol.Optional("icon"): str,
+    vol.Optional("interval"): int,
+    vol.Optional("assignees"): cv.ensure_list,
+})
+@websocket_api.async_response
+async def ws_edit_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """Edit an existing template via websocket."""
+    data = hass.data[DOMAIN]["data"]
+    template_id = msg["template_id"]
+    
+    if template_id not in data.get("templates", {}):
+        connection.send_error(msg["id"], "not_found", "Template not found")
+        return
+        
+    template_ref = data["templates"][template_id]
+    keys_to_update = ["name", "description", "area", "complexity", "icon", "interval", "assignees"]
+    
+    for key in keys_to_update:
+        if key in msg: 
+            template_ref[key] = msg[key]
+            
+    await hass.data[DOMAIN]["store"].async_save(data)
+    hass.bus.async_fire(EVENT_TASK_UPDATED)
+    connection.send_result(msg["id"], {"success": True})
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_DELETE_TEMPLATE,
+    vol.Required("template_id"): str,
+})
+@websocket_api.async_response
+async def ws_delete_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """Delete a template via websocket."""
+    data = hass.data[DOMAIN]["data"]
+    template_id = msg["template_id"]
+    
+    if "templates" not in data:
+        data["templates"] = {}
+
+    if template_id in data.get("templates", {}):
+        del data["templates"][template_id]
+        await hass.data[DOMAIN]["store"].async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+    
     connection.send_result(msg["id"], {"success": True})
 
 
@@ -484,13 +630,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
             "monthly_history": {}, "current_month": datetime.now().strftime("%Y-%m"), 
-            "current_period_start": datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat()
+            "current_period_start": datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat(),
+            "templates": {}
         }
     
     # Ensure all required keys exist
     data.setdefault("monthly_history", {})
     data.setdefault("current_month", datetime.now().strftime("%Y-%m"))
     data.setdefault("current_period_start", datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat())
+    data.setdefault("templates", {})
+
+    # IMPORTANT: Ensure settings from config entry options are always reflected in data
+    data["settings"] = dict(entry.options)
 
     hass.data[DOMAIN]["store"] = store
     hass.data[DOMAIN]["data"] = data
@@ -589,16 +740,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.bus.async_fire(EVENT_TASK_UPDATED)
 
     async def handle_add_task(call: ServiceCall):
-        """Service handle to add a new task from an automation."""
-        assignees_input = call.data.get("assignees", [])
+        """Service handle to create a new task from an automation, with template support."""
+        data = hass.data[DOMAIN]["data"]
+        store = hass.data[DOMAIN]["store"]
+        
+        template_name = call.data.get("template")
+        template = None
+        
+        if template_name:
+            template = next(
+                (t for t in data.get("templates", {}).values() if t["name"].lower() == template_name.lower()),
+                None
+            )
+            if not template:
+                _LOGGER.warning("Template '%s' not found.", template_name)
+    
+        # Use call data, fallback to template data, fallback to default
+        name = call.data.get("name") or (template.get("name") if template else None)
+        if not name:
+            _LOGGER.error("Task name is required when not using a valid template.")
+            return
+            
+        interval = call.data.get("interval")
+        if interval is None:
+            interval = template.get("interval") if template else 7
+            
+        assignees_input = call.data.get("assignees")
+        if assignees_input is None and template:
+            assignees_input = template.get("assignees", [])
+        if assignees_input is None:
+            assignees_input = []
+            
         if isinstance(assignees_input, str):
             assignees_input = [x.strip() for x in assignees_input.split(",")]
             
-        assignees = []
-        for assignee in assignees_input:
-            uid = _get_user_id(hass, assignee)
-            if uid: 
-                assignees.append(uid)
+        assignees = [_get_user_id(hass, assignee) for assignee in assignees_input if _get_user_id(hass, assignee)]
             
         if not assignees and call.context.user_id:
             assignees = [call.context.user_id]
@@ -606,16 +782,62 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         task_id = str(uuid.uuid4())
         data["tasks"][task_id] = {
             "id": task_id, 
-            "name": call.data.get("name", "New task"),
-            "description": call.data.get("description", ""),
-            "interval": call.data.get("interval", 7),
+            "name": name,
+            "description": call.data.get("description") or (template.get("description", "") if template else ""),
+            "area": call.data.get("area") or (template.get("area", "") if template else ""),
+            "interval": interval,
             "assignees": assignees,
-            "complexity": call.data.get("complexity", 5),
+            "complexity": call.data.get("complexity") or (template.get("complexity", 5) if template else 5),
             "category": "General",
-            "icon": call.data.get("icon", "mdi:broom"),
+            "icon": call.data.get("icon") or (template.get("icon", "mdi:broom") if template else "mdi:broom"),
             "due_date": datetime.now().isoformat(), 
-            "paused_until": None
+            "paused_until": None,
+            "override_overdue_days": call.data.get("override_overdue_days")
         }
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_set_task_due_by_name(call: ServiceCall):
+        """Service handle to set a task as due immediately by its name."""
+        task_name = call.data.get("task_name")
+        
+        target_task_id = next(
+            (tid for tid, t in data["tasks"].items() if t["name"].lower() == task_name.lower()), 
+            None
+        )
+                
+        if not target_task_id:
+            _LOGGER.warning("Task '%s' not found for setting due.", task_name)
+            return
+            
+        task = data["tasks"][target_task_id]
+        task["due_date"] = datetime.now().isoformat()
+        task["paused_until"] = None
+        
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_pause_task_by_name(call: ServiceCall):
+        """Service handle to pause a task by its name."""
+        task_name = call.data.get("task_name")
+        pause_until = call.data.get("pause_until")
+        
+        target_task_id = next(
+            (tid for tid, t in data["tasks"].items() if t["name"].lower() == task_name.lower()), 
+            None
+        )
+                
+        if not target_task_id:
+            _LOGGER.warning("Task '%s' not found for pausing.", task_name)
+            return
+
+        if not pause_until:
+            _LOGGER.warning("Pause until date not provided for task '%s'.", task_name)
+            return
+            
+        task = data["tasks"][target_task_id]
+        task["paused_until"] = datetime.fromisoformat(pause_until).isoformat()
+
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
 
@@ -624,6 +846,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_FACTORY_RESET, handle_factory_reset)
     hass.services.async_register(DOMAIN, SERVICE_COMPLETE_TASK_BY_NAME, handle_complete_task_by_name)
     hass.services.async_register(DOMAIN, SERVICE_ADD_TASK, handle_add_task)
+    hass.services.async_register(DOMAIN, SERVICE_SET_TASK_DUE_BY_NAME, handle_set_task_due_by_name)
+    hass.services.async_register(DOMAIN, SERVICE_PAUSE_TASK_BY_NAME, handle_pause_task_by_name)
     
     # Register websocket API commands
     websocket_api.async_register_command(hass, ws_get_data)
@@ -636,6 +860,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     websocket_api.async_register_command(hass, ws_delete_history_item)
     websocket_api.async_register_command(hass, ws_edit_history_item)
     websocket_api.async_register_command(hass, ws_import_tasks)
+    websocket_api.async_register_command(hass, ws_add_template)
+    websocket_api.async_register_command(hass, ws_edit_template)
+    websocket_api.async_register_command(hass, ws_delete_template)
     
     # Register static path for frontend cards
     frontend_path = hass.config.path(f"custom_components/{DOMAIN}/www")

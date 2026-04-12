@@ -3,18 +3,26 @@
  * en: English translations.
  * de: German translations.
  */
-const I18N_STATS = {
-  en: { 
-    title: "Household Log", empty: "No entries.", unknown: "Unknown", 
-    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points", 
-    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All", 
-    prev: "Previous", next: "Next", page: "Page" 
+const I18N_STATS = { 
+  en: {
+    title: "Household Log", empty: "No entries.", unknown: "Unknown",
+    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points",
+    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All",
+    prev: "Previous", next: "Next", page: "Page",
+    edit_hover: "Edit entry",
+    delete_hover: "Delete entry",
+    entry_saved: "Entry saved!",
+    entry_deleted: "Entry deleted!"
   },
   de: { 
     title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
     confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
-    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle", 
-    prev: "Zurück", next: "Weiter", page: "Seite" 
+    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle",
+    prev: "Zurück", next: "Weiter", page: "Seite",
+    edit_hover: "Eintrag bearbeiten",
+    delete_hover: "Eintrag löschen",
+    entry_saved: "Eintrag gespeichert!",
+    entry_deleted: "Eintrag gelöscht!"
   }
 };
 
@@ -24,7 +32,7 @@ const I18N_STATS = {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "task-organizer-stats",
-  name: "Task Organizer Statistics",
+  name: "Task Organizer: Statistics",
   description: "Displays a log of completed tasks and allows editing.",
   preview: true,
 });
@@ -51,14 +59,24 @@ class TaskOrganizerStats extends HTMLElement {
   }
 
   /**
+   * Statically translates a key. Helper for getStubConfig.
+   * @param {object} hass - The Home Assistant object.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  static _localize(hass, key) {
+    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
+    const dict = I18N_STATS[lang] || I18N_STATS['en'];
+    return dict[key] || key;
+  }
+
+  /**
    * Translates a given key based on the Home Assistant language.
    * * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
   localize(key) { 
-    const lang = (this._hass && this._hass.language) ? this._hass.language.substring(0, 2) : 'en'; 
-    const dict = I18N_STATS[lang] || I18N_STATS['en']; 
-    return dict[key] || key; 
+    return TaskOrganizerStats._localize(this._hass, key);
   }
 
   /**
@@ -71,8 +89,13 @@ class TaskOrganizerStats extends HTMLElement {
   /**
    * Generates default configuration for the Card Picker.
    */
-  static getStubConfig() { 
-    return { type: "custom:task-organizer-stats", items_per_page: 10, filter_by: "all" }; 
+  static getStubConfig(hass) { 
+    return { 
+      type: "custom:task-organizer-stats", 
+      title: this._localize(hass, 'title'),
+      items_per_page: 10, 
+      filter_by: "all" 
+    }; 
   }
 
   /**
@@ -197,25 +220,34 @@ class TaskOrganizerStats extends HTMLElement {
     const modal = this.shadowRoot.getElementById('edit-modal'); 
     
     this.shadowRoot.getElementById('edit-points').value = entry.points; 
-    this.shadowRoot.getElementById('edit-user').value = entry.user_id; 
+    
+    // Set active radio button based on the entry's user_id
+    this.shadowRoot.querySelectorAll('.edit-user-radio').forEach(radio => {
+        radio.checked = (radio.value === entry.user_id);
+    });
     
     modal.classList.add('open'); 
   }
 
-  /**
-   * Closes the edit modal and resets the editing state.
-   */
   closeModal() { 
     this.shadowRoot.getElementById('edit-modal').classList.remove('open'); 
     this.editingEntryId = null; 
   }
 
-  /**
-   * Saves the modified history entry to the backend.
-   */
   saveEdit() { 
     const points = parseFloat(this.shadowRoot.getElementById('edit-points').value); 
-    const userId = this.shadowRoot.getElementById('edit-user').value; 
+    
+    // Read the selected user_id from the active radio button
+    let userId = null;
+    this.shadowRoot.querySelectorAll('.edit-user-radio').forEach(radio => {
+        if (radio.checked) {
+            userId = radio.value;
+        }
+    });
+
+    if (!userId) {
+        return; // Safety guard if somehow nothing is selected
+    }
     
     this._hass.callWS({ 
       type: 'task_organizer/edit_history_item', 
@@ -223,9 +255,24 @@ class TaskOrganizerStats extends HTMLElement {
       points: points, 
       user_id: userId 
     }).then(() => { 
-      this.closeModal(); 
-      this.fetchData(); 
+      this._showToast(this.localize('entry_saved'));
+      this.closeModal();
+      this.fetchData();
     }); 
+  }
+
+  _showToast(message) {
+    const event = new CustomEvent("hass-notification", {
+        detail: { message: message, duration: 3000 },
+        bubbles: true,
+        composed: true
+    });
+    this.dispatchEvent(event);
+    
+    const root = document.querySelector("home-assistant");
+    if (root) { 
+        root.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: message, duration: 3000 } })); 
+    }
   }
 
   /**
@@ -237,48 +284,50 @@ class TaskOrganizerStats extends HTMLElement {
       this._hass.callWS({ 
         type: 'task_organizer/delete_history_item', 
         entry_id: entryId 
-      }).then(() => this.fetchData()); 
+      }).then(() => {
+        this._showToast(this.localize('entry_deleted'));
+        this.fetchData();
+      });
     } 
   }
 
-  /**
-   * Generates the custom CSS for the card view.
-   */
   _getStyles() {
     return `
       <style> 
-        :host { display: block; width: 100%; } 
+        :host { display: block; width: 100%; height: 100%; } 
         * { box-sizing: border-box; } 
-        ha-card { padding: 16px; display: flex; flex-direction: column; } 
+        ha-card { padding: 16px; display: flex; flex-direction: column; width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;} 
+        
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header { font-size: 20px; font-weight: bold; } 
-        .hist-list { display: flex; flex-direction: column; gap: 10px; } 
-        .hist-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); box-shadow: var(--ha-card-box-shadow, 0 2px 2px rgba(0,0,0,0.1)); min-height: 75px; box-sizing: border-box; } 
-        .hist-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } 
+        .header { font-size: 20px; font-weight: bold; color: var(--primary-text-color); } 
+        
+        .hist-list { display: flex; flex-direction: column; gap: 10px; width: 100%; } 
+        .hist-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); transition: transform 0.2s; min-height: 75px; box-sizing: border-box; } 
+        .hist-item:hover { background-color: var(--secondary-background-color); transform: translateX(2px); box-shadow: -2px 4px 8px rgba(0,0,0,0.1); } 
+        
+        .hist-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; color: var(--primary-text-color); } 
         .task-name { font-weight: bold; font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .meta { font-size: 12px; color: var(--secondary-text-color); } 
-        .actions { display: flex; gap: 4px; align-items: center; } 
-        .points-badge { font-weight: bold; color: var(--primary-color); margin-right: 8px; font-size: 14px; } 
-        .action-btn { background: none; border: none; padding: 6px; cursor: pointer; color: var(--primary-text-color); } 
+        
+        .actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; } 
+        .points-badge { font-weight: bold; color: var(--primary-color); font-size: 14px; margin-right: 8px; } 
+        
+        .action-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; color: var(--secondary-text-color); transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+        .action-btn:hover { background-color: var(--divider-color); color: var(--primary-text-color); }
+        .btn-edit { color: var(--info-color, #2196F3); } 
+        .btn-delete { color: var(--error-color, #F44336); } 
+        
         .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
-        .btn-page { background: #2196F3; color: white; padding: 8px 12px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
-        .btn-page:active { opacity: 0.8; }
-        .btn-page[disabled] { background: var(--divider-color); color: var(--secondary-text-color); cursor: not-allowed; opacity: 0.6; }
+        
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
         .modal.open { display: flex; } 
-        .modal-content { background: var(--card-background-color, white); padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; } 
-        .input-group { display: flex; flex-direction: column; gap: 5px; width: 100%; } 
-        .modal input, .modal select { width: 100%; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px; font-size: 16px; background: var(--primary-background-color); color: var(--primary-text-color); } 
-        .modal-actions { display: flex; gap: 10px; margin-top: 10px; } 
-        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; } 
-        .btn-save { background: #2196F3; color: white; } 
+        .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); } 
+        
+        .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; }
       </style>
     `;
   }
 
-  /**
-   * Renders the HTML content.
-   */
   render() {
     if (!this.config || !this._hass) {
       return;
@@ -296,15 +345,13 @@ class TaskOrganizerStats extends HTMLElement {
       filteredHistory = filteredHistory.filter(h => h.user_id === currentUserId);
     }
     
-    // Pagination Logic
     const itemsPerPage = this.config.items_per_page || 10;
     const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
-    if (this.currentPage > totalPages) this.currentPage = totalPages;
+    if (this.currentPage > totalPages) this.currentPage = Math.max(1, totalPages);
     
     const startIndex = (this.currentPage - 1) * itemsPerPage;
     const paginatedHistory = filteredHistory.slice(startIndex, startIndex + itemsPerPage);
 
-    // Render HTML Structure
     html += `
       <ha-card>
         <div class="top-bar">
@@ -314,7 +361,7 @@ class TaskOrganizerStats extends HTMLElement {
     `;
     
     if (paginatedHistory.length === 0) {
-      html += `<div style="text-align:center; color:gray; padding:20px;">${this.localize('empty')}</div>`;
+      html += `<div style="text-align:center; color: var(--secondary-text-color); padding:20px;">${this.localize('empty')}</div>`;
     }
     
     paginatedHistory.forEach(entry => {
@@ -331,11 +378,11 @@ class TaskOrganizerStats extends HTMLElement {
           </div>
           <div class="actions">
             <span class="points-badge">+${entry.points}</span>
-            <button class="action-btn btn-edit" data-id="${entry.id}">
-              <ha-icon icon="mdi:pencil-outline"></ha-icon>
+            <button class="action-btn btn-edit" data-id="${entry.id}" title="${this.localize('edit_hover')}">
+              <ha-icon icon="mdi:pencil"></ha-icon>
             </button>
-            <button class="action-btn btn-delete" data-id="${entry.id}">
-              <ha-icon icon="mdi:delete-outline"></ha-icon>
+            <button class="action-btn btn-delete" data-id="${entry.id}" title="${this.localize('delete_hover')}">
+              <ha-icon icon="mdi:delete"></ha-icon>
             </button>
           </div>
         </div>`;
@@ -343,13 +390,13 @@ class TaskOrganizerStats extends HTMLElement {
     
     html += `</div>`;
     
-    // Render Pagination Controls if needed
+    // Render Pagination Controls
     if (filteredHistory.length > itemsPerPage) {
         html += `
             <div class="pagination">
-                <button class="btn-page" id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</button>
-                <span style="font-size: 13px; color: var(--secondary-text-color);">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
-                <button class="btn-page" id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</button>
+                <ha-button id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</ha-button>
+                <span style="font-size: 14px; color: var(--secondary-text-color); font-weight: 500;">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
+                <ha-button id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</ha-button>
             </div>
         `;
     }
@@ -358,20 +405,24 @@ class TaskOrganizerStats extends HTMLElement {
     html += `
         <div id="edit-modal" class="modal">
           <div class="modal-content">
-            <h2>${this.localize('edit')}</h2>
-            <div class="input-group">
-              <label>${this.localize('points')}</label>
-              <input type="number" id="edit-points" step="0.1">
+            <h2 style="margin: 0 0 8px 0;">${this.localize('edit')}</h2>
+            
+            <ha-textfield id="edit-points" type="number" label="${this.localize('points')}" step="0.1"></ha-textfield>
+            
+            <div>
+                <label class="form-label">${this.localize('user')}</label>
+                <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
+                    ${Object.entries(this.users).map(([uid, name]) => `
+                        <ha-formfield label="${name}">
+                            <ha-radio class="edit-user-radio" name="edit_user_radio" value="${uid}"></ha-radio>
+                        </ha-formfield>
+                    `).join('')}
+                </div>
             </div>
-            <div class="input-group">
-              <label>${this.localize('user')}</label>
-              <select id="edit-user">
-                ${Object.entries(this.users).map(([uid, name]) => `<option value="${uid}">${name}</option>`).join('')}
-              </select>
-            </div>
-            <div class="modal-actions">
-              <button class="btn btn-cancel" id="btn-edit-cancel" style="background:#eee; color:#333;">${this.localize('cancel')}</button>
-              <button class="btn btn-save" id="btn-edit-save">${this.localize('save')}</button>
+            
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
+              <ha-button id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
+              <ha-button raised id="btn-edit-save">${this.localize('save')}</ha-button>
             </div>
           </div>
         </div>

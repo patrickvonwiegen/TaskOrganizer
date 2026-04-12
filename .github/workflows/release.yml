@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
-      - 'feature/*'
       - 'release/*'
   schedule:
     - cron: '0 0 * * *'
@@ -22,79 +20,91 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
 
-      - id: get_version
+      - name: Get Version
+        id: get_version
         run: |
           VERSION=$(jq -r .version custom_components/task_organizer/manifest.json)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - id: release_info
+      - name: Determine Release Info
+        id: release_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            LATEST_NIGHTLY=$(git tag -l "nightly-*" | sort -r | head -n 1)
-            
-            if [ -n "$LATEST_NIGHTLY" ]; then
-              CHANGES=$(git log $LATEST_NIGHTLY..HEAD --oneline)
-            else
-              CHANGES="initial_run"
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAG="v${VERSION}"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "::error::Release $TAG already exists on main. Releases are not overwritten."
+              exit 1
             fi
-
-            if [ -z "$CHANGES" ]; then
-              echo "ℹ️ No changes since last nightly ($LATEST_NIGHTLY). Skip release."
-              echo "TYPE=unknown" >> $GITHUB_ENV
-            else
-              echo "TYPE=nightly" >> $GITHUB_ENV
-              echo "TAG=nightly-$(date +'%Y%m%d')" >> $GITHUB_ENV
-              echo "TITLE=TaskOrganizer-nightly$(date +'%Y%m%d')" >> $GITHUB_ENV
-              echo "PRERELEASE=true" >> $GITHUB_ENV
-            fi
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TYPE=stable" >> $GITHUB_ENV
-            echo "TAG=v${VERSION}" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizerV${VERSION}" >> $GITHUB_ENV
+            echo "TAG=$TAG" >> $GITHUB_ENV
+            echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
             echo "PRERELEASE=false" >> $GITHUB_ENV
           elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            TAG="v${VERSION}-beta"
             echo "TYPE=beta" >> $GITHUB_ENV
-            echo "TAG=v${VERSION}-beta" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizerV${VERSION}-beta" >> $GITHUB_ENV
+            echo "TAG=$TAG" >> $GITHUB_ENV
+            echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
             echo "PRERELEASE=true" >> $GITHUB_ENV
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "TYPE=nightly" >> $GITHUB_ENV
+            echo "TAG=nightly-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
           else
             echo "TYPE=unknown" >> $GITHUB_ENV
           fi
 
-      - if: env.TYPE == 'beta'
+      - name: Manage Beta Release
+        if: env.TYPE == 'beta'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "ℹ️ Beta release ${TAG} exists. Deleting to recreate and update."
             gh release delete "${TAG}" --cleanup-tag -y || true
+            git push --delete origin "${TAG}" || true
           fi
-          git push --delete origin "${TAG}" || true
 
-      - if: env.TYPE == 'nightly'
+      - name: Get Changelog Body
+        if: env.TYPE == 'stable' || env.TYPE == 'beta'
+        run: |
+          CHANGELOG_CONTENT=$(awk -v version="$VERSION" '
+            BEGIN { p = 0 }
+            $0 ~ "^## \\[" version "\\]" { p = 1; next }
+            $0 ~ "^## \\[" { if (p == 1) exit }
+            p { print }
+          ' CHANGELOG.md)
+
+          echo "CHANGELOG_BODY<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Package Nightly
+        if: env.TYPE == 'nightly'
+        run: |
+          mkdir -p release/task_organizer
+          cp -r custom_components/task_organizer/* release/task_organizer/
+          cd release
+          zip -r ../task_organizer-${TAG}.zip .
+          cd ..
+
+      - name: Upload Nightly Artifact
+        uses: actions/upload-artifact@v4
+        if: env.TYPE == 'nightly'
+        with:
+          name: task_organizer-${{ env.TAG }}
+          path: task_organizer-${{ env.TAG }}.zip
+          retention-days: 7
+
+      - name: Create Release
+        if: env.TYPE == 'stable' || env.TYPE == 'beta'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGELOG: ${{ env.CHANGELOG_BODY }}
         run: |
-          git tag -l "nightly-*" | sort -r > nightly_tags.txt
-          COUNT=$(wc -l < nightly_tags.txt)
-          if [ "$COUNT" -ge 25 ]; then
-            tail -n +25 nightly_tags.txt > tags_to_delete.txt
-            while read -r tag_to_delete; do
-              gh release delete "$tag_to_delete" --cleanup-tag -y || true
-              git push --delete origin "$tag_to_delete" || true
-            done < tags_to_delete.txt
-          fi
-
-      - if: env.TYPE != 'unknown'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "ℹ️ Release ${TAG} already exists. No new release needed. Skipping creation..."
-            exit 0
-          fi
-
           PRERELEASE_FLAG=""
-          if [ "$PRERELEASE" = "true" ]; then
+          if [ "${PRERELEASE}" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
-          gh release create "${TAG}" -t "${TITLE}" --generate-notes ${PRERELEASE_FLAG}
+
+          gh release create "${TAG}" -t "${TITLE}" --notes "${CHANGELOG}" ${PRERELEASE_FLAG} --target "${{ github.ref_name }}"
