@@ -66,7 +66,6 @@ jobs:
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "ℹ️ Beta release ${TAG} already exists. Deleting to recreate..."
             gh release delete "${TAG}" --cleanup-tag -y || true
-            git push --delete origin "${TAG}" || true
             sleep 3 
           fi
 
