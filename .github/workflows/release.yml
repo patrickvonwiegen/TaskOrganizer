@@ -15,16 +15,17 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
 
-      - name: Get Version
+      - name: Get Version from Manifest
         id: get_version
         run: |
           VERSION=$(jq -r .version custom_components/task_organizer/manifest.json)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Determine Release Info
         id: release_info
@@ -34,35 +35,39 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             TAG="v${VERSION}"
             if gh release view "$TAG" >/dev/null 2>&1; then
-              echo "::error::Release $TAG already exists on main. Releases are not overwritten."
+              echo "::error::Release $TAG already exists on main. Stable releases are not overwritten!"
               exit 1
             fi
-            echo "TYPE=stable" >> $GITHUB_ENV
-            echo "TAG=$TAG" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
-            echo "PRERELEASE=false" >> $GITHUB_ENV
+            echo "TYPE=stable" >> "$GITHUB_ENV"
+            echo "TAG=$TAG" >> "$GITHUB_ENV"
+            echo "TITLE=TaskOrganizer $TAG" >> "$GITHUB_ENV"
+            echo "PRERELEASE=false" >> "$GITHUB_ENV"
+
           elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
             TAG="v${VERSION}-beta"
-            echo "TYPE=beta" >> $GITHUB_ENV
-            echo "TAG=$TAG" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
-            echo "PRERELEASE=true" >> $GITHUB_ENV
+            echo "TYPE=beta" >> "$GITHUB_ENV"
+            echo "TAG=$TAG" >> "$GITHUB_ENV"
+            echo "TITLE=TaskOrganizer $TAG (Beta)" >> "$GITHUB_ENV"
+            echo "PRERELEASE=true" >> "$GITHUB_ENV"
+
           elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "TYPE=nightly" >> $GITHUB_ENV
-            echo "TAG=nightly-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+            echo "TYPE=nightly" >> "$GITHUB_ENV"
+            echo "TAG=nightly-$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_ENV"
+
           else
-            echo "TYPE=unknown" >> $GITHUB_ENV
+            echo "TYPE=unknown" >> "$GITHUB_ENV"
           fi
 
-      - name: Manage Beta Release
+      - name: Manage Beta Release (Delete Old)
         if: env.TYPE == 'beta'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "ℹ️ Beta release ${TAG} exists. Deleting to recreate and update."
+            echo "ℹ️ Beta release ${TAG} already exists. Deleting to recreate..."
             gh release delete "${TAG}" --cleanup-tag -y || true
             git push --delete origin "${TAG}" || true
+            sleep 3 
           fi
 
       - name: Get Changelog Body
@@ -75,11 +80,13 @@ jobs:
             p { print }
           ' CHANGELOG.md)
 
-          echo "CHANGELOG_BODY<<EOF" >> $GITHUB_ENV
-          echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          {
+            echo "CHANGELOG_BODY<<EOF"
+            echo "$CHANGELOG_CONTENT"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
-      - name: Package Nightly
+      - name: Package Nightly Artifact
         if: env.TYPE == 'nightly'
         run: |
           mkdir -p release/task_organizer
@@ -96,7 +103,7 @@ jobs:
           path: task_organizer-${{ env.TAG }}.zip
           retention-days: 7
 
-      - name: Create Release
+      - name: Create GitHub Release
         if: env.TYPE == 'stable' || env.TYPE == 'beta'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,4 +114,8 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
 
-          gh release create "${TAG}" -t "${TITLE}" --notes "${CHANGELOG}" ${PRERELEASE_FLAG} --target "${{ github.ref_name }}"
+          gh release create "${TAG}" \
+            -t "${TITLE}" \
+            --notes "${CHANGELOG}" \
+            ${PRERELEASE_FLAG} \
+            --target "${{ github.ref_name }}"
