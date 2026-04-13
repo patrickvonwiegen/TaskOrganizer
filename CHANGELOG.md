@@ -12,6 +12,7 @@
 ### 🚀 New Features
 - New event `task_organizer_task_created` that is fired when a new task is created
 - **task-organizer-card:** Added new `done`, `assigned`, `paused`, and `onetime` filter options.
+- Added new services: `remove_task_by_name`, `edit_task_by_name`, `add_template`, `remove_template_by_name`, and `edit_template_by_name`.
 
 ### 🐛 Bug Fixes
 - Dynamic and redesigned leaderboard

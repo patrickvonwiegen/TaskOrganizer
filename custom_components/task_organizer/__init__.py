@@ -45,6 +45,11 @@ from .const import (
     SERVICE_FACTORY_RESET,
     SERVICE_SET_TASK_DUE_BY_NAME,
     SERVICE_PAUSE_TASK_BY_NAME,
+    SERVICE_REMOVE_TASK_BY_NAME,
+    SERVICE_EDIT_TASK_BY_NAME,
+    SERVICE_ADD_TEMPLATE,
+    SERVICE_REMOVE_TEMPLATE_BY_NAME,
+    SERVICE_EDIT_TEMPLATE_BY_NAME,
 )
 
 # Global logger for the integration
@@ -845,6 +850,131 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
 
+    async def handle_remove_task_by_name(call: ServiceCall):
+        """Service handle to remove a task by its name."""
+        task_name = call.data.get("task_name")
+        
+        target_task_id = next(
+            (tid for tid, t in data["tasks"].items() if t["name"].lower() == task_name.lower()), 
+            None
+        )
+                
+        if not target_task_id:
+            _LOGGER.warning("Task '%s' not found for removal.", task_name)
+            return
+            
+        del data["tasks"][target_task_id]
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_edit_task_by_name(call: ServiceCall):
+        """Service handle to edit an existing task by its name."""
+        task_name = call.data.get("task_name")
+        
+        target_task_id = next(
+            (tid for tid, t in data["tasks"].items() if t["name"].lower() == task_name.lower()), 
+            None
+        )
+                
+        if not target_task_id:
+            _LOGGER.warning("Task '%s' not found for editing.", task_name)
+            return
+            
+        task_ref = data["tasks"][target_task_id]
+        
+        if "new_name" in call.data:
+            task_ref["name"] = call.data["new_name"]
+        
+        keys_to_update = ["description", "area", "interval", "complexity", "category", "icon"]
+        for key in keys_to_update:
+            if key in call.data: 
+                task_ref[key] = call.data[key]
+                
+        if "assignees" in call.data:
+            assignees_input = call.data["assignees"]
+            if isinstance(assignees_input, str):
+                assignees_input = [x.strip() for x in assignees_input.split(",")]
+            task_ref["assignees"] = [_get_user_id(hass, assignee) for assignee in assignees_input if _get_user_id(hass, assignee)]
+
+        if "override_overdue_days" in call.data:
+            task_ref["override_overdue_days"] = call.data["override_overdue_days"]
+
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_add_template(call: ServiceCall):
+        """Service handle to create a new template."""
+        template_id = str(uuid.uuid4())
+        
+        assignees_input = call.data.get("assignees", [])
+        if isinstance(assignees_input, str):
+            assignees_input = [x.strip() for x in assignees_input.split(",")]
+        assignees = [_get_user_id(hass, assignee) for assignee in assignees_input if _get_user_id(hass, assignee)]
+        
+        new_template = {
+            "id": template_id, 
+            "name": call.data.get("name"), 
+            "description": call.data.get("description", ""),
+            "area": call.data.get("area", ""),
+            "complexity": call.data.get("complexity", 5),
+            "icon": call.data.get("icon", "mdi:broom"),
+            "interval": call.data.get("interval", 7),
+            "assignees": assignees,
+        }
+        
+        data.setdefault("templates", {})[template_id] = new_template
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_remove_template_by_name(call: ServiceCall):
+        """Service handle to remove a template by its name."""
+        template_name = call.data.get("template_name")
+        
+        target_template_id = next(
+            (tid for tid, t in data.get("templates", {}).items() if t["name"].lower() == template_name.lower()), 
+            None
+        )
+                
+        if not target_template_id:
+            _LOGGER.warning("Template '%s' not found for removal.", template_name)
+            return
+            
+        del data["templates"][target_template_id]
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
+    async def handle_edit_template_by_name(call: ServiceCall):
+        """Service handle to edit a template by its name."""
+        template_name = call.data.get("template_name")
+        
+        target_template_id = next(
+            (tid for tid, t in data.get("templates", {}).items() if t["name"].lower() == template_name.lower()), 
+            None
+        )
+                
+        if not target_template_id:
+            _LOGGER.warning("Template '%s' not found for editing.", template_name)
+            return
+            
+        template_ref = data["templates"][target_template_id]
+        
+        if "new_name" in call.data:
+            template_ref["name"] = call.data["new_name"]
+            
+        keys_to_update = ["description", "area", "interval", "complexity", "icon"]
+        for key in keys_to_update:
+            if key in call.data: 
+                template_ref[key] = call.data[key]
+                
+        if "assignees" in call.data:
+            assignees_input = call.data["assignees"]
+            if isinstance(assignees_input, str):
+                assignees_input = [x.strip() for x in assignees_input.split(",")]
+            template_ref["assignees"] = [_get_user_id(hass, assignee) for assignee in assignees_input if _get_user_id(hass, assignee)]
+            
+        await store.async_save(data)
+        hass.bus.async_fire(EVENT_TASK_UPDATED)
+
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_RESET_MONTHLY_POINTS, handle_manual_reset)
     hass.services.async_register(DOMAIN, SERVICE_FACTORY_RESET, handle_factory_reset)
@@ -852,6 +982,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_ADD_TASK, handle_add_task)
     hass.services.async_register(DOMAIN, SERVICE_SET_TASK_DUE_BY_NAME, handle_set_task_due_by_name)
     hass.services.async_register(DOMAIN, SERVICE_PAUSE_TASK_BY_NAME, handle_pause_task_by_name)
+    hass.services.async_register(DOMAIN, SERVICE_REMOVE_TASK_BY_NAME, handle_remove_task_by_name)
+    hass.services.async_register(DOMAIN, SERVICE_EDIT_TASK_BY_NAME, handle_edit_task_by_name)
+    hass.services.async_register(DOMAIN, SERVICE_ADD_TEMPLATE, handle_add_template)
+    hass.services.async_register(DOMAIN, SERVICE_REMOVE_TEMPLATE_BY_NAME, handle_remove_template_by_name)
+    hass.services.async_register(DOMAIN, SERVICE_EDIT_TEMPLATE_BY_NAME, handle_edit_template_by_name)
     
     # Register websocket API commands
     websocket_api.async_register_command(hass, ws_get_data)

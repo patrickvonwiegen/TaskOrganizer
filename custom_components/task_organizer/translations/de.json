@@ -88,6 +88,62 @@
         "task_name": { "name": "Aufgabenname", "description": "Der exakte Name der Aufgabe." },
         "pause_until": { "name": "Pausieren bis", "description": "Das Datum, bis zu dem die Aufgabe pausiert werden soll (z.B. '2024-12-31')." }
       }
+    },
+    "remove_task_by_name": {
+      "name": "Aufgabe entfernen",
+      "description": "Entfernt eine Aufgabe anhand ihres exakten Namens.",
+      "fields": {
+        "task_name": { "name": "Aufgabenname", "description": "Der exakte Name der Aufgabe, die entfernt werden soll." }
+      }
+    },
+    "edit_task_by_name": {
+      "name": "Aufgabe bearbeiten",
+      "description": "Bearbeitet eine bestehende Aufgabe anhand ihres exakten Namens.",
+      "fields": {
+        "task_name": { "name": "Aufgabenname", "description": "Der exakte Name der Aufgabe, die bearbeitet werden soll." },
+        "new_name": { "name": "Neuer Name (Optional)", "description": "Der neue Name für die Aufgabe." },
+        "description": { "name": "Beschreibung (Optional)", "description": "Zusätzliche Informationen." },
+        "area": { "name": "Bereich (Optional)", "description": "In welchem Raum/Bereich fällt die Aufgabe an?" },
+        "interval": { "name": "Intervall (Tage, Optional)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
+        "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
+        "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
+        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." },
+        "override_overdue_days": { "name": "Tage bis überfällig (Optional)", "description": "Überschreibt die globale Einstellung." }
+      }
+    },
+    "add_template": {
+      "name": "Vorlage anlegen",
+      "description": "Erstellt eine neue Vorlage.",
+      "fields": {
+        "name": { "name": "Name", "description": "Wie soll die Vorlage heißen?" },
+        "description": { "name": "Beschreibung (Optional)", "description": "Zusätzliche Informationen." },
+        "area": { "name": "Bereich (Optional)", "description": "In welchem Raum/Bereich fällt die Aufgabe an?" },
+        "interval": { "name": "Intervall (Tage, Optional)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
+        "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
+        "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
+        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." }
+      }
+    },
+    "remove_template_by_name": {
+      "name": "Vorlage entfernen",
+      "description": "Entfernt eine Vorlage anhand ihres exakten Namens.",
+      "fields": {
+        "template_name": { "name": "Vorlagenname", "description": "Der exakte Name der Vorlage, die entfernt werden soll." }
+      }
+    },
+    "edit_template_by_name": {
+      "name": "Vorlage bearbeiten",
+      "description": "Bearbeitet eine bestehende Vorlage anhand ihres exakten Namens.",
+      "fields": {
+        "template_name": { "name": "Vorlagenname", "description": "Der exakte Name der Vorlage, die bearbeitet werden soll." },
+        "new_name": { "name": "Neuer Name (Optional)", "description": "Der neue Name für die Vorlage." },
+        "description": { "name": "Beschreibung (Optional)", "description": "Zusätzliche Informationen." },
+        "area": { "name": "Bereich (Optional)", "description": "In welchem Raum/Bereich fällt die Aufgabe an?" },
+        "interval": { "name": "Intervall (Tage, Optional)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
+        "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
+        "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
+        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." }
+      }
     }
   }
 }

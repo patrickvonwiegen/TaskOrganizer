@@ -150,6 +150,47 @@ Pauses a task until a specific date.
 * **task_name**: The name of the task.
 * **pause_until**: The date until which the task should be paused (e.g., "2024-12-31").
 
+### `task_organizer.remove_task_by_name`
+Removes a task by its exact name.
+* **task_name**: The exact name of the task.
+
+### `task_organizer.edit_task_by_name`
+Edits an existing task by its exact name.
+* **task_name**: The exact name of the task to edit.
+* **new_name**: (Optional) The new name for the task.
+* **description**: (Optional) Additional info.
+* **area**: (Optional) The area/room where the task applies.
+* **interval**: (Optional) How often does it need to be done?
+* **complexity**: (Optional) Points (1-10).
+* **icon**: (Optional) An mdi-icon for the task.
+* **assignees**: (Optional) List of user IDs or person entities.
+* **override_overdue_days**: (Optional) Overrides the global setting.
+
+### `task_organizer.add_template`
+Creates a new template.
+* **name**: The name of the template.
+* **description**: (Optional) Additional info.
+* **area**: (Optional) The area/room where the task applies.
+* **interval**: (Optional) How often does it need to be done?
+* **complexity**: (Optional) Points (1-10).
+* **icon**: (Optional) An mdi-icon for the task.
+* **assignees**: (Optional) List of user IDs or person entities.
+
+### `task_organizer.remove_template_by_name`
+Removes a template by its exact name.
+* **template_name**: The exact name of the template.
+
+### `task_organizer.edit_template_by_name`
+Edits an existing template by its exact name.
+* **template_name**: The exact name of the template to edit.
+* **new_name**: (Optional) The new name for the template.
+* **description**: (Optional) Additional info.
+* **area**: (Optional) The area/room where the task applies.
+* **interval**: (Optional) How often does it need to be done?
+* **complexity**: (Optional) Points (1-10).
+* **icon**: (Optional) An mdi-icon for the task.
+* **assignees**: (Optional) List of user IDs or person entities.
+
 ### `task_organizer.reset_monthly_points`
 Manually resets all points to 0 and saves the current month to the history.
 
