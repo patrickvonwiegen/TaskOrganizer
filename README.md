@@ -4,12 +4,12 @@ TaskOrganizer is a integration for Home Assistant designed to manage household t
 
 <p align="center">
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
-  <img width="24% alt="image" src="https://github.com/user-attachments/assets/297ff495-9156-43d8-b5ba-f704829fddfb" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/8860eb6b-1b92-436b-bbf1-9908bde8f7ec" />
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
 </p>
 
-Currently still in testing. Suggestions for improvement or bug reports are welcome.
+Suggestions for improvement or bug reports are welcome.
 
 ## Features
 * **Task Management**: Create, edit, and delete tasks directly from your dashboard.
@@ -70,7 +70,7 @@ show_add: true           # Shows the add task button (Default true)
 ### 2. Roommate of the Month (task-organizer-leaderboard)
 Displays the winner's podium and an optional history of previous months.
 
-<img width="383" height="369" alt="image" src="https://github.com/user-attachments/assets/297ff495-9156-43d8-b5ba-f704829fddfb" />
+<img width="488" height="609" alt="image" src="https://github.com/user-attachments/assets/8860eb6b-1b92-436b-bbf1-9908bde8f7ec" />
 
 **YAML Configuration:**
 ```yaml
