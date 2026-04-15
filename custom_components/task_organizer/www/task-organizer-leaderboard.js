@@ -178,16 +178,17 @@ class TaskOrganizerLeaderboard extends HTMLElement {
         ha-card { padding: 16px; text-align: center; width: 100%; box-sizing: border-box; } 
         .header { font-size: 20px; font-weight: bold; margin-bottom: 24px; } 
         .period-text { font-size: 12px; font-weight: normal; color: var(--secondary-text-color); margin-top: 4px; } 
-        .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 8px; height: 180px; } 
-        .podium-place { display: flex; flex-direction: column; align-items: center; width: 30%; position: relative; } 
-        .name { font-size: 14px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } 
-        .points-badge { background: var(--accent-color, #ff9800); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 5px; z-index: 3; } 
-        .trophy-icon { margin-bottom: -15px; z-index: 4; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3)); } 
-        .step { width: 100%; display: flex; align-items: flex-start; justify-content: center; padding-top: 15px; font-size: 24px; font-weight: bold; color: rgba(255,255,255,0.8); border-top-left-radius: 8px; border-top-right-radius: 8px;} 
+        .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 8px; min-height: 200px; margin-top: 10px; } 
+        .podium-place { display: flex; flex-direction: column; align-items: center; width: 30%; position: relative; justify-content: flex-end; } 
+        .trophy-container { position: relative; display: flex; justify-content: center; margin-bottom: 3px; z-index: 10; }
+        .trophy-icon { filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3)); }
+        .place-number { position: absolute; top: 12px; font-size: 18px; font-weight: bold; z-index: 5; text-align: center; width: 100%; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); }
+        .step { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; gap: 4px; font-size: 14px; font-weight: bold; color: rgba(0,0,0,0.8); border-top-left-radius: 8px; border-top-right-radius: 8px; transition: height 0.5s ease;}
+        .step-label { background: rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 12px; font-size: 12px; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
         /* Colors for the podium steps: Gold, Silver, Bronze */
-        .place-1 .step { height: 100px; background: linear-gradient(to top, #FFD700, #FDB931); } 
-        .place-2 .step { height: 70px; background: linear-gradient(to top, #C0C0C0, #E0E0E0); } 
-        .place-3 .step { height: 45px; background: linear-gradient(to top, #CD7F32, #D2B48C); }
+        .place-1 .step { background: linear-gradient(to top, #FFD700, #FDB931); } 
+        .place-2 .step { background: linear-gradient(to top, #C0C0C0, #E0E0E0); } 
+        .place-3 .step { background: linear-gradient(to top, #CD7F32, #D2B48C); }
         .history-section { margin-top: 30px; border-top: 1px solid var(--divider-color); padding-top: 15px; text-align: left; }
         .history-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
@@ -237,17 +238,50 @@ class TaskOrganizerLeaderboard extends HTMLElement {
       const first = sortedUsers[0]; 
       const second = sortedUsers.length > 1 ? sortedUsers[1] : null; 
       const third = sortedUsers.length > 2 ? sortedUsers[2] : null;
+
+      let h1 = 140;
+      let h2 = 90;
+      let h3 = 42;
+      const minGap = 15;
+
+      if (first && third) {
+        const p1 = first.points;
+        const p2 = second.points;
+        const p3 = third.points;
+        h1 = 140;
+        h3 = 42;
+        const range = p1 - p3;
+        if (range > 0) {
+          let ratio = (p2 - p3) / range;
+          h2 = 42 + ratio * (140 - 42);
+        } else {
+          h2 = (140 + 42) / 2;
+        }
+        if (h2 > h1 - minGap) h2 = h1 - minGap;
+        if (h2 < h3 + minGap) h2 = h3 + minGap;
+      } else if (first && second) {
+        const p1 = first.points;
+        const p2 = second.points;
+        h1 = 140;
+        if (p1 > 0) {
+           let ratio = p2 / p1;
+           h2 = 42 + ratio * (140 - 42);
+        } else {
+           h2 = 90;
+        }
+        if (h2 > h1 - minGap) h2 = h1 - minGap;
+      }
       
       // Render the podium
       html += `<div class="podium-container">`;
       if (second) {
-        html += this.generatePodiumHTML(second, 2);
+        html += this.generatePodiumHTML(second, 2, h2);
       }
       if (first) {
-        html += this.generatePodiumHTML(first, 1);
+        html += this.generatePodiumHTML(first, 1, h1);
       }
       if (third) {
-        html += this.generatePodiumHTML(third, 3);
+        html += this.generatePodiumHTML(third, 3, h3);
       }
       html += `</div>`;
     }
@@ -296,17 +330,29 @@ class TaskOrganizerLeaderboard extends HTMLElement {
    * Generates HTML for a single podium place.
    * * @param {object} user - The user object.
    * @param {number} place - The position (1, 2, or 3).
+   * @param {number} height - The height of the podium step.
    * @returns {string} - The HTML string for the podium step.
    */
-  generatePodiumHTML(user, place) {
-    let trophyColor = place === 1 ? '#FFD700' : (place === 2 ? '#C0C0C0' : '#CD7F32'); // Gold, Silver, Bronze
+  generatePodiumHTML(user, place, height) {
+    const colors = {
+      1: { icon: '#FFD700', text: '#997A00' }, // Gold with darker text
+      2: { icon: '#C0C0C0', text: '#666666' }, // Silver with darker text
+      3: { icon: '#CD7F32', text: '#7A4214' }  // Bronze with darker text
+    };
+    const c = colors[place] || colors[3];
     const hoverText = this.localize('podium_hover', { place: place, name: user.name, points: user.points });
     return `
       <div class="podium-place place-${place}" title="${hoverText}">
-        <div class="name">${user.name.split(' ')[0]}</div>
-        <div class="points-badge">${user.points} ${this.localize('pts')}</div>
-        <ha-icon icon="mdi:trophy" class="trophy-icon" style="color: ${trophyColor}; --mdc-icon-size: 45px;"></ha-icon>
-        <div class="step">${place}</div>
+        <div class="trophy-container">
+          <ha-icon icon="mdi:trophy" class="trophy-icon" style="color: ${c.icon}; --mdc-icon-size: 55px;"></ha-icon>
+          <div class="place-number" style="color: ${c.text};">${place}</div>
+        </div>
+        <div class="step" style="height: ${height}px; position: relative; z-index: 1;">
+          <div class="step-label" style="text-align: center; white-space: normal; line-height: 1.2;">
+            ${user.name.split(' ')[0]}<br>
+            ${user.points} ${this.localize('pts')}
+          </div>
+        </div>
       </div>
     `;
   }

@@ -1,6 +1,23 @@
 ﻿﻿# Changelog
 
-## [1.2.0] - 2024-04-05
+## [1.3.0] - 2024-04-12
+### ⚠️ Breaking Changes
+- **task-organizer-card:** The `filter_by` configuration logic has been completely rewritten. It now supports multiple comma-separated filters and negations (e.g., `!due, !paused`). All applied filters are combined with a logical AND.
+- The `active`, `due_and_overdue`, `inactive`, and `unassigned` filter options have been **removed**. If you used them in your Lovelace dashboard cards, you **must update** your configuration:
+  - Replace `active` with `filter_by: "!paused"`.
+  - Replace `due_and_overdue` with `filter_by: "!done, !paused"`.
+  - Replace `inactive` with `filter_by: "paused"`.
+  - Replace `unassigned` with `filter_by: "!assigned"`.
+
+### 🚀 New Features
+- New event `task_organizer_task_created` that is fired when a new task is created
+- **task-organizer-card:** Added new `done`, `assigned`, `paused`, and `onetime` filter options.
+- Added new services: `remove_task_by_name`, `edit_task_by_name`, `add_template`, `remove_template_by_name`, and `edit_template_by_name`.
+
+### 🐛 Bug Fixes
+- Dynamic and redesigned leaderboard
+
+## [1.2.0] - 2024-04-12
 ### ⚠️ Breaking Changes
 - Sensor `task_organizer_due_tasks` transfered into new sensor `task_organizer_due_and_overdue_tasks`
 

@@ -20,6 +20,7 @@ DEFAULT_OVERDUE_DAYS = 5
 EVENT_TASK_UPDATED = "task_organizer_updated"
 EVENT_LEADERBOARD_CHANGED = "task_organizer_leaderboard_changed"
 EVENT_TASK_COMPLETED = "task_organizer_task_completed"
+EVENT_TASK_CREATED = "task_organizer_task_created"
 
 # WebSocket Command Types
 WS_TYPE_GET_DATA = "task_organizer/get_data"
@@ -45,3 +46,8 @@ SERVICE_ADD_TASK = "add_task"
 SERVICE_FACTORY_RESET = "factory_reset"
 SERVICE_SET_TASK_DUE_BY_NAME = "set_task_due_by_name"
 SERVICE_PAUSE_TASK_BY_NAME = "pause_task_by_name"
+SERVICE_REMOVE_TASK_BY_NAME = "remove_task_by_name"
+SERVICE_EDIT_TASK_BY_NAME = "edit_task_by_name"
+SERVICE_ADD_TEMPLATE = "add_template"
+SERVICE_REMOVE_TEMPLATE_BY_NAME = "remove_template_by_name"
+SERVICE_EDIT_TEMPLATE_BY_NAME = "edit_template_by_name"

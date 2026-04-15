@@ -84,6 +84,62 @@
         "task_name": { "name": "Task name", "description": "The exact name of the task." },
         "pause_until": { "name": "Pause until", "description": "The date until which the task should be paused (e.g., '2024-12-31')." }
       }
+    },
+    "remove_task_by_name": {
+      "name": "Remove task",
+      "description": "Removes a task by its exact name.",
+      "fields": {
+        "task_name": { "name": "Task name", "description": "The exact name of the task to remove." }
+      }
+    },
+    "edit_task_by_name": {
+      "name": "Edit task",
+      "description": "Edits an existing task by its exact name.",
+      "fields": {
+        "task_name": { "name": "Task name", "description": "The exact name of the task to edit." },
+        "new_name": { "name": "New Name (Optional)", "description": "The new name for the task." },
+        "description": { "name": "Description (Optional)", "description": "Additional info." },
+        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
+        "override_overdue_days": { "name": "Overdue after (Days, Optional)", "description": "Overrides the global setting." }
+      }
+    },
+    "add_template": {
+      "name": "Add template",
+      "description": "Creates a new template.",
+      "fields": {
+        "name": { "name": "Name", "description": "What should the template be called?" },
+        "description": { "name": "Description (Optional)", "description": "Additional info." },
+        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." }
+      }
+    },
+    "remove_template_by_name": {
+      "name": "Remove template",
+      "description": "Removes a template by its exact name.",
+      "fields": {
+        "template_name": { "name": "Template name", "description": "The exact name of the template to remove." }
+      }
+    },
+    "edit_template_by_name": {
+      "name": "Edit template",
+      "description": "Edits an existing template by its exact name.",
+      "fields": {
+        "template_name": { "name": "Template name", "description": "The exact name of the template to edit." },
+        "new_name": { "name": "New Name (Optional)", "description": "The new name for the template." },
+        "description": { "name": "Description (Optional)", "description": "Additional info." },
+        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." }
+      }
     }
   }
 }

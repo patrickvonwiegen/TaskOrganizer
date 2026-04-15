@@ -114,3 +114,202 @@ pause_task_by_name:
       required: true
       selector:
         date:
+
+remove_task_by_name:
+  name: Remove task
+  description: Removes a task by its exact name.
+  fields:
+    task_name:
+      name: Task name
+      description: The exact name of the task to remove.
+      required: true
+      example: "Take out the trash"
+      selector:
+        text:
+
+edit_task_by_name:
+  name: Edit task
+  description: Edits an existing task by its exact name.
+  fields:
+    task_name:
+      name: Task name
+      description: The exact name of the task to edit.
+      required: true
+      example: "Take out the trash"
+      selector:
+        text:
+    new_name:
+      name: New Name (Optional)
+      description: The new name for the task.
+      required: false
+      selector:
+        text:
+    description:
+      name: Description (Optional)
+      description: Additional info.
+      required: false
+      selector:
+        text:
+    area:
+      name: Area (Optional)
+      description: Which area does the task belong to?
+      required: false
+      selector:
+        area:
+    interval:
+      name: Interval (Days, Optional)
+      description: How often does it need to be done?
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 365
+    complexity:
+      name: Points (1-10, Optional)
+      description: How many points is it worth?
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10
+    icon:
+      name: Icon (Optional)
+      description: An mdi-icon, e.g. mdi:broom
+      required: false
+      selector:
+        icon:
+    assignees:
+      name: Assignees (Optional)
+      description: Who is responsible? (Comma separated user IDs or person.name entities).
+      required: false
+      selector:
+        text:
+    override_overdue_days:
+      name: Overdue after (Days, Optional)
+      description: Overrides the global setting.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+
+add_template:
+  name: Add template
+  description: Creates a new template.
+  fields:
+    name:
+      name: Name
+      description: What should the template be called?
+      required: true
+      selector:
+        text:
+    description:
+      name: Description (Optional)
+      description: Additional info.
+      required: false
+      selector:
+        text:
+    area:
+      name: Area (Optional)
+      description: Which area does the task belong to?
+      required: false
+      selector:
+        area:
+    interval:
+      name: Interval (Days, Optional)
+      description: How often does it need to be done?
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 365
+    complexity:
+      name: Points (1-10, Optional)
+      description: How many points is it worth?
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10
+    icon:
+      name: Icon (Optional)
+      description: An mdi-icon, e.g. mdi:broom
+      required: false
+      selector:
+        icon:
+    assignees:
+      name: Assignees (Optional)
+      description: Who is responsible? (Comma separated user IDs or person.name entities).
+      required: false
+      selector:
+        text:
+
+remove_template_by_name:
+  name: Remove template
+  description: Removes a template by its exact name.
+  fields:
+    template_name:
+      name: Template name
+      description: The exact name of the template to remove.
+      required: true
+      example: "Cleaning"
+      selector:
+        text:
+
+edit_template_by_name:
+  name: Edit template
+  description: Edits an existing template by its exact name.
+  fields:
+    template_name:
+      name: Template name
+      description: The exact name of the template to edit.
+      required: true
+      example: "Cleaning"
+      selector:
+        text:
+    new_name:
+      name: New Name (Optional)
+      description: The new name for the template.
+      required: false
+      selector:
+        text:
+    description:
+      name: Description (Optional)
+      description: Additional info.
+      required: false
+      selector:
+        text:
+    area:
+      name: Area (Optional)
+      description: Which area does the task belong to?
+      required: false
+      selector:
+        area:
+    interval:
+      name: Interval (Days, Optional)
+      description: How often does it need to be done?
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 365
+    complexity:
+      name: Points (1-10, Optional)
+      description: How many points is it worth?
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10
+    icon:
+      name: Icon (Optional)
+      description: An mdi-icon, e.g. mdi:broom
+      required: false
+      selector:
+        icon:
+    assignees:
+      name: Assignees (Optional)
+      description: Who is responsible? (Comma separated user IDs or person.name entities).
+      required: false
+      selector:
+        text:

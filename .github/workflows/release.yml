@@ -5,8 +5,6 @@ on:
     branches:
       - main
       - 'release/*'
-  schedule:
-    - cron: '0 0 * * *'
 
 jobs:
   build-and-release:
@@ -18,7 +16,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
 
       - name: Get Version
         id: get_version
@@ -47,11 +44,9 @@ jobs:
             echo "TAG=$TAG" >> $GITHUB_ENV
             echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
             echo "PRERELEASE=true" >> $GITHUB_ENV
-          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "TYPE=nightly" >> $GITHUB_ENV
-            echo "TAG=nightly-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
           else
             echo "TYPE=unknown" >> $GITHUB_ENV
+            exit 1
           fi
 
       - name: Manage Beta Release
@@ -78,23 +73,6 @@ jobs:
           echo "CHANGELOG_BODY<<EOF" >> $GITHUB_ENV
           echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
-      - name: Package Nightly
-        if: env.TYPE == 'nightly'
-        run: |
-          mkdir -p release/task_organizer
-          cp -r custom_components/task_organizer/* release/task_organizer/
-          cd release
-          zip -r ../task_organizer-${TAG}.zip .
-          cd ..
-
-      - name: Upload Nightly Artifact
-        uses: actions/upload-artifact@v4
-        if: env.TYPE == 'nightly'
-        with:
-          name: task_organizer-${{ env.TAG }}
-          path: task_organizer-${{ env.TAG }}.zip
-          retention-days: 7
 
       - name: Create Release
         if: env.TYPE == 'stable' || env.TYPE == 'beta'
