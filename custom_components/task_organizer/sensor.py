@@ -1,9 +1,10 @@
-"""Sensoren für den TaskOrganizer."""
+"""Sensors for the TaskOrganizer integration."""
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_OVERDUE_DAYS, DOMAIN, EVENT_TASK_UPDATED
 
@@ -90,7 +91,7 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
 
     def _get_due_tasks(self) -> list:
         """Helper to extract tasks that are due but not overdue."""
-        now = datetime.now().date()
+        now = dt_util.now().date()
         settings = self._data.get("settings", {})
         overdue_days = settings.get("overdue_days", DEFAULT_OVERDUE_DAYS)
 
@@ -100,11 +101,11 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
                 paused_until_str = task.get("paused_until")
                 is_paused = False
                 if paused_until_str:
-                    paused_date = datetime.fromisoformat(paused_until_str).date()
+                    paused_date = dt_util.parse_datetime(paused_until_str).date()
                     if now <= paused_date:
                         is_paused = True
 
-                due_date = datetime.fromisoformat(task["due_date"]).date()
+                due_date = dt_util.parse_datetime(task["due_date"]).date()
                 task_overdue_days = task.get("override_overdue_days")
                 if task_overdue_days is None:
                     task_overdue_days = overdue_days
@@ -138,7 +139,7 @@ class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
 
     def _get_overdue_tasks(self) -> list:
         """Helper to extract tasks that are overdue."""
-        now = datetime.now().date()
+        now = dt_util.now().date()
         settings = self._data.get("settings", {})
         overdue_days = settings.get("overdue_days", DEFAULT_OVERDUE_DAYS)
 
@@ -148,11 +149,11 @@ class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
                 paused_until_str = task.get("paused_until")
                 is_paused = False
                 if paused_until_str:
-                    paused_date = datetime.fromisoformat(paused_until_str).date()
+                    paused_date = dt_util.parse_datetime(paused_until_str).date()
                     if now <= paused_date:
                         is_paused = True
 
-                due_date = datetime.fromisoformat(task["due_date"]).date()
+                due_date = dt_util.parse_datetime(task["due_date"]).date()
                 task_overdue_days = task.get("override_overdue_days")
                 if task_overdue_days is None:
                     task_overdue_days = overdue_days
@@ -185,18 +186,18 @@ class TaskOrganizerDueAndOverdueTasksSensor(TaskOrganizerBaseSensor):
 
     def _get_due_and_overdue_tasks(self) -> list:
         """Helper to extract tasks that are due today or earlier."""
-        now = datetime.now().date()
+        now = dt_util.now().date()
         due_tasks = []
         for task in self._data.get("tasks", {}).values():
             if task.get("due_date"):
                 paused_until_str = task.get("paused_until")
                 is_paused = False
                 if paused_until_str:
-                    paused_date = datetime.fromisoformat(paused_until_str).date()
+                    paused_date = dt_util.parse_datetime(paused_until_str).date()
                     if now <= paused_date:
                         is_paused = True
 
-                due_date = datetime.fromisoformat(task["due_date"]).date()
+                due_date = dt_util.parse_datetime(task["due_date"]).date()
                 if not is_paused and due_date <= now:
                     due_tasks.append(task)
         return due_tasks

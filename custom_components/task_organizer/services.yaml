@@ -84,6 +84,12 @@ add_task:
         number:
           min: 0
           max: 9999
+    subtasks:
+      name: Subtasks (Optional)
+      description: A list of subtasks (objects with 'title' and 'done' keys).
+      required: false
+      selector:
+        object:
 
 set_task_due_by_name:
   name: Set task due
@@ -192,6 +198,12 @@ edit_task_by_name:
         number:
           min: 0
           max: 9999
+    subtasks:
+      name: Subtasks (Optional)
+      description: A list of subtasks.
+      required: false
+      selector:
+        object:
 
 add_template:
   name: Add template
@@ -243,6 +255,12 @@ add_template:
       required: false
       selector:
         text:
+    subtasks:
+      name: Subtasks (Optional)
+      description: A list of subtasks for this template.
+      required: false
+      selector:
+        object:
 
 remove_template_by_name:
   name: Remove template
@@ -273,6 +291,12 @@ edit_template_by_name:
       required: false
       selector:
         text:
+    subtasks:
+      name: Subtasks (Optional)
+      description: The new list of subtasks.
+      required: false
+      selector:
+        object:
     description:
       name: Description (Optional)
       description: Additional info.

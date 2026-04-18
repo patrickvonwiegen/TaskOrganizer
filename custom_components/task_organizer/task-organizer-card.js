@@ -326,7 +326,7 @@ class TaskOrganizerCard extends HTMLElement {
     const headerId = "toggle-" + id.replace("-content", "");
     const icon = this.shadowRoot.querySelector(`#${headerId} ha-icon`);
     
-    // Prüfe den aktuellen Zustand (inline oder via CSS)
+    // Check the current state (inline or via CSS)
     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
     
     if (isHidden) {
@@ -366,7 +366,7 @@ class TaskOrganizerCard extends HTMLElement {
     const task = this.tasks[taskId];
     if (!task) return;
 
-    // Wenn Unteraufgaben vorhanden sind, öffne den neuen Teildialog
+    // If subtasks are present, open the completion sub-dialog
     if (task.subtasks && task.subtasks.length > 0) {
         this._openSubtaskCompletionModal(taskId);
     } else {
@@ -471,14 +471,14 @@ class TaskOrganizerCard extends HTMLElement {
     const task = this.tasks[this._currentTaskId];
     const updatedSubtasks = this._completionSubtasks.map(st => ({ ...st, done: true }));
 
-    // Erst alle Unteraufgaben auf erledigt setzen
+    // First set all subtasks to completed
     await this._hass.callWS({
         type: 'task_organizer/edit_task',
         task_id: this._currentTaskId,
         subtasks: updatedSubtasks
     });
 
-    // Dann direkt zum Abschluss-Workflow (ohne weitere Abfrage der Unteraufgaben)
+    // Then proceed directly to the completion workflow (without further subtask queries)
     this._closeSubtaskCompletionModal();
     this._proceedToAssigneeCheck(task.id);
   }
@@ -829,6 +829,7 @@ class TaskOrganizerCard extends HTMLElement {
         this._closeModal(); 
         this._fetchData(); 
         if (shouldComplete) {
+            // Use the existing task ID or find the new one in the state
             const finalTaskId = this._editingTaskId || 
                                Object.values(this.tasks).find(t => t.name === payload.name)?.id;
             

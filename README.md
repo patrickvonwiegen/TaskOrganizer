@@ -14,6 +14,7 @@ Suggestions for improvement or bug reports are welcome.
 ## Features
 * **Task Management**: Create, edit, and delete tasks directly from your dashboard.
 * **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
+* **Subtasks**: Break down complex tasks into smaller sub-steps. Includes a progress indicator (%) and a dedicated completion dialog.
 * **One-time & Recurring Tasks**: Supports both recurring tasks with an interval and one-time tasks that are deleted upon completion.
 * **Task Templates**: Create and manage templates to quickly add frequently used tasks.
 * **Points System**: Each task has a complexity level (1-10); points are shared fairly among all participants upon completion.
@@ -106,13 +107,13 @@ The integration provides the following sensors:
 
 | Sensor | Description |
 | :--- | :--- |
-| `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list is available as JSON in the attributes. |
+| `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list (including subtasks) is available as JSON in the attributes. |
 | `sensor.task_organizer_due_tasks` | Displays the number of tasks that are due but not yet overdue. |
 | `sensor.task_organizer_overdue_tasks` | Displays the number of overdue tasks. |
 | `sensor.task_organizer_due_and_overdue_tasks` | Displays the combined number of due and overdue tasks. |
 | `sensor.task_organizer_points` | Shows the current point standings for all users. Perfect for custom visualizations. |
 | `sensor.task_organizer_leaderboard` | Displays the name of the roommate currently in the lead. |
-| `sensor.task_organizer_templates` | Displays the number of available templates. The full template list is available as JSON in the attributes. |
+| `sensor.task_organizer_templates` | Displays the number of available templates. The full template list (including subtasks) is available as JSON in the attributes. |
 | `sensor.task_organizer_settings` | Provides the current configuration (colors, overdue thresholds). |
 
 ## Buttons
@@ -135,6 +136,7 @@ Creates a new recurring or one-time task, optionally from a template.
 * **icon**: (Optional) An mdi-icon for the task (e.g., `mdi:broom`).
 * **assignees**: (Optional) List of user IDs or person entities.
 * **override_overdue_days**: (Optional) Overrides the global setting for the number of days after which this task is considered overdue.
+* **subtasks**: (Optional) A list of subtasks (objects with 'title' and 'done' keys).
 
 ### `task_organizer.complete_task_by_name`
 Marks a task as completed by its exact name.
@@ -165,6 +167,7 @@ Edits an existing task by its exact name.
 * **icon**: (Optional) An mdi-icon for the task.
 * **assignees**: (Optional) List of user IDs or person entities.
 * **override_overdue_days**: (Optional) Overrides the global setting.
+* **subtasks**: (Optional) The updated list of subtasks.
 
 ### `task_organizer.add_template`
 Creates a new template.
@@ -175,6 +178,7 @@ Creates a new template.
 * **complexity**: (Optional) Points (1-10).
 * **icon**: (Optional) An mdi-icon for the task.
 * **assignees**: (Optional) List of user IDs or person entities.
+* **subtasks**: (Optional) A list of subtasks for this template.
 
 ### `task_organizer.remove_template_by_name`
 Removes a template by its exact name.
@@ -190,6 +194,7 @@ Edits an existing template by its exact name.
 * **complexity**: (Optional) Points (1-10).
 * **icon**: (Optional) An mdi-icon for the task.
 * **assignees**: (Optional) List of user IDs or person entities.
+* **subtasks**: (Optional) The updated list of subtasks.
 
 ### `task_organizer.reset_monthly_points`
 Manually resets all points to 0 and saves the current month to the history.
@@ -276,6 +281,7 @@ This event is fired whenever a new task is created. It is useful for notifying r
 - **due_date**: The initial due date of the task.
 - **paused_until**: Date until the task is paused (if applicable).
 - **override_overdue_days**: Custom overdue threshold for the task (if applicable).
+- **subtasks**: A list of subtasks for the task.
 
 #### Example Automation:
 Send a notification when a new high-complexity task is created.

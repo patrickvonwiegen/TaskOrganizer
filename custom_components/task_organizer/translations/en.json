@@ -67,7 +67,8 @@
         "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
         "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
         "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
-        "override_overdue_days": { "name": "Days until overdue (optional)", "description": "Overrides the global setting for the number of days after which this task is considered overdue." }
+        "override_overdue_days": { "name": "Days until overdue (optional)", "description": "Overrides the global setting for the number of days after which this task is considered overdue." },
+        "subtasks": { "name": "Subtasks (Optional)", "description": "A list of subtasks." }
       }
     },
     "set_task_due_by_name": {
@@ -104,7 +105,8 @@
         "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
         "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
         "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
-        "override_overdue_days": { "name": "Overdue after (Days, Optional)", "description": "Overrides the global setting." }
+        "override_overdue_days": { "name": "Overdue after (Days, Optional)", "description": "Overrides the global setting." },
+        "subtasks": { "name": "Subtasks (Optional)", "description": "The updated list of subtasks." }
       }
     },
     "add_template": {
@@ -117,7 +119,8 @@
         "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
         "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
         "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
-        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." }
+        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
+        "subtasks": { "name": "Subtasks (Optional)", "description": "Subtasks for this template." }
       }
     },
     "remove_template_by_name": {
@@ -138,7 +141,8 @@
         "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
         "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
         "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
-        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." }
+        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
+        "subtasks": { "name": "Subtasks (Optional)", "description": "The updated list of subtasks." }
       }
     }
   }

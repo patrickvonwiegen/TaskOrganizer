@@ -29,7 +29,7 @@ Please adhere to the following rules for every request:
 
 3.  **Update Documentation**: For every functional change or new feature, update the following files accordingly:
     *   **`README.md`**: Add or modify the description of features, sensors, services, events, or card configurations.
-    *   **`CHANGELOG.md`**: Add a new entry under the appropriate version and category (`🚀 New Features`, `🐛 Bug Fixes`, `⚠️ Breaking Changes`).
+    *   **`CHANGELOG.md`**: Add a new version entry if not exists and category (`🚀 New Features`, `🐛 Bug Fixes`, `⚠️ Breaking Changes`).
 
 4.  **Versioning Logic**: Follow the `Major.Minor.Bugfix` semantic versioning scheme:
     *   **Major (e.g., 2.0.0)**: For incompatible API changes.
