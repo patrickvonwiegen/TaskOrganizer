@@ -4,6 +4,7 @@
 ### 🚀 New Features
 - **Subtasks:** Tasks can now have subtasks. Added progress indicators, hover-text, and backend support for all relevant services and websocket commands.
 - **UI Improvements:** Added a one-time task and subtask indicator icon next to the task name.
+- **Area Filtering:** The `task-organizer-card` now supports filtering by area IDs using the `room:` prefix (e.g., `filter_by: "room:kitchen"`). Area filters also support negation (e.g., `!room:kitchen`).
 
 ### 🐛 Bug Fixes
 - **Timestamps:** Fixed an issue where task completion timestamps in the history were stored as naive datetimes, causing an offset in the UI.

@@ -1283,7 +1283,11 @@ class TaskOrganizerCard extends HTMLElement {
             else if (filterName === 'overdue') match = isOverdue;
             else if (filterName === 'paused') match = isPausedFilter;
             else if (filterName === 'onetime') match = isOnetime;
-            else match = true; // unknown filter, ignore
+            else if (filterName.startsWith('room:')) {
+                // Extract area_id after 'room:' prefix
+                const targetArea = filterName.substring(5);
+                match = (task.area === targetArea);
+            } else match = true; // unknown filter, ignore
 
             if (negate) match = !match;
 

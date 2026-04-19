@@ -72,6 +72,7 @@ show_add: true           # Shows the add task button (Default true)
 - `overdue`: Tasks that have exceeded their overdue threshold.
 - `paused`: Tasks that are currently paused until a specific date. You can use `!paused` to only show active tasks.
 - `onetime`: Tasks that do not repeat.
+- `room:[area_id]`: Tasks assigned to a specific area (e.g., `room:kitchen`, `room:living_room`).
 
 #### Filter Examples:
 - `filter_by: "current_user, due"` (Only my due tasks)
@@ -81,6 +82,7 @@ show_add: true           # Shows the add task button (Default true)
 - `filter_by: "!assigned, !done"` (All unassigned tasks that are due or overdue)
 - `filter_by: "!done, !paused"` (All active tasks that are due or overdue)
 - `filter_by: "onetime, !done"` (All pending one-time tasks)
+- `filter_by: "room:kitchen, overdue"` (All overdue tasks in the kitchen)
 
 ### 2. Roommate of the Month (task-organizer-leaderboard)
 Displays the winner's podium and an optional history of previous months.
