@@ -25,7 +25,19 @@ const I18N_CARD = {
     complete_subtasks_desc: "Complete some subtasks now or finish the main task completely.",
     prev: "Previous", next: "Next", page: "Page", 
     search_placeholder: "Search tasks...",
-    all_done: "All done",
+    all_done: "All done", 
+    height_lbl: "Height", width_lbl: "Width", title_lbl: "Title",
+    items_per_page_lbl: "Items per Page",
+    show_search_lbl: "Show Search",
+    show_add_lbl: "Show Add Button",
+    show_edit_lbl: "Show Edit Button",
+    show_delete_lbl: "Show Delete Button",
+    sort_by_lbl: "Sort By",
+    sort_by_placeholder: "due_date, points, assignee, alphabet",
+    sort_order_lbl: "Sort Order",
+    sort_order_placeholder: "default, asc, desc",
+    filter_by_lbl: "Filter By",
+    filter_by_placeholder: "comma separated, e.g. !paused, due",
     search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
   },
   de: { 
@@ -49,7 +61,19 @@ const I18N_CARD = {
     complete_subtasks_desc: "Schließen Sie jetzt einige Unteraufgaben ab oder schließen Sie die Aufgabe komplett ab.",
     prev: "Zurück", next: "Weiter", page: "Seite", 
     search_placeholder: "Aufgaben suchen...",
-    all_done: "Alles erledigen",
+    all_done: "Alles erledigen", 
+    height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel",
+    items_per_page_lbl: "Einträge pro Seite",
+    show_search_lbl: "Suche anzeigen",
+    show_add_lbl: "Hinzufügen-Button anzeigen",
+    show_edit_lbl: "Bearbeiten-Button anzeigen",
+    show_delete_lbl: "Löschen-Button anzeigen",
+    sort_by_lbl: "Sortieren nach",
+    sort_by_placeholder: "due_date, points, assignee, alphabet",
+    sort_order_lbl: "Sortierreihenfolge",
+    sort_order_placeholder: "default, asc, desc",
+    filter_by_lbl: "Filtern nach",
+    filter_by_placeholder: "Kommagetrennt, z.B. !paused, due",
     search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
   }
 };
@@ -149,10 +173,33 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
+   * Normalizes a string for comparison (lowercase and replaces German umlauts).
+   * @param {string} str - The string to normalize.
+   * @returns {string} - The normalized string.
+   */
+  _normalize(str) {
+    if (str === null || str === undefined) return "";
+    return str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss');
+  }
+
+  /**
+   * Returns the editor element for GUI configuration.
+   * @returns {HTMLElement}
+   */
+  static getConfigElement() {
+    return document.createElement("task-organizer-card-editor");
+  }
+
+  /**
    * Sets the configuration from Home Assistant.
    * @param {object} config - The card configuration.
    */
   setConfig(config) { 
+      if (!config) throw new Error("Invalid configuration");
       this._config = config; 
       this._skeletonBuilt = false; 
       if (this._hass) this._render();
@@ -848,10 +895,13 @@ class TaskOrganizerCard extends HTMLElement {
    * @returns {string} - The CSS style string.
    */
   _getStyles() {
+      const height = this._config.card_height || '100%';
+      const width = this._config.card_width || '100%';
+
       return `
         <style>
-          :host { display: block; width: 100%; height: 100%; } 
-          ha-card { width: 100%; height: 100%; padding: 16px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; position: relative; } 
+          :host { display: block; width: ${width}; margin: 0 auto; } 
+          ha-card { width: 100%; height: ${height}; padding: 16px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; position: relative; min-height: 100px; } 
           
           .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } 
           .header span { font-size: 20px; font-weight: bold; color: var(--primary-text-color); } 
@@ -1284,9 +1334,9 @@ class TaskOrganizerCard extends HTMLElement {
             else if (filterName === 'paused') match = isPausedFilter;
             else if (filterName === 'onetime') match = isOnetime;
             else if (filterName.startsWith('room:')) {
-                // Extract area_id after 'room:' prefix
-                const targetArea = filterName.substring(5);
-                match = (task.area === targetArea);
+                // Normalize both target area from filter and task area for reliable matching
+                const targetArea = this._normalize(filterName.substring(5));
+                match = (this._normalize(task.area) === targetArea);
             } else match = true; // unknown filter, ignore
 
             if (negate) match = !match;
@@ -1438,4 +1488,121 @@ class TaskOrganizerCard extends HTMLElement {
     wrapper.innerHTML = html;
   }
 }
+
+/**
+ * Editor for the TaskOrganizerCard.
+ */
+class TaskOrganizerCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  /**
+   * Translates a key using the static helper of the card.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  localize(key) {
+    return TaskOrganizerCard._localize(this._hass, key);
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (this._rendered) {
+        this._updateUI();
+        return;
+    }
+    this.innerHTML = `
+      <div class="card-config">
+        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <div style="display: flex; gap: 8px;">
+          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
+          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+        </div>
+        <ha-textfield label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-textfield>
+        
+        <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px;">
+          <ha-formfield label="${this.localize('show_search_lbl')}">
+            <ha-checkbox ${this._config.show_search !== false ? 'checked' : ''} configValue="show_search"></ha-checkbox>
+          </ha-formfield>
+          <ha-formfield label="${this.localize('show_add_lbl')}">
+            <ha-checkbox ${this._config.show_add !== false ? 'checked' : ''} configValue="show_add"></ha-checkbox>
+          </ha-formfield>
+          <ha-formfield label="${this.localize('show_edit_lbl')}">
+            <ha-checkbox ${this._config.show_edit !== false ? 'checked' : ''} configValue="show_edit"></ha-checkbox>
+          </ha-formfield>
+          <ha-formfield label="${this.localize('show_delete_lbl')}">
+            <ha-checkbox ${this._config.show_delete !== false ? 'checked' : ''} configValue="show_delete"></ha-checkbox>
+          </ha-formfield>
+        </div>
+
+        <ha-textfield label="${this.localize('sort_by_lbl')}" placeholder="${this.localize('sort_by_placeholder')}" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+        <ha-textfield label="${this.localize('sort_order_lbl')}" placeholder="${this.localize('sort_order_placeholder')}" value="${this._config.sort_order || 'default'}" configValue="sort_order" style="width: 100%; margin-top: 8px;"></ha-textfield>
+        <ha-textfield label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || ''}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+      </div>
+      <style>
+        .card-config ha-textfield, .card-config ha-select {
+          display: block;
+          margin-bottom: 8px;
+        }
+        ha-formfield {
+          display: flex;
+          align-items: center;
+        }
+      </style>
+    `;
+
+    this._rendered = true;
+    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
+    this._updateUI();
+  }
+
+  /**
+   * Updates the UI elements with current config values without re-rendering the whole HTML.
+   */
+  _updateUI() {
+    if (!this._rendered) return;
+    this.querySelectorAll('[configValue]').forEach(el => {
+        const key = el.getAttribute('configValue');
+        const value = this._config[key];
+        if (el.tagName === 'HA-CHECKBOX') {
+            el.checked = value !== false;
+        } else if (value !== undefined) {
+            el.value = value;
+        }
+    });
+  }
+
+  _valueChanged(ev) {
+    if (!this._config || !this._hass) return;
+    ev.stopPropagation();
+    const target = ev.target;
+    const configValue = target.configValue || target.getAttribute('configValue');
+    let newValue = (target.value !== undefined) ? target.value : target.getAttribute('value');
+
+    if (target.tagName === 'HA-CHECKBOX') {
+      newValue = target.checked;
+    } else if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
+      newValue = newValue === "" ? undefined : parseInt(newValue);
+    }
+
+    if (this._config[configValue] === newValue) return;
+
+    const event = new CustomEvent("config-changed", {
+      detail: { config: { ...this._config, [configValue]: newValue } },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
+customElements.define('task-organizer-card-editor', TaskOrganizerCardEditor);
 customElements.define('task-organizer-card', TaskOrganizerCard);

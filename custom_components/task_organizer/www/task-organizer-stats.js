@@ -11,7 +11,12 @@ const I18N_STATS = {
     prev: "Previous", next: "Next", page: "Page",
     edit_hover: "Edit entry",
     delete_hover: "Delete entry",
-    entry_saved: "Entry saved!",
+    entry_saved: "Entry saved!", 
+    height_lbl: "Height", width_lbl: "Width",
+    title_lbl: "Title",
+    items_per_page_lbl: "Items per Page",
+    filter_by_lbl: "Filter By",
+    filter_by_placeholder: "all, mine",
     entry_deleted: "Entry deleted!"
   },
   de: { 
@@ -21,7 +26,12 @@ const I18N_STATS = {
     prev: "Zurück", next: "Weiter", page: "Seite",
     edit_hover: "Eintrag bearbeiten",
     delete_hover: "Eintrag löschen",
-    entry_saved: "Eintrag gespeichert!",
+    entry_saved: "Eintrag gespeichert!", 
+    height_lbl: "Höhe", width_lbl: "Breite",
+    title_lbl: "Titel",
+    items_per_page_lbl: "Einträge pro Seite",
+    filter_by_lbl: "Filtern nach",
+    filter_by_placeholder: "all, mine",
     entry_deleted: "Eintrag gelöscht!"
   }
 };
@@ -99,11 +109,21 @@ class TaskOrganizerStats extends HTMLElement {
   }
 
   /**
+   * Returns the editor element for GUI configuration.
+   * @returns {HTMLElement}
+   */
+  static getConfigElement() {
+    return document.createElement("task-organizer-stats-editor");
+  }
+
+  /**
    * Sets the configuration from Home Assistant.
    * * @param {object} config - The card configuration.
    */
   setConfig(config) { 
+    if (!config) throw new Error("Invalid configuration");
     this.config = config; 
+    if (this._hass) this.render();
   }
 
   connectedCallback() { 
@@ -292,11 +312,14 @@ class TaskOrganizerStats extends HTMLElement {
   }
 
   _getStyles() {
+    const height = this.config.card_height || '100%';
+    const width = this.config.card_width || '100%';
+
     return `
       <style> 
-        :host { display: block; width: 100%; height: 100%; } 
+        :host { display: block; width: ${width}; margin: 0 auto; } 
         * { box-sizing: border-box; } 
-        ha-card { padding: 16px; display: flex; flex-direction: column; width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;} 
+        ha-card { padding: 16px; display: flex; flex-direction: column; width: 100%; height: ${height}; overflow-x: hidden; overflow-y: auto; min-height: 100px;} 
         
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header { font-size: 20px; font-weight: bold; color: var(--primary-text-color); } 
@@ -433,4 +456,88 @@ class TaskOrganizerStats extends HTMLElement {
   }
 }
 
+/**
+ * Editor for TaskOrganizerStats.
+ */
+class TaskOrganizerStatsEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  /**
+   * Translates a key using the static helper of the card.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  localize(key) {
+    return TaskOrganizerStats._localize(this._hass, key);
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (this._rendered) {
+        this._updateUI();
+        return;
+    }
+    this.innerHTML = `
+      <div class="card-config">
+        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <div style="display: flex; gap: 8px;">
+          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
+          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+        </div>
+        <ha-textfield label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-textfield>
+        <ha-textfield label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || 'all'}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+      </div>
+      <style>
+        .card-config ha-textfield {
+          display: block;
+          margin-bottom: 8px;
+        }
+      </style>
+    `;
+
+    this._rendered = true;
+    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this._updateUI();
+  }
+
+  _updateUI() {
+    if (!this._rendered) return;
+    this.querySelectorAll('[configValue]').forEach(el => {
+        const key = el.getAttribute('configValue');
+        const value = this._config[key];
+        if (value !== undefined) el.value = value;
+    });
+  }
+
+  _valueChanged(ev) {
+    if (!this._config || !this._hass) return;
+    ev.stopPropagation();
+    const target = ev.target;
+    const configValue = target.configValue || target.getAttribute('configValue');
+    let newValue = target.value !== undefined ? target.value : target.getAttribute('value');
+
+    if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number')) {
+      newValue = newValue === "" ? undefined : parseInt(newValue);
+    }
+
+    if (this._config[configValue] === newValue) return;
+
+    const event = new CustomEvent("config-changed", {
+      detail: { config: { ...this._config, [configValue]: newValue } },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
+customElements.define('task-organizer-stats-editor', TaskOrganizerStatsEditor);
 customElements.define('task-organizer-stats', TaskOrganizerStats);

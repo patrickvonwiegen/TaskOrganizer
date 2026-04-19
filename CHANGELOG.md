@@ -1,5 +1,9 @@
 ﻿﻿# Changelog
 
+## [1.5.0] - 2024-04-19
+### 🚀 New Features
+- **GUI Configuration Editor:** All Lovelace cards now support the Home Assistant Visual Editor. Parameters can be adjusted via the UI without manual YAML editing.
+
 ## [1.4.0] - 2024-04-16
 ### 🚀 New Features
 - **Subtasks:** Tasks can now have subtasks. Added progress indicators, hover-text, and backend support for all relevant services and websocket commands.

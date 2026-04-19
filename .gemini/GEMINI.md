@@ -12,6 +12,10 @@ TaskOrganizer is a custom integration for Home Assistant that allows users to ma
     *   `__init__.py`: The core of the integration. It sets up services, websockets, and coordinates data management.
     *   `sensor.py`, `button.py`: Platform setup for entities.
     *   `const.py`: Contains all constants like domain, event names, service names, and websocket types.
+*   **Lovelace Cards (GUI Support)**: 
+    * All cards include a `getConfigElement()` method and an associated Editor class (e.g., `TaskOrganizerCardEditor`).
+    * GUI editors support configuration of title, filters, sorting, and layout (width/height).
+    * Visibility can be restricted via `show_...` parameters in the GUI.
     *   `translations/`: Contains JSON files for internationalization (i18n) of entity names, services, and config flows. `en.json` and `de.json` are the primary languages.
     *   `www/`: Contains the JavaScript files for the frontend Lovelace cards. Each card is a self-contained web component.
 *   `README.md`: The main documentation for the project. It should be updated with any new features, services, or configuration options.
@@ -29,7 +33,7 @@ Please adhere to the following rules for every request:
 
 3.  **Update Documentation**: For every functional change or new feature, update the following files accordingly:
     *   **`README.md`**: Add or modify the description of features, sensors, services, events, or card configurations.
-    *   **`CHANGELOG.md`**: Add a new version entry if not exists and category (`🚀 New Features`, `🐛 Bug Fixes`, `⚠️ Breaking Changes`).
+    *   **`CHANGELOG.md`**: Use the current version of manifest.json and category (`🚀 New Features`, `🐛 Bug Fixes`, `⚠️ Breaking Changes`).
 
 4.  **Versioning Logic**: Follow the `Major.Minor.Bugfix` semantic versioning scheme:
     *   **Major (e.g., 2.0.0)**: For incompatible API changes.
