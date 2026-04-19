@@ -28,7 +28,8 @@ const I18N_SETTINGS = {
     desc_lbl: "Description (optional)", area_lbl: "Area", points_lbl: "Points (1-10)", icon_lbl: "Icon",
     interval_lbl: "Days (Interval)", assignees_lbl: "Assignees",
     cancel: "Cancel", save: "Save",
-    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points"
+    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points",
+    no_desc: "No description", onetime: "One-time"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
@@ -54,7 +55,8 @@ const I18N_SETTINGS = {
     desc_lbl: "Beschreibung (optional)", area_lbl: "Bereich", points_lbl: "Punkte (1-10)", icon_lbl: "Icon",
     interval_lbl: "Tage (Intervall)", assignees_lbl: "Bearbeiter",
     cancel: "Abbrechen", save: "Speichern",
-    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie"
+    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie",
+    no_desc: "Keine Beschreibung", onetime: "Einmalig"
   }
 };
 
@@ -605,7 +607,8 @@ class TaskOrganizerSettings extends HTMLElement {
         .template-card { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); }
         .template-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
         .template-text { flex: 1; min-width: 0; }
-        .template-name { font-weight: bold; font-size: 15px; }
+        .template-name { font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 4px; cursor: help; overflow: hidden; }
+        .template-name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .template-meta { font-size: 12px; color: var(--secondary-text-color); }
         .template-actions { display: flex; gap: 0; align-items: center; }
         .templates-desc { font-size: 14px; color: var(--secondary-text-color); margin: 0; }
@@ -713,14 +716,26 @@ class TaskOrganizerSettings extends HTMLElement {
             </button>
           </div>
           <div id="template-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-            ${Object.values(this.templates).length > 0 ? Object.values(this.templates).map(t => `
+            ${Object.values(this.templates).length > 0 ? Object.values(this.templates).map(t => {
+              const descTooltip = t.description ? t.description.replace(/"/g, '&quot;') : "";
+              let subtaskTooltip = "";
+              if (t.subtasks && t.subtasks.length > 0) {
+                  const subtaskList = t.subtasks.map(st => `${st.done ? '✓' : '○'} ${st.title}`).join('&#10;');
+                  subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
+              }
+              return `
               <div class="template-card">
                 <div class="template-info">
                   <ha-icon icon="${t.icon || 'mdi:label-outline'}"></ha-icon>
                   <div class="template-text">
                     <div class="template-name">
-                        ${t.name}
-                        ${t.subtasks?.length > 0 ? `<ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; opacity: 0.6; margin-left: 4px;"></ha-icon>` : ''}
+                        <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${t.name}</span>
+                        ${t.subtasks?.length > 0 ? `
+                            <ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; opacity: 0.7; flex-shrink: 0;" title="${subtaskTooltip}"></ha-icon>
+                        ` : ''}
+                        ${t.interval === 0 ? `
+                            <ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; opacity: 0.7; flex-shrink: 0;" title="${this.localize('onetime')}"></ha-icon>
+                        ` : ''}
                     </div>
                     <div class="template-meta">${t.area || ''}</div>
                   </div>
@@ -730,7 +745,7 @@ class TaskOrganizerSettings extends HTMLElement {
                   <button class="action-btn btn-delete-template" data-id="${t.id}" title="${this.localize('delete_template_hover')}"><ha-icon icon="mdi:delete"></ha-icon></button>
                 </div>
               </div>
-            `).join('') : `<div class="no-templates-msg">${this.localize('no_templates')}</div>`}
+            `}).join('') : `<div class="no-templates-msg">${this.localize('no_templates')}</div>`}
           </div>
         </div>
 

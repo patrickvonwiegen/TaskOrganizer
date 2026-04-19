@@ -880,7 +880,7 @@ class TaskOrganizerCard extends HTMLElement {
           .task-meta { font-size: 12px; color: var(--secondary-text-color); margin-top: 2px; } 
           
           .assignees-icons { display: flex; margin-top: 6px; gap: 4px; } 
-          .mini-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--secondary-text-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-transform: uppercase; box-shadow: 0 1px 3px rgba(0,0,0,0.2); } 
+          .mini-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--secondary-text-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-transform: uppercase; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: help; } 
           
           .actions { display: flex; gap: 4px; flex-shrink: 0; } 
           .action-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; color: var(--secondary-text-color); transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
@@ -1396,7 +1396,7 @@ class TaskOrganizerCard extends HTMLElement {
           subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
       }
 
-      const descriptionTooltip = (task.description ? task.description.replace(/"/g, '&quot;') : this.localize('no_desc'));
+      const descTooltip = task.description ? task.description.replace(/"/g, '&quot;') : "";
       let itemStyle = `--status-color: ${borderColor};`;
       if (isPaused) itemStyle += ` opacity: 0.6; filter: grayscale(0.8);`;
 
@@ -1406,7 +1406,7 @@ class TaskOrganizerCard extends HTMLElement {
                 <ha-icon icon="${task.icon || 'mdi:broom'}" style="flex-shrink: 0;"></ha-icon>
                 <div class="task-text">
                     <div class="task-title">
-                        <span title="${descriptionTooltip}">${task.name}</span>
+                        <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${task.name}</span>
                         ${task.subtasks?.length > 0 ? `<ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${subtaskTooltip}"></ha-icon>` : ''}
                         ${task.interval === 0 ? `<ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${this.localize('onetime')}"></ha-icon>` : ''}
                     </div>

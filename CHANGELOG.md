@@ -9,6 +9,7 @@
 ### 🐛 Bug Fixes
 - **Timestamps:** Fixed an issue where task completion timestamps in the history were stored as naive datetimes, causing an offset in the UI.
 - **Sensors:** Updated due/overdue calculation to use Home Assistant's local time utilities for consistent task tracking.
+- **Task-Card:** Changed cursor to help (question mark) when hovering over assignees for better UX.
 
 ## [1.3.0] - 2024-04-12
 ### ⚠️ Breaking Changes
