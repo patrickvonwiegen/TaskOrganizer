@@ -1284,9 +1284,13 @@ class TaskOrganizerCard extends HTMLElement {
             else if (filterName === 'paused') match = isPausedFilter;
             else if (filterName === 'onetime') match = isOnetime;
             else if (filterName.startsWith('room:')) {
-                // Extract area_id after 'room:' prefix
-                const targetArea = filterName.substring(5);
-                match = (task.area === targetArea);
+                const targetArea = filterName.substring(5).toLowerCase();
+                const areaId = (task.area || "").toLowerCase();
+                let areaDisplayName = "";
+                if (task.area && this._hass.areas && this._hass.areas[task.area]) {
+                    areaDisplayName = (this._hass.areas[task.area].name || "").toLowerCase();
+                }
+                match = (areaId === targetArea || areaDisplayName === targetArea);
             } else match = true; // unknown filter, ignore
 
             if (negate) match = !match;
