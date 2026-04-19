@@ -25,6 +25,20 @@ Suggestions for improvement or bug reports are welcome.
 * **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates.
 
+## Installation
+### Option 1: HACS (Recommended)
+- Add this repository to HACS.
+- Search for "TaskOrganizer" under "Integrations".
+- Install the integration.
+- Restart Home Assistant.
+### Option 2: Manual
+- Open the directory for your HA configuration (where you find configuration.yaml).
+- If you do not have a custom_components directory (folder) there, you need to create it.
+- In the custom_components directory create a new folder called task_organizer.
+- Download all the files from the custom_components/task_organizer/ directory in this repository.
+- Place the files you downloaded in the new directory (folder) you created.
+- Restart Home Assistant.
+  
 ## Dashboard Cards
 The integration includes four specialized cards for the Lovelace dashboard.
 
