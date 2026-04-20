@@ -71,7 +71,8 @@
         "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
         "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
         "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." },
-        "override_overdue_days": { "name": "Tage bis überfällig (optional)", "description": "Überschreibt die globale Einstellung für die Anzahl der Tage, nach denen diese Aufgabe als überfällig gilt." }
+        "override_overdue_days": { "name": "Tage bis überfällig (optional)", "description": "Überschreibt die globale Einstellung für die Anzahl der Tage, nach denen diese Aufgabe als überfällig gilt." },
+        "subtasks": { "name": "Unteraufgaben (Optional)", "description": "Eine Liste von Unteraufgaben." }
       }
     },
     "set_task_due_by_name": {
@@ -108,7 +109,8 @@
         "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
         "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
         "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." },
-        "override_overdue_days": { "name": "Tage bis überfällig (Optional)", "description": "Überschreibt die globale Einstellung." }
+        "override_overdue_days": { "name": "Tage bis überfällig (Optional)", "description": "Überschreibt die globale Einstellung." },
+        "subtasks": { "name": "Unteraufgaben (Optional)", "description": "Die aktualisierte Liste der Unteraufgaben." }
       }
     },
     "add_template": {
@@ -121,7 +123,8 @@
         "interval": { "name": "Intervall (Tage, Optional)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
         "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
         "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
-        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." }
+        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." },
+        "subtasks": { "name": "Unteraufgaben (Optional)", "description": "Unteraufgaben für diese Vorlage." }
       }
     },
     "remove_template_by_name": {
@@ -142,7 +145,8 @@
         "interval": { "name": "Intervall (Tage, Optional)", "description": "Wie oft muss die Aufgabe erledigt werden?" },
         "complexity": { "name": "Punkte (1-10, Optional)", "description": "Wie viele Punkte ist die Aufgabe wert?" },
         "icon": { "name": "Icon (Optional)", "description": "Ein mdi-Icon, z.B. mdi:broom" },
-        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." }
+        "assignees": { "name": "Bearbeiter (Optional)", "description": "Komma getrennte User-IDs oder person.name Entitäten." },
+        "subtasks": { "name": "Unteraufgaben (Optional)", "description": "Die aktualisierte Liste der Unteraufgaben." }
       }
     }
   }

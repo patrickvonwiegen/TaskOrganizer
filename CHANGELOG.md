@@ -1,5 +1,16 @@
 ﻿﻿# Changelog
 
+## [1.4.0] - 2024-04-16
+### 🚀 New Features
+- **Subtasks:** Tasks can now have subtasks. Added progress indicators, hover-text, and backend support for all relevant services and websocket commands.
+- **UI Improvements:** Added a one-time task and subtask indicator icon next to the task name.
+- **Area Filtering:** The `task-organizer-card` now supports filtering by area IDs using the `room:` prefix (e.g., `filter_by: "room:kitchen"`). Area filters also support negation (e.g., `!room:kitchen`).
+
+### 🐛 Bug Fixes
+- **Timestamps:** Fixed an issue where task completion timestamps in the history were stored as naive datetimes, causing an offset in the UI.
+- **Sensors:** Updated due/overdue calculation to use Home Assistant's local time utilities for consistent task tracking.
+- **Task-Card:** Changed cursor to help (question mark) when hovering over assignees for better UX.
+
 ## [1.3.0] - 2024-04-12
 ### ⚠️ Breaking Changes
 - **task-organizer-card:** The `filter_by` configuration logic has been completely rewritten. It now supports multiple comma-separated filters and negations (e.g., `!due, !paused`). All applied filters are combined with a logical AND.

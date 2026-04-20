@@ -17,7 +17,15 @@ const I18N_CARD = {
     recreate_task_prompt: "Create '{taskName}' from a template?",
     set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
     override_overdue_lbl: "Task specific overdue", override_overdue_days_placeholder: "Days",
-    prev: "Previous", next: "Next", page: "Page", search_placeholder: "Search tasks...",
+    time_settings: "Time Settings", subtasks: "Subtasks", 
+    add_subtask: "Add Subtask", subtask_placeholder: "Subtask title...",
+    completed_percent: "{percent}%",
+    confirm_task_complete: "All subtasks are done. Do you want to complete the main task now?",
+    complete_subtasks: "Complete Subtasks",
+    complete_subtasks_desc: "Complete some subtasks now or finish the main task completely.",
+    prev: "Previous", next: "Next", page: "Page", 
+    search_placeholder: "Search tasks...",
+    all_done: "All done",
     search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
   },
   de: { 
@@ -33,7 +41,15 @@ const I18N_CARD = {
     recreate_task_prompt: "Möchtest du '{taskName}' aus einer Vorlage erstellen?",
     set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
     override_overdue_lbl: "Aufgabenspezifische Überfälligkeit", override_overdue_days_placeholder: "Tage",
-    prev: "Zurück", next: "Weiter", page: "Seite", search_placeholder: "Aufgaben suchen...",
+    time_settings: "Zeiteinstellungen", subtasks: "Unteraufgaben",
+    add_subtask: "Unteraufgabe hinzufügen", subtask_placeholder: "Titel der Unteraufgabe...",
+    completed_percent: "{percent}%",
+    confirm_task_complete: "Alle Unteraufgaben sind erledigt. Möchtest du die Hauptaufgabe jetzt abschließen?",
+    complete_subtasks: "Unteraufgaben abschließen",
+    complete_subtasks_desc: "Schließen Sie jetzt einige Unteraufgaben ab oder schließen Sie die Aufgabe komplett ab.",
+    prev: "Zurück", next: "Weiter", page: "Seite", 
+    search_placeholder: "Aufgaben suchen...",
+    all_done: "Alles erledigen",
     search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
   }
 };
@@ -50,6 +66,9 @@ window.customCards.push({
 });
 
 class TaskOrganizerCard extends HTMLElement {
+  /**
+   * Initializes the TaskOrganizerCard element and its internal state.
+   */
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -71,6 +90,9 @@ class TaskOrganizerCard extends HTMLElement {
     this.currentPage = 1;
     this._searchTerm = "";
     this._searchVisible = false;
+    this._subtasks = [];
+    this._currentTaskId = null;
+    this._completionSubtasks = [];
     this.addEventListener('click', (ev) => this._handleCardClick(ev));
   }
 
@@ -126,18 +148,28 @@ class TaskOrganizerCard extends HTMLElement {
       }; 
   }
 
+  /**
+   * Sets the configuration from Home Assistant.
+   * @param {object} config - The card configuration.
+   */
   setConfig(config) { 
       this._config = config; 
       this._skeletonBuilt = false; 
       if (this._hass) this._render();
   }
 
+  /**
+   * Called when the element is added to the DOM. Starts subscriptions.
+   */
   connectedCallback() { 
       if (this._hass && !this._unsubEvents) { 
           this._subscribeToUpdates(); 
       } 
   }
 
+  /**
+   * Called when the element is removed from the DOM. Cleans up subscriptions.
+   */
   disconnectedCallback() { 
       if (this._unsubEvents) { 
           this._unsubEvents.then(unsub => unsub()); 
@@ -145,6 +177,10 @@ class TaskOrganizerCard extends HTMLElement {
       } 
   }
 
+  /**
+   * Subscribes to backend updates via websockets.
+   * @returns {Promise<void>}
+   */
   async _subscribeToUpdates() { 
       if (!this._hass) return;
       this._unsubEvents = this._hass.connection.subscribeEvents(
@@ -153,6 +189,10 @@ class TaskOrganizerCard extends HTMLElement {
       ); 
   }
 
+  /**
+   * Sets the Home Assistant object and triggers data fetching.
+   * @param {object} hass - The Home Assistant object.
+   */
   set hass(hass) {
     this._hass = hass;
     if (!hass) return;
@@ -175,6 +215,9 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Maps Home Assistant 'person' entities to the local users object.
+   */
   _mapUsers() {
     const users = {};
     for (const entityId in this._hass.states) {
@@ -188,6 +231,9 @@ class TaskOrganizerCard extends HTMLElement {
     this.users = users;
   }
 
+  /**
+   * Fetches the current task and settings data from the backend.
+   */
   _fetchData() {
     this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => {
       this.tasks = data.tasks || {};
@@ -199,9 +245,20 @@ class TaskOrganizerCard extends HTMLElement {
     });
   }
 
+  /**
+   * Central click handler for the card. Dispatches actions based on target ID or class.
+   * @param {Event} ev - The click event.
+   */
   _handleCardClick(ev) {
     const path = ev.composedPath();
-    const target = path.find(el => el.id?.startsWith('btn-') || el.classList?.contains('action-btn') || el.classList?.contains('suggestion-item'));
+    const target = path.find(el =>
+        (el.id && (el.id.startsWith('btn-') || el.id.startsWith('toggle-'))) ||
+        (el.classList && (
+            el.classList.contains('action-btn') ||
+            el.classList.contains('suggestion-item') ||
+            el.classList.contains('subtask-check') ||
+            el.classList.contains('sub-complete-check')))
+    );
     
     if (!target) return;
     
@@ -235,6 +292,10 @@ class TaskOrganizerCard extends HTMLElement {
     else if (target.id === 'btn-modal-save') this._saveTask();
     else if (target.id === 'btn-choice-cancel') this._closeChoiceModal();
     else if (target.id === 'btn-choice-confirm') this._confirmCompletion();
+    else if (target.id === 'btn-submodal-cancel') this._closeSubtaskCompletionModal();
+    else if (target.id === 'btn-submodal-save') this._saveSubtaskProgress();
+    else if (target.id === 'btn-submodal-all') this._completeEverything();
+    else if (target.classList.contains('sub-complete-check')) this._toggleCompletionSubtask(target.dataset.index);
     else if (target.classList?.contains('suggestion-item')) this._applyTemplate(target.dataset.id);
     else if (target.id === 'btn-prev-page') {
         this.currentPage = Math.max(1, this.currentPage - 1);
@@ -244,12 +305,190 @@ class TaskOrganizerCard extends HTMLElement {
         this.currentPage++;
         this._renderTaskList();
     }
+    else if (target.id === 'btn-type-recurring') this._updateTaskTypeUI(false);
+    else if (target.id === 'btn-type-onetime') this._updateTaskTypeUI(true);
+    // Subtask Handlers
+    else if (target.id === 'toggle-time-settings') this._toggleSection('time-settings-content');
+    else if (target.id === 'toggle-subtasks') this._toggleSection('subtasks-content');
+    else if (target.id === 'btn-add-subtask') this._addSubtask();
+    else if (target.classList.contains('btn-del-subtask')) this._removeSubtask(target.dataset.index);
+    else if (target.classList.contains('subtask-check')) this._toggleSubtaskStatus(target.dataset.index);
   }
 
+  /**
+   * Toggles the visibility of a UI section.
+   * @param {string} id - The ID of the section to toggle.
+   */
+  _toggleSection(id) {
+    const content = this.shadowRoot.getElementById(id);
+    if (!content) return;
+
+    const headerId = "toggle-" + id.replace("-content", "");
+    const icon = this.shadowRoot.querySelector(`#${headerId} ha-icon`);
+    
+    // Prüfe den aktuellen Zustand (inline oder via CSS)
+    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
+    
+    if (isHidden) {
+        content.style.display = 'flex';
+        if (icon) icon.setAttribute('icon', 'mdi:chevron-up');
+    } else {
+        content.style.display = 'none';
+        if (icon) icon.setAttribute('icon', 'mdi:chevron-down');
+    }
+  }
+
+  /**
+   * Explicitly sets the visibility state of a UI section.
+   * @param {string} id - The ID of the section.
+   * @param {boolean} open - Whether the section should be open.
+   */
+  _setSectionState(id, open) {
+    const content = this.shadowRoot.getElementById(id);
+    if (!content) return;
+
+    const headerId = "toggle-" + id.replace("-content", "");
+    const icon = this.shadowRoot.querySelector(`#${headerId} ha-icon`);
+    if (open) {
+        content.style.display = 'flex';
+        if (icon) icon.setAttribute('icon', 'mdi:chevron-up');
+    } else {
+        content.style.display = 'none';
+        if (icon) icon.setAttribute('icon', 'mdi:chevron-down');
+    }
+  }
+
+  /**
+   * Determines if a task can be completed directly or requires subtask interaction.
+   * @param {string} taskId - The unique identifier of the task.
+   */
   _checkCompleteAction(taskId) {
     const task = this.tasks[taskId];
     if (!task) return;
+
+    // Wenn Unteraufgaben vorhanden sind, öffne den neuen Teildialog
+    if (task.subtasks && task.subtasks.length > 0) {
+        this._openSubtaskCompletionModal(taskId);
+    } else {
+        this._proceedToAssigneeCheck(taskId);
+    }
+  }
+
+  /**
+   * Opens the modal to manage subtask completion before finishing a main task.
+   * @param {string} taskId - The unique identifier of the task.
+   */
+  _openSubtaskCompletionModal(taskId) {
+    this._currentTaskId = taskId;
+    const task = this.tasks[taskId];
+    this._completionSubtasks = JSON.parse(JSON.stringify(task.subtasks));
     
+    const modal = this.shadowRoot.getElementById('subtask-completion-modal');
+    const titleEl = this.shadowRoot.getElementById('sub-completion-title');
+    if (titleEl) {
+        titleEl.textContent = `${task.name} - ${this.localize('complete_subtasks')}`;
+    }
+    
+    this._renderSubtaskCompletionList();
+    modal.classList.add('open');
+  }
+
+  /**
+   * Renders the list of subtasks in the completion modal.
+   */
+  _renderSubtaskCompletionList() {
+    const container = this.shadowRoot.getElementById('sub-completion-list');
+    if (!container) return;
+    container.innerHTML = this._completionSubtasks.map((st, index) => `
+        <ha-formfield label="${st.title}">
+            <ha-checkbox class="sub-complete-check" data-index="${index}" ${st.done ? 'checked' : ''}></ha-checkbox>
+        </ha-formfield>
+    `).join('');
+  }
+
+  /**
+   * Toggles the completion status of a subtask in the local temporary state.
+   * @param {number} index - The index of the subtask in the list.
+   */
+  _toggleCompletionSubtask(index) {
+    this._completionSubtasks[index].done = !this._completionSubtasks[index].done;
+    this._renderSubtaskCompletionList();
+  }
+
+  /**
+   * Closes the subtask completion modal.
+   */
+  _closeSubtaskCompletionModal() {
+    this.shadowRoot.getElementById('subtask-completion-modal').classList.remove('open');
+    this._currentTaskId = null;
+  }
+
+  /**
+   * Saves the current subtask progress to the backend.
+   * @returns {Promise<void>}
+   */
+  async _saveSubtaskProgress() {
+    const task = this.tasks[this._currentTaskId];
+    if (!task) return;
+
+    // Read the current state of checkboxes directly from the DOM before saving
+    const checkboxes = this.shadowRoot.querySelectorAll('.sub-complete-check');
+    checkboxes.forEach(cb => {
+        const index = parseInt(cb.dataset.index);
+        if (this._completionSubtasks[index]) {
+            this._completionSubtasks[index].done = cb.checked;
+        }
+    });
+
+    const allDone = this._completionSubtasks.every(st => st.done);
+    
+    // Send only the subtasks list to the backend to ensure a partial update
+    await this._hass.callWS({
+        type: 'task_organizer/edit_task',
+        task_id: this._currentTaskId,
+        subtasks: this._completionSubtasks
+    });
+
+    if (allDone) {
+        if (confirm(this.localize('confirm_task_complete'))) {
+            this._closeSubtaskCompletionModal();
+            this._proceedToAssigneeCheck(task.id);
+        } else {
+            this._closeSubtaskCompletionModal();
+            this._fetchData();
+        }
+    } else {
+        this._closeSubtaskCompletionModal();
+        this._fetchData();
+    }
+  }
+
+  /**
+   * Marks all subtasks as done and proceeds to the main task completion workflow.
+   * @returns {Promise<void>}
+   */
+  async _completeEverything() {
+    const task = this.tasks[this._currentTaskId];
+    const updatedSubtasks = this._completionSubtasks.map(st => ({ ...st, done: true }));
+
+    // Erst alle Unteraufgaben auf erledigt setzen
+    await this._hass.callWS({
+        type: 'task_organizer/edit_task',
+        task_id: this._currentTaskId,
+        subtasks: updatedSubtasks
+    });
+
+    // Dann direkt zum Abschluss-Workflow (ohne weitere Abfrage der Unteraufgaben)
+    this._closeSubtaskCompletionModal();
+    this._proceedToAssigneeCheck(task.id);
+  }
+
+  /**
+   * Checks if a task has multiple assignees and opens the choice modal if necessary.
+   * @param {string} taskId - The unique identifier of the task.
+   */
+  _proceedToAssigneeCheck(taskId) {
+    const task = this.tasks[taskId];
     let assignees = task.assignees;
     if (typeof assignees === 'string') assignees = [assignees];
     if (!assignees) assignees = [];
@@ -262,6 +501,11 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Opens a modal for selecting which user(s) performed the task.
+   * @param {string} taskId - The task ID.
+   * @param {string[]} assignees - List of user IDs assigned to the task.
+   */
   _openChoiceModal(taskId, assignees) {
     this._currentTaskId = taskId;
     const currentUserId = this._hass.user.id;
@@ -278,6 +522,9 @@ class TaskOrganizerCard extends HTMLElement {
     this.shadowRoot.getElementById('choice-modal').classList.add('open');
   }
 
+  /**
+   * Confirms the task completion for the selected users.
+   */
   _confirmCompletion() {
     const selected = [];
     this.shadowRoot.querySelectorAll('.choice-cb').forEach(cb => {
@@ -293,10 +540,18 @@ class TaskOrganizerCard extends HTMLElement {
     this._closeChoiceModal();
   }
 
+  /**
+   * Closes the assignee choice modal.
+   */
   _closeChoiceModal() { 
       this.shadowRoot.getElementById('choice-modal').classList.remove('open'); 
   }
 
+  /**
+   * Calls the backend service to complete a task.
+   * @param {string} taskId - The task ID.
+   * @param {string[]} completedBy - Array of user IDs who completed the task.
+   */
   _completeTask(taskId, completedBy) { 
       this._hass.callWS({ 
           type: 'task_organizer/complete_task', 
@@ -308,6 +563,10 @@ class TaskOrganizerCard extends HTMLElement {
       }); 
   }
 
+  /**
+   * Displays a toast notification in the Home Assistant UI.
+   * @param {string} message - The message to display.
+   */
   _showToast(message) {
     const event = new CustomEvent("hass-notification", { 
         detail: { message: message, duration: 3000 }, 
@@ -324,6 +583,10 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Deletes a task after user confirmation.
+   * @param {string} taskId - The ID of the task to delete.
+   */
   _deleteTask(taskId) { 
       if (confirm(this.localize('confirm_delete'))) { 
           this._hass.callWS({ type: 'task_organizer/delete_task', task_id: taskId }).then(() => { 
@@ -333,18 +596,25 @@ class TaskOrganizerCard extends HTMLElement {
       } 
   }
 
+  /**
+   * Opens the modal to add or edit a task.
+   * @param {string|null} taskId - The ID of the task to edit, or null for a new task.
+   */
   _openModal(taskId = null) {
     this._editingTaskId = taskId;
     const modal = this.shadowRoot.getElementById('task-modal');
+    this._subtasks = [];
     
     if (taskId && this.tasks[taskId]) {
         const t = this.tasks[taskId];
-        this.shadowRoot.getElementById('f-name').value = t.name;
-        this.shadowRoot.getElementById('f-description').value = t.description || "";
-        this.shadowRoot.getElementById('f-area').value = t.area || "";
-        this.shadowRoot.getElementById('f-interval').value = t.interval;
-        this.shadowRoot.getElementById('f-interval').value = t.interval || 7;
-        this.shadowRoot.getElementById('f-complexity').value = t.complexity;
+        if (this.shadowRoot.getElementById('f-name')) this.shadowRoot.getElementById('f-name').value = t.name;
+        if (this.shadowRoot.getElementById('f-description')) this.shadowRoot.getElementById('f-description').value = t.description || "";
+        if (this.shadowRoot.getElementById('f-area')) this.shadowRoot.getElementById('f-area').value = t.area || "";
+        if (this.shadowRoot.getElementById('f-interval')) {
+            this.shadowRoot.getElementById('f-interval').value = (t.interval !== undefined) ? t.interval : 7;
+        }
+        if (this.shadowRoot.getElementById('f-complexity')) this.shadowRoot.getElementById('f-complexity').value = t.complexity;
+        this._subtasks = t.subtasks ? [...t.subtasks] : [];
         this._currentIcon = t.icon || "mdi:broom";
         
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
@@ -374,6 +644,7 @@ class TaskOrganizerCard extends HTMLElement {
         this.shadowRoot.getElementById('f-interval').value = 7;
         this.shadowRoot.getElementById('f-complexity').value = 5; 
         this._currentIcon = "mdi:broom";
+        this._subtasks = [];
         
         this._updateTaskTypeUI(false); // Default to recurring
         this.shadowRoot.getElementById('template-suggestions').style.display = 'block';
@@ -412,67 +683,170 @@ class TaskOrganizerCard extends HTMLElement {
         }
     }
 
+    // Manage Section Visibility
+    let timeSettingsOpen = false;
+    if (taskId && this.tasks[taskId]) {
+        const t = this.tasks[taskId];
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const isPaused = t.paused_until && new Date(t.paused_until) >= now;
+        const hasOverride = t.override_overdue_days !== null && t.override_overdue_days !== undefined;
+        
+        if (isPaused || hasOverride) timeSettingsOpen = true;
+    }
+    this._setSectionState('time-settings-content', timeSettingsOpen);
+    this._setSectionState('subtasks-content', this._subtasks.length > 0);
+    this._renderModalSubtasks();
+
     const picker = this.shadowRoot.getElementById('f-icon-picker');
     if (picker) picker.value = this._currentIcon; 
     
     modal.classList.add('open');
   }
 
+  /**
+   * Adds a new subtask to the local temporary state of the task editor.
+   */
+  _addSubtask() {
+    const input = this.shadowRoot.getElementById('new-subtask-title');
+    const title = input.value.trim();
+    if (!title) return;
+    
+    this._subtasks.push({ title: title, done: false });
+    input.value = '';
+    this._renderModalSubtasks();
+  }
+
+  /**
+   * Removes a subtask from the local temporary state.
+   * @param {number} index - The index of the subtask to remove.
+   */
+  _removeSubtask(index) {
+    this._subtasks.splice(index, 1);
+    this._renderModalSubtasks();
+  }
+
+  /**
+   * Toggles the 'done' status of a subtask in the editor.
+   * @param {number} index - The index of the subtask.
+   */
+  _toggleSubtaskStatus(index) {
+    this._subtasks[index].done = !this._subtasks[index].done;
+    this._renderModalSubtasks();
+  }
+
+  /**
+   * Renders the list of subtasks in the task editor modal.
+   */
+  _renderModalSubtasks() {
+    const container = this.shadowRoot.getElementById('subtask-list');
+    if (!container) return;
+    
+    if (this._subtasks.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = this._subtasks.map((st, index) => `
+        <div style="display: flex; align-items: center; gap: 8px; background: var(--secondary-background-color); padding: 4px 8px; border-radius: 4px;">
+            <ha-checkbox class="subtask-check" data-index="${index}" ${st.done ? 'checked' : ''}></ha-checkbox>
+            <span style="flex: 1; font-size: 14px; ${st.done ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${st.title}</span>
+            <button class="action-btn btn-del-subtask" data-index="${index}" style="width: 30px; height: 30px;">
+                <ha-icon icon="mdi:close" style="--mdc-icon-size: 18px;"></ha-icon>
+            </button>
+        </div>
+    `).join('');
+  }
+
+  /**
+   * Closes the task editor modal.
+   */
   _closeModal() { 
       this.shadowRoot.getElementById('task-modal').classList.remove('open'); 
   }
 
-  _saveTask() {
+  /**
+   * Gathers data from the modal and saves the task to the backend.
+   * @param {boolean} completeAfterSave - Whether to trigger the completion workflow immediately after saving.
+   */
+  _saveTask(completeAfterSave = false) {
+    const name = this.shadowRoot.getElementById('f-name')?.value?.trim();
+    if (!name) {
+        this._showToast("Name ist erforderlich!");
+        return;
+    }
+
+    let shouldComplete = completeAfterSave;
+    if (!shouldComplete && this._subtasks.length > 0 && this._subtasks.every(st => st.done)) {
+        if (confirm(this.localize('confirm_task_complete'))) {
+            shouldComplete = true;
+        }
+    }
+
     const assignees = [];
-    const isOnetime = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
+    const isOnetime = this.shadowRoot.getElementById('btn-type-onetime')?.classList.contains('active') || false;
     this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
         if (cb.checked) assignees.push(cb.value);
     });
     
-    const setCustomDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb').checked;
-    const customDueDateVal = this.shadowRoot.getElementById('f-custom-due-date').value;
-
+    const setCustomDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb')?.checked || false;
+    const customDueDateVal = this.shadowRoot.getElementById('f-custom-due-date')?.value;
     let customDueDate = null;
     if (setCustomDueDateCb) {
         if (customDueDateVal) customDueDate = customDueDateVal;
-        else {
-            const today = new Date();
-            customDueDate = today.toISOString().split('T')[0];
-        }
+        else customDueDate = new Date().toISOString().split('T')[0];
     }
 
-    const isPausedCb = this.shadowRoot.getElementById('f-pause-cb').checked;
-    const pauseDateVal = this.shadowRoot.getElementById('f-pause-date').value;
+    const isPausedCb = this.shadowRoot.getElementById('f-pause-cb')?.checked || false;
+    const pauseDateVal = this.shadowRoot.getElementById('f-pause-date')?.value;
     const pausedUntil = (isPausedCb && pauseDateVal) ? pauseDateVal : null;
 
-    const isOverrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb').checked;
-    const overrideOverdueDaysVal = this.shadowRoot.getElementById('f-override-overdue-days').value;
-    const overrideOverdueDays = (isOverrideOverdueCb && overrideOverdueDaysVal) ? parseInt(overrideOverdueDaysVal) : null;
+    const isOverrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb')?.checked || false;
+    const overrideOverdueDaysVal = this.shadowRoot.getElementById('f-override-overdue-days')?.value;
+    const overrideOverdueDays = (isOverrideOverdueCb && overrideOverdueDaysVal) ? (parseInt(overrideOverdueDaysVal) || null) : null;
 
     const payload = {
-      name: this.shadowRoot.getElementById('f-name').value, 
-      description: this.shadowRoot.getElementById('f-description').value,
-      area: this.shadowRoot.getElementById('f-area').value,
-      interval: isOnetime ? 0 : parseInt(this.shadowRoot.getElementById('f-interval').value) || 7,
-      complexity: parseInt(this.shadowRoot.getElementById('f-complexity').value), 
-      icon: this.shadowRoot.getElementById('f-icon-picker').value,
+      name: name, 
+      description: this.shadowRoot.getElementById('f-description')?.value || "",
+      area: this.shadowRoot.getElementById('f-area')?.value || "",
+      interval: isOnetime ? 0 : parseInt(this.shadowRoot.getElementById('f-interval')?.value) || 7,
+      complexity: parseInt(this.shadowRoot.getElementById('f-complexity')?.value) || 5, 
+      icon: this.shadowRoot.getElementById('f-icon-picker')?.value || "mdi:broom",
       category: "Allgemein", 
       assignees: assignees,
       custom_due_date: customDueDate,
       paused_until: pausedUntil,
-      override_overdue_days: overrideOverdueDays
+      override_overdue_days: overrideOverdueDays,
+      subtasks: this._subtasks
     };
     
     const type = this._editingTaskId ? 'task_organizer/edit_task' : 'task_organizer/add_task';
     if (this._editingTaskId) payload.task_id = this._editingTaskId;
     
-    this._hass.callWS({ type, ...payload }).then(() => { 
+    this._hass.callWS({ type, ...payload })
+      .then(() => { 
         this._showToast(this.localize('saved')); 
         this._closeModal(); 
         this._fetchData(); 
-    });
+        if (shouldComplete) {
+            const finalTaskId = this._editingTaskId || 
+                               Object.values(this.tasks).find(t => t.name === payload.name)?.id;
+            
+            if (finalTaskId) {
+                this._checkCompleteAction(finalTaskId);
+            }
+        }
+      })
+      .catch(err => {
+        console.error("TaskOrganizer: Fehler beim Speichern", err);
+        this._showToast("Fehler: " + (err.message || "Unbekannter Fehler"));
+      });
   }
 
+  /**
+   * Returns the CSS styles for the card.
+   * @returns {string} - The CSS style string.
+   */
   _getStyles() {
       return `
         <style>
@@ -501,11 +875,12 @@ class TaskOrganizerCard extends HTMLElement {
           .task-item:hover { background-color: color-mix(in srgb, var(--status-color), transparent 85%); transform: translateX(2px); box-shadow: -2px 4px 8px rgba(0,0,0,0.1); } 
           .task-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; color: var(--primary-text-color); } 
           .task-text { flex: 1; min-width: 0; word-break: break-word; text-align: left; } 
-          .task-title { font-weight: bold; margin: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; } 
+          .task-title { font-weight: bold; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 4px; cursor: help; overflow: hidden; } 
+          .task-title span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .task-meta { font-size: 12px; color: var(--secondary-text-color); margin-top: 2px; } 
           
           .assignees-icons { display: flex; margin-top: 6px; gap: 4px; } 
-          .mini-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--secondary-text-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-transform: uppercase; box-shadow: 0 1px 3px rgba(0,0,0,0.2); } 
+          .mini-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--secondary-text-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-transform: uppercase; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: help; } 
           
           .actions { display: flex; gap: 4px; flex-shrink: 0; } 
           .action-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; color: var(--secondary-text-color); transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
@@ -529,10 +904,18 @@ class TaskOrganizerCard extends HTMLElement {
           .template-suggestions { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
           .suggestion-item { background: transparent; border: none; color: var(--primary-color); cursor: pointer; text-align: left; padding: 4px 0; font-size: 14px; }
           .suggestion-item:hover { text-decoration: underline; }
+
+          .collapsible-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; cursor: pointer; border-top: 1px solid var(--divider-color); margin-top: 8px; color: var(--primary-text-color); font-weight: 500; }
+          .collapsible-content { display: none; flex-direction: column; gap: 16px; padding: 8px 0 16px 0; }
+          .subtask-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+          .subtask-list { display: flex; flex-direction: column; gap: 6px; }
         </style>
       `;
   }
 
+  /**
+   * Builds the basic HTML skeleton of the card.
+   */
   _buildSkeleton() {
     const displayTitle = this._config.title || this.localize('title');
     const showSearch = this._config.show_search !== false; 
@@ -565,6 +948,20 @@ class TaskOrganizerCard extends HTMLElement {
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
                     <ha-button id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
                     <ha-button raised id="btn-choice-confirm">${this.localize('confirm')}</ha-button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="subtask-completion-modal" class="modal">
+            <div class="modal-content">
+                <h2 id="sub-completion-title" style="margin: 0 0 8px 0;">${this.localize('complete_subtasks')}</h2>
+                <p style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 16px; font-style: italic;">${this.localize('complete_subtasks_desc')}</p>
+                <div id="sub-completion-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+                <div style="display:flex; justify-content:flex-end; align-items: center; gap:8px; margin-top:24px; flex-wrap: wrap;">
+                    <ha-button id="btn-submodal-cancel">${this.localize('cancel')}</ha-button>
+                    <div style="flex: 1;"></div>
+                    <ha-button id="btn-submodal-save">${this.localize('save')}</ha-button>
+                    <ha-button raised id="btn-submodal-all">${this.localize('all_done')}</ha-button>
                 </div>
             </div>
         </div>
@@ -612,25 +1009,43 @@ class TaskOrganizerCard extends HTMLElement {
                         </div>
                     </div>
                     
-                    <div style="margin-top: 8px; border-top: 1px solid var(--divider-color); padding-top: 16px; display:flex; flex-direction:column; gap:16px;">
-                        <div style="display:flex; align-items:center; gap:16px;">
-                            <ha-formfield label="${this.localize('set_due_today')}">
-                                <ha-switch id="f-set-due-date-cb"></ha-switch>
-                            </ha-formfield>
-                            <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
+                    <div id="toggle-time-settings" class="collapsible-header">
+                        <span>${this.localize('time_settings')}</span>
+                        <ha-icon icon="mdi:chevron-down"></ha-icon>
+                    </div>
+                    <div id="time-settings-content" class="collapsible-content">
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <ha-formfield label="${this.localize('set_due_today')}">
+                                    <ha-switch id="f-set-due-date-cb"></ha-switch>
+                                </ha-formfield>
+                                <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <ha-formfield label="${this.localize('override_overdue_lbl')}">
+                                    <ha-switch id="f-override-overdue-cb"></ha-switch>
+                                </ha-formfield>
+                                <ha-textfield id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-textfield>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <ha-formfield label="${this.localize('pause_until')}">
+                                    <ha-switch id="f-pause-cb"></ha-switch>
+                                </ha-formfield>
+                                <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:16px;">
-                            <ha-formfield label="${this.localize('override_overdue_lbl')}">
-                                <ha-switch id="f-override-overdue-cb"></ha-switch>
-                            </ha-formfield>
-                            <ha-textfield id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-textfield>
+                    </div>
+
+                    <div id="toggle-subtasks" class="collapsible-header">
+                        <span>${this.localize('subtasks')}</span>
+                        <ha-icon icon="mdi:chevron-down"></ha-icon>
+                    </div>
+                    <div id="subtasks-content" class="collapsible-content">
+                        <div class="subtask-input-row">
+                            <ha-textfield id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-textfield>
+                            <ha-button id="btn-add-subtask">${this.localize('confirm')}</ha-button>
                         </div>
-                        <div style="display:flex; align-items:center; gap:16px;">
-                            <ha-formfield label="${this.localize('pause_until')}">
-                                <ha-switch id="f-pause-cb"></ha-switch>
-                            </ha-formfield>
-                            <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
-                        </div>
+                        <div id="subtask-list" class="subtask-list"></div>
                     </div>
                 </div>
                 
@@ -653,9 +1068,6 @@ class TaskOrganizerCard extends HTMLElement {
             this._renderTaskList();
         });
     }
-    
-    this.shadowRoot.getElementById('btn-type-recurring').addEventListener('click', () => this._updateTaskTypeUI(false));
-    this.shadowRoot.getElementById('btn-type-onetime').addEventListener('click', () => this._updateTaskTypeUI(true));
 
     const nameField = this.shadowRoot.getElementById('f-name');
     if (nameField) {
@@ -705,6 +1117,10 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Updates the UI state when switching between recurring and one-time tasks.
+   * @param {boolean} isOnetime - Whether the task is one-time.
+   */
   _updateTaskTypeUI(isOnetime) {
     const intervalField = this.shadowRoot.getElementById('f-interval');
     const btnOnetime = this.shadowRoot.getElementById('btn-type-onetime');
@@ -723,6 +1139,10 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Searches for templates matching the current input name and displays suggestions.
+   * @param {Event} e - The input event.
+   */
   _handleTemplateSuggestions(e) {
     const input = e.target.value.toLowerCase();
     const suggestionsContainer = this.shadowRoot.getElementById('template-suggestions');
@@ -747,6 +1167,10 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Populates the task editor with data from a template.
+   * @param {string} templateId - The ID of the template to apply.
+   */
   _applyTemplate(templateId) {
     if (templateId && this.templates[templateId]) {
         const t = this.templates[templateId];
@@ -756,6 +1180,10 @@ class TaskOrganizerCard extends HTMLElement {
         this.shadowRoot.getElementById('f-complexity').value = t.complexity || 5;
         this.shadowRoot.getElementById('f-icon-picker').value = t.icon || 'mdi:broom';
         this.shadowRoot.getElementById('template-suggestions').innerHTML = '';
+        
+        this._subtasks = t.subtasks ? JSON.parse(JSON.stringify(t.subtasks)) : [];
+        this._renderModalSubtasks();
+        this._setSectionState('subtasks-content', this._subtasks.length > 0);
 
         const isOnetimeSelected = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
         if (isOnetimeSelected) {
@@ -770,6 +1198,9 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  /**
+   * Updates the visibility of the search bar based on internal state.
+   */
   _updateSearchVisibility() {
       const container = this.shadowRoot.getElementById('search-container');
       const searchField = this.shadowRoot.getElementById('search-field');
@@ -783,6 +1214,9 @@ class TaskOrganizerCard extends HTMLElement {
       }
   }
 
+  /**
+   * Main render function that ensures the skeleton is built and the list is updated.
+   */
   _render() {
     if (!this._config || !this._hass) return;
 
@@ -795,6 +1229,9 @@ class TaskOrganizerCard extends HTMLElement {
     this._renderTaskList();
   }
 
+  /**
+   * Filters, sorts, and renders the list of tasks.
+   */
   _renderTaskList() {
     const wrapper = this.shadowRoot.getElementById('task-list-wrapper');
     if (!wrapper) return;
@@ -846,7 +1283,15 @@ class TaskOrganizerCard extends HTMLElement {
             else if (filterName === 'overdue') match = isOverdue;
             else if (filterName === 'paused') match = isPausedFilter;
             else if (filterName === 'onetime') match = isOnetime;
-            else match = true; // unknown filter, ignore
+            else if (filterName.startsWith('room:')) {
+                const targetArea = filterName.substring(5).toLowerCase();
+                const areaId = (task.area || "").toLowerCase();
+                let areaDisplayName = "";
+                if (task.area && this._hass.areas && this._hass.areas[task.area]) {
+                    areaDisplayName = (this._hass.areas[task.area].name || "").toLowerCase();
+                }
+                match = (areaId === targetArea || areaDisplayName === targetArea);
+            } else match = true; // unknown filter, ignore
 
             if (negate) match = !match;
 
@@ -941,7 +1386,21 @@ class TaskOrganizerCard extends HTMLElement {
           </div>
       `).join('');
 
-      const tooltipText = task.description ? task.description.replace(/"/g, '&quot;') : this.localize('no_desc');
+      // Subtask Progress Logic
+      let progressText = "";
+      let subtaskTooltip = "";
+      if (task.subtasks && task.subtasks.length > 0) {
+          const total = task.subtasks.length;
+          const completed = task.subtasks.filter(st => st.done).length;
+          if (completed > 0) {
+              const percent = Math.round((completed / total) * 100);
+              progressText = ` • ${this.localize('completed_percent', {percent: percent})}`;
+          }
+          const subtaskList = task.subtasks.map(st => `${st.done ? '✓' : '○'} ${st.title}`).join('&#10;');
+          subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
+      }
+
+      const descTooltip = task.description ? task.description.replace(/"/g, '&quot;') : "";
       let itemStyle = `--status-color: ${borderColor};`;
       if (isPaused) itemStyle += ` opacity: 0.6; filter: grayscale(0.8);`;
 
@@ -950,8 +1409,12 @@ class TaskOrganizerCard extends HTMLElement {
             <div class="task-info">
                 <ha-icon icon="${task.icon || 'mdi:broom'}" style="flex-shrink: 0;"></ha-icon>
                 <div class="task-text">
-                    <p class="task-title" title="${tooltipText}">${task.name}</p>
-                    <div class="task-meta">${areaName ? areaName + ' • ' : ''}${timeText} • ${task.complexity} ${this.localize('points')}</div>
+                    <div class="task-title">
+                        <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${task.name}</span>
+                        ${task.subtasks?.length > 0 ? `<ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${subtaskTooltip}"></ha-icon>` : ''}
+                        ${task.interval === 0 ? `<ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${this.localize('onetime')}"></ha-icon>` : ''}
+                    </div>
+                    <div class="task-meta">${areaName ? areaName + ' • ' : ''}${timeText} • ${task.complexity} ${this.localize('points')}${progressText}</div>
                     <div class="assignees-icons">${assigneeHtml}</div>
                 </div>
             </div>

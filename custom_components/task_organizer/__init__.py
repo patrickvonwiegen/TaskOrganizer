@@ -3,7 +3,7 @@
 import logging
 import time
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import voluptuous as vol
 
@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
@@ -153,30 +154,17 @@ async def ws_get_data(hass: HomeAssistant, connection: websocket_api.ActiveConne
     connection.send_result(msg["id"], response_data)
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TYPE_COMPLETE_TASK,
-    vol.Required("task_id"): str,
-    vol.Optional("completed_by"): cv.ensure_list,
-})
-@websocket_api.async_response
-async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, completed_by: list):
     """
-    Mark a specific task as completed via websocket.
+    Internal helper to process task completion logic, including points, history and recurring logic.
     
     :param hass: The Home Assistant instance.
-    :param connection: The active websocket connection.
-    :param msg: The incoming message payload containing task_id and optionally completed_by.
+    :param task_id: The unique ID of the task.
+    :param completed_by: List of user IDs who completed the task.
     """
     data = hass.data[DOMAIN]["data"]
-    task_id = msg["task_id"]
-    completed_by = msg.get("completed_by")
-    
-    if not completed_by:
-        completed_by = [connection.user.id]
-
     if task_id not in data["tasks"]:
-        connection.send_error(msg["id"], "not_found", "Task not found")
-        return
+        return False
 
     task = data["tasks"][task_id]
     total_points = float(task.get("complexity", 1))
@@ -196,15 +184,20 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
             "task_name": task.get("name", "Unknown task"),
             "user_id": u_id,
             "points": points_per_user,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": dt_util.utcnow().isoformat()
         }
         data["history"].insert(0, history_entry)
     
     interval = task.get("interval", 7)
     # If recurring, update due date. If one-time, it will be deleted.
     if interval > 0:
-        task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
+        task["due_date"] = (dt_util.utcnow() + timedelta(days=interval)).isoformat()
         task["paused_until"] = None
+        
+        # Reset subtasks for recurring tasks
+        if "subtasks" in task:
+            for st in task["subtasks"]:
+                st["done"] = False
 
     # Now, if it was a one-time task, delete it from the main dictionary
     if interval == 0:
@@ -222,6 +215,31 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
+    return True
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TYPE_COMPLETE_TASK,
+    vol.Required("task_id"): str,
+    vol.Optional("completed_by"): cv.ensure_list,
+})
+@websocket_api.async_response
+async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+    """
+    Mark a specific task as completed via websocket.
+    """
+    task_id = msg["task_id"]
+    completed_by = msg.get("completed_by")
+    
+    if not completed_by:
+        completed_by = [connection.user.id]
+
+    success = await _async_complete_task_internal(hass, task_id, completed_by)
+
+    if not success:
+        connection.send_error(msg["id"], "not_found", "Task not found")
+        return
+
     connection.send_result(msg["id"], {"success": True})
 
 
@@ -238,6 +256,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
     vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
+    vol.Optional("subtasks"): cv.ensure_list,
 })
 @websocket_api.async_response
 async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -254,7 +273,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     if custom_due_date_str:
         due_date = datetime.fromisoformat(custom_due_date_str).isoformat()
     else:
-        due_date = datetime.now().isoformat() # Default if no custom date is provided
+        due_date = dt_util.utcnow().isoformat() # Default if no custom date is provided
     
     new_task = {
         "id": task_id, 
@@ -268,7 +287,8 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
         "icon": msg["icon"],
         "due_date": due_date, 
         "paused_until": msg.get("paused_until"),
-        "override_overdue_days": msg.get("override_overdue_days")
+        "override_overdue_days": msg.get("override_overdue_days"),
+        "subtasks": msg.get("subtasks", [])
     }
     
     data["tasks"][task_id] = new_task
@@ -292,6 +312,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
     vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
+    vol.Optional("subtasks"): cv.ensure_list,
 })
 @websocket_api.async_response
 async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -310,14 +331,14 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         return
         
     task_ref = data["tasks"][task_id]
-    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon"]
+    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon", "subtasks"]
     
     for key in keys_to_update:
         if key in msg: 
             task_ref[key] = msg[key]
 
     if msg.get("custom_due_date"):
-        task_ref["due_date"] = datetime.fromisoformat(msg["custom_due_date"]).isoformat()
+        task_ref["due_date"] = dt_util.as_utc(dt_util.parse_datetime(msg["custom_due_date"])).isoformat()
         
     if "paused_until" in msg:
         task_ref["paused_until"] = msg["paused_until"]
@@ -515,6 +536,7 @@ async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveC
     vol.Required("icon"): str,
     vol.Optional("interval", default=7): int,
     vol.Optional("assignees", default=[]): cv.ensure_list,
+    vol.Optional("subtasks", default=[]): cv.ensure_list,
 })
 @websocket_api.async_response
 async def ws_add_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -531,6 +553,7 @@ async def ws_add_template(hass: HomeAssistant, connection: websocket_api.ActiveC
         "icon": msg["icon"],
         "interval": msg.get("interval"),
         "assignees": msg.get("assignees"),
+        "subtasks": msg.get("subtasks", []),
     }
     
     data["templates"][template_id] = new_template
@@ -548,6 +571,7 @@ async def ws_add_template(hass: HomeAssistant, connection: websocket_api.ActiveC
     vol.Optional("icon"): str,
     vol.Optional("interval"): int,
     vol.Optional("assignees"): cv.ensure_list,
+    vol.Optional("subtasks"): cv.ensure_list,
 })
 @websocket_api.async_response
 async def ws_edit_template(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -560,7 +584,7 @@ async def ws_edit_template(hass: HomeAssistant, connection: websocket_api.Active
         return
         
     template_ref = data["templates"][template_id]
-    keys_to_update = ["name", "description", "area", "complexity", "icon", "interval", "assignees"]
+    keys_to_update = ["name", "description", "area", "complexity", "icon", "interval", "assignees", "subtasks"]
     
     for key in keys_to_update:
         if key in msg: 
@@ -600,7 +624,7 @@ async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
     """
     data = hass.data[DOMAIN]["data"]
     store = hass.data[DOMAIN]["store"]
-    current_actual_month = datetime.now().strftime("%Y-%m")
+    current_actual_month = dt_util.now().strftime("%Y-%m")
     saved_month = data.get("current_month")
     
     if saved_month != current_actual_month or force:
@@ -613,7 +637,7 @@ async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
             data["points"][user] = 0
             
         data["current_month"] = current_actual_month
-        data["current_period_start"] = datetime.now().isoformat()
+        data["current_period_start"] = dt_util.utcnow().isoformat()
         
         _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
         
@@ -636,15 +660,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if data is None:
         data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
-            "monthly_history": {}, "current_month": datetime.now().strftime("%Y-%m"), 
-            "current_period_start": datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat(),
+            "monthly_history": {}, "current_month": dt_util.now().strftime("%Y-%m"), 
+            "current_period_start": dt_util.start_of_local_day(dt_util.now().replace(day=1)).isoformat(),
             "templates": {}
         }
     
     # Ensure all required keys exist
     data.setdefault("monthly_history", {})
-    data.setdefault("current_month", datetime.now().strftime("%Y-%m"))
-    data.setdefault("current_period_start", datetime.now().replace(day=1, hour=0, minute=0, second=0).isoformat())
+    data.setdefault("current_month", dt_util.now().strftime("%Y-%m"))
+    data.setdefault("current_period_start", dt_util.start_of_local_day(dt_util.now().replace(day=1)).isoformat())
     data.setdefault("templates", {})
 
     # IMPORTANT: Ensure settings from config entry options are always reflected in data
@@ -678,8 +702,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         
         new_data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
-            "monthly_history": {}, "current_month": datetime.now().strftime("%Y-%m"), 
-            "current_period_start": datetime.now().isoformat()
+            "monthly_history": {}, "current_month": dt_util.now().strftime("%Y-%m"), 
+            "current_period_start": dt_util.utcnow().isoformat()
         }
         hass.data[DOMAIN]["data"] = new_data
         
@@ -725,14 +749,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "task_name": task.get("name", "Unknown task"),
                 "user_id": u_id, 
                 "points": points_per_user,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": dt_util.utcnow().isoformat()
             }
             data["history"].insert(0, history_entry)
         
         interval = task.get("interval", 1)
-        task["due_date"] = (datetime.now() + timedelta(days=interval)).isoformat()
+        task["due_date"] = (dt_util.utcnow() + timedelta(days=interval)).isoformat()
         task["paused_until"] = None 
         
+        # Reset subtasks for recurring tasks
+        if "subtasks" in task:
+            for st in task["subtasks"]:
+                st["done"] = False
+
         # Trigger events
         _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
         hass.bus.async_fire(EVENT_TASK_COMPLETED, {
@@ -797,9 +826,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "complexity": call.data.get("complexity") or (template.get("complexity", 5) if template else 5),
             "category": "General",
             "icon": call.data.get("icon") or (template.get("icon", "mdi:broom") if template else "mdi:broom"),
-            "due_date": datetime.now().isoformat(), 
+            "due_date": dt_util.utcnow().isoformat(), 
             "paused_until": None,
-            "override_overdue_days": call.data.get("override_overdue_days")
+            "override_overdue_days": call.data.get("override_overdue_days"),
+            "subtasks": call.data.get("subtasks") or (template.get("subtasks", []) if template else [])
         }
         data["tasks"][task_id] = new_task_data
         hass.bus.async_fire(EVENT_TASK_CREATED, new_task_data)
@@ -820,7 +850,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
             
         task = data["tasks"][target_task_id]
-        task["due_date"] = datetime.now().isoformat()
+        task["due_date"] = dt_util.utcnow().isoformat()
         task["paused_until"] = None
         
         await store.async_save(data)
@@ -845,7 +875,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
             
         task = data["tasks"][target_task_id]
-        task["paused_until"] = datetime.fromisoformat(pause_until).isoformat()
+        task["paused_until"] = dt_util.parse_datetime(pause_until).isoformat()
 
         await store.async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -885,7 +915,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if "new_name" in call.data:
             task_ref["name"] = call.data["new_name"]
         
-        keys_to_update = ["description", "area", "interval", "complexity", "category", "icon"]
+        keys_to_update = ["description", "area", "interval", "complexity", "category", "icon", "subtasks"]
         for key in keys_to_update:
             if key in call.data: 
                 task_ref[key] = call.data[key]
@@ -920,6 +950,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "icon": call.data.get("icon", "mdi:broom"),
             "interval": call.data.get("interval", 7),
             "assignees": assignees,
+            "subtasks": call.data.get("subtasks", [])
         }
         
         data.setdefault("templates", {})[template_id] = new_template
@@ -961,7 +992,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if "new_name" in call.data:
             template_ref["name"] = call.data["new_name"]
             
-        keys_to_update = ["description", "area", "interval", "complexity", "icon"]
+        keys_to_update = ["description", "area", "interval", "complexity", "icon", "subtasks"]
         for key in keys_to_update:
             if key in call.data: 
                 template_ref[key] = call.data[key]
