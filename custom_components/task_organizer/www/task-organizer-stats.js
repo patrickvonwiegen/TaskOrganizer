@@ -444,7 +444,7 @@ class TaskOrganizerStats extends HTMLElement {
             </div>
             
             <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-              <ha-button id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
+              <ha-button appearance="plain" variant="brand" id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
               <ha-button raised id="btn-edit-save">${this.localize('save')}</ha-button>
             </div>
           </div>

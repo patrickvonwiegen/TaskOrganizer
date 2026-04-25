@@ -603,7 +603,7 @@ class TaskOrganizerCard extends HTMLElement {
     html += `<div id="dist-list" style="display:flex; flex-direction:column; gap:12px;">`;
     uids.forEach(uid => {
         const pct = (this._distribution[uid] || 0).toFixed(1); // Keep one decimal for display
-        const pts = ((pct / 100) * (task.complexity || 0)).toFixed(1);
+        const pts = ((pct / 100) * (task.complexity || 0)).toFixed(1); // Calculate points based on percentage
         html += `
             <div class="dist-row" style="display:flex; align-items:flex-start; gap:12px; padding: 8px 0; border-bottom: 1px solid var(--divider-color);">
                 <div style="display:flex; flex-direction:column; flex:1; min-width:0;">
@@ -1315,7 +1315,7 @@ class TaskOrganizerCard extends HTMLElement {
                 <p style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 16px;">${this.localize('fair_points')}</p>
                 <div id="choice-assignees" style="display:flex; flex-direction:column; gap:4px;"></div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                    <ha-button id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button appearance="plain" variant="brand" id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
                     <ha-button raised id="btn-choice-confirm">${this.localize('confirm')}</ha-button>
                 </div>
             </div>
@@ -1327,7 +1327,7 @@ class TaskOrganizerCard extends HTMLElement {
                 <p style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 16px; font-style: italic;">${this.localize('complete_subtasks_desc')}</p>
                 <div id="sub-completion-list" style="display:flex; flex-direction:column; gap:8px;"></div>
                 <div style="display:flex; justify-content:flex-end; align-items: center; gap:8px; margin-top:24px; flex-wrap: wrap;">
-                    <ha-button id="btn-submodal-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button appearance="plain" variant="brand" id="btn-submodal-cancel">${this.localize('cancel')}</ha-button>
                     <div style="flex: 1;"></div>
                     <ha-button id="btn-submodal-save">${this.localize('save')}</ha-button>
                     <ha-button raised id="btn-submodal-all">${this.localize('all_done')}</ha-button>
@@ -1419,7 +1419,7 @@ class TaskOrganizerCard extends HTMLElement {
                 </div>
                 
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                    <ha-button id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
                     <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
                 </div>
             </div>

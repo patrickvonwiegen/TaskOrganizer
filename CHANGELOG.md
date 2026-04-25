@@ -5,6 +5,9 @@
 - **GUI Configuration Editor:** All Lovelace cards now support the Home Assistant Visual Editor. Parameters can be adjusted via the UI without manual YAML editing.
 - **Flexible Point Distribution:** When completing a task with multiple assignees, users can now distribute points flexibly via a slider. If there are more than two assignees, a network diagram is also provided so that the tasks can be easily assigned.
 
+### 🐛 Bug Fixes
+- **Consistent Cancel Button Styling**: All "Cancel" buttons across the Lovelace cards now have a consistent style (blue text on a transparent background).
+
 ## [1.4.0]
 ### 🚀 New Features
 - **Subtasks:** Tasks can now have subtasks. Added progress indicators, hover-text, and backend support for all relevant services and websocket commands.
