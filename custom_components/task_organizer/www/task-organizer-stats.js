@@ -444,7 +444,7 @@ class TaskOrganizerStats extends HTMLElement {
             </div>
             
             <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-              <ha-button id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
+              <ha-button appearance="plain" variant="brand" id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
               <ha-button raised id="btn-edit-save">${this.localize('save')}</ha-button>
             </div>
           </div>
@@ -524,7 +524,7 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     const configValue = target.configValue || target.getAttribute('configValue');
     let newValue = target.value !== undefined ? target.value : target.getAttribute('value');
 
-    if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number')) {
+    if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
       newValue = newValue === "" ? undefined : parseInt(newValue);
     }
 

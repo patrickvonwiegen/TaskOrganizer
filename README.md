@@ -17,7 +17,8 @@ Suggestions for improvement or bug reports are welcome.
 * **Subtasks**: Break down complex tasks into smaller sub-steps. Includes a progress indicator (%) and a dedicated completion dialog.
 * **One-time & Recurring Tasks**: Supports both recurring tasks with an interval and one-time tasks that are deleted upon completion.
 * **Task Templates**: Create and manage templates to quickly add frequently used tasks.
-* **Points System**: Each task has a complexity level (1-10); points are shared fairly among all participants upon completion.
+* **Points System**: Each task has a complexity level (1-10); points can be distributed flexibly upon completion. For 3+ participants, an interactive spider chart allows shifting the point tendency by dragging a center point. 
+
 * **Pause & Custom Due Date**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date.
 * **Task Organization**: Assign tasks to specific areas and give them a unique icon.
 * **Task-specific Overdue Thresholds**: Override the global overdue setting for individual tasks.

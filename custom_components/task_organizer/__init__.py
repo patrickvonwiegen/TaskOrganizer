@@ -4,7 +4,7 @@ import logging
 import time
 import uuid
 from datetime import timedelta
-
+from datetime import datetime
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
@@ -154,13 +154,14 @@ async def ws_get_data(hass: HomeAssistant, connection: websocket_api.ActiveConne
     connection.send_result(msg["id"], response_data)
 
 
-async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, completed_by: list):
+async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, completed_by: list, points_distribution: dict = None):
     """
     Internal helper to process task completion logic, including points, history and recurring logic.
     
     :param hass: The Home Assistant instance.
     :param task_id: The unique ID of the task.
     :param completed_by: List of user IDs who completed the task.
+    :param points_distribution: Mapping of user ID to percentage for point distribution.
     """
     data = hass.data[DOMAIN]["data"]
     if task_id not in data["tasks"]:
@@ -168,22 +169,29 @@ async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, compl
 
     task = data["tasks"][task_id]
     total_points = float(task.get("complexity", 1))
-    points_per_user = _calculate_points_per_user(total_points, len(completed_by))
     
     old_points = data["points"].copy()
-    
-    for u_id in completed_by:
-        if u_id not in data["points"]:
-            data["points"][u_id] = 0
-            
-        data["points"][u_id] += points_per_user
-        
+
+    # Create mapping for users receiving points (either from distribution or fair share)
+    users_with_points = {}
+    if points_distribution:
+        for u_id, percentage in points_distribution.items():
+            users_with_points[u_id] = round((percentage / 100) * total_points, 1)
+    else:
+        share = _calculate_points_per_user(total_points, len(completed_by))
+        for u_id in completed_by:
+            users_with_points[u_id] = share
+
+    for u_id, pts in users_with_points.items():
+        data["points"].setdefault(u_id, 0.0)
+        data["points"][u_id] += pts
+
         history_entry = {
             "id": str(uuid.uuid4()),
             "task_id": task_id,
             "task_name": task.get("name", "Unknown task"),
             "user_id": u_id,
-            "points": points_per_user,
+            "points": pts,
             "timestamp": dt_util.utcnow().isoformat()
         }
         data["history"].insert(0, history_entry)
@@ -208,8 +216,8 @@ async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, compl
     hass.bus.async_fire(EVENT_TASK_COMPLETED, {
         "task_id": task_id,
         "task_name": task.get("name"),
-        "completed_by": completed_by,
-        "points_per_user": points_per_user,
+        "completed_by": list(users_with_points.keys()),
+        "points_per_user": None if points_distribution else _calculate_points_per_user(total_points, len(completed_by)),
         "total_points": total_points
     })
     
@@ -222,6 +230,7 @@ async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, compl
     vol.Required("type"): WS_TYPE_COMPLETE_TASK,
     vol.Required("task_id"): str,
     vol.Optional("completed_by"): cv.ensure_list,
+    vol.Optional("points_distribution"): dict, # Allow points_distribution from frontend
 })
 @websocket_api.async_response
 async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -234,7 +243,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     if not completed_by:
         completed_by = [connection.user.id]
 
-    success = await _async_complete_task_internal(hass, task_id, completed_by)
+    success = await _async_complete_task_internal(hass, task_id, completed_by, msg.get("points_distribution"))
 
     if not success:
         connection.send_error(msg["id"], "not_found", "Task not found")
@@ -270,8 +279,8 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     data = hass.data[DOMAIN]["data"]
     task_id = str(uuid.uuid4())
     custom_due_date_str = msg.get("custom_due_date")
-    if custom_due_date_str:
-        due_date = datetime.fromisoformat(custom_due_date_str).isoformat()
+    if custom_due_date_str: # Ensure datetime is imported for fromisoformat
+        due_date = datetime.fromisoformat(custom_due_date_str).isoformat() 
     else:
         due_date = dt_util.utcnow().isoformat() # Default if no custom date is provided
     

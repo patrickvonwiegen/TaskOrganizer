@@ -35,10 +35,9 @@ Please adhere to the following rules for every request:
     *   **`README.md`**: Add or modify the description of features, sensors, services, events, or card configurations.
     *   **`CHANGELOG.md`**: Use the current version of manifest.json and category (`🚀 New Features`, `🐛 Bug Fixes`, `⚠️ Breaking Changes`).
 
-4.  **Versioning Logic**: Follow the `Major.Minor.Bugfix` semantic versioning scheme:
-    *   **Major (e.g., 2.0.0)**: For incompatible API changes.
-    *   **Minor (e.g., 1.3.0)**: For adding functionality in a backward-compatible manner.
-    *   **Bugfix (e.g., 1.2.1)**: For backward-compatible bug fixes.
+4.  **Versioning Logic**: Follow the `Major.Minor.Bugfix` semantic versioning scheme. 
+    *   Consolidate all changes for a feature set or bugfix round into a "Next" section in `CHANGELOG.md`. 
+    *   Do not increment the version for every minor code adjustment. Only increment the version when a logical development block is completed.
 
 5.  **Code Quality**:
     *   Keep the code clean and readable.
