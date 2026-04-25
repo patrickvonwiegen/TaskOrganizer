@@ -38,7 +38,8 @@ const I18N_CARD = {
     sort_order_placeholder: "default, asc, desc",
     filter_by_lbl: "Filter By",
     filter_by_placeholder: "comma separated, e.g. !paused, due",
-    search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
+    search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear",
+    help_link: "Configuration Guide (README)"
   },
   de: { 
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
@@ -74,7 +75,8 @@ const I18N_CARD = {
     sort_order_placeholder: "default, asc, desc",
     filter_by_lbl: "Filtern nach",
     filter_by_placeholder: "Kommagetrennt, z.B. !paused, due",
-    search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
+    search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren",
+    help_link: "Konfigurations-Handbuch (README)"
   }
 };
 
@@ -1839,6 +1841,12 @@ class TaskOrganizerCardEditor extends HTMLElement {
     }
     this.innerHTML = `
       <div class="card-config">
+        <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px; border: 1px solid var(--divider-color);">
+          <ha-icon icon="mdi:help-circle-outline" style="color: var(--primary-color);"></ha-icon>
+          <a href="https://github.com/PatrickvonWiegen/TaskOrganizer/blob/main/README.md#1-household-tasks-task-organizer-card" target="_blank" rel="noreferrer" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">
+            ${this.localize('help_link')}
+          </a>
+        </div>
         <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
         <div style="display: flex; gap: 8px;">
           <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>

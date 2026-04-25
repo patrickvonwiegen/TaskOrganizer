@@ -524,7 +524,7 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     const configValue = target.configValue || target.getAttribute('configValue');
     let newValue = target.value !== undefined ? target.value : target.getAttribute('value');
 
-    if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number')) {
+    if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
       newValue = newValue === "" ? undefined : parseInt(newValue);
     }
 
