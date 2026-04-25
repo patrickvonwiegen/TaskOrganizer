@@ -2,29 +2,53 @@
 
 TaskOrganizer is a integration for Home Assistant designed to manage household tasks in a gamified way. It allows you to create tasks with intervals and complexity points, assign them to roommates, and crown a "Roommate of the Month".
 
-<p align="center">
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/8860eb6b-1b92-436b-bbf1-9908bde8f7ec" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
-</p>
-
 Suggestions for improvement or bug reports are welcome.
 
 ## Features
-* **Task Management**: Create, edit, and delete tasks directly from your dashboard.
-* **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
-* **Subtasks**: Break down complex tasks into smaller sub-steps. Includes a progress indicator (%) and a dedicated completion dialog.
-* **One-time & Recurring Tasks**: Supports both recurring tasks with an interval and one-time tasks that are deleted upon completion.
-* **Task Templates**: Create and manage templates to quickly add frequently used tasks.
-* **Points System**: Each task has a complexity level (1-10); points can be distributed flexibly upon completion. For 3+ participants, an interactive spider chart allows shifting the point tendency by dragging a center point. 
+* **Task Management**: Show, create, edit, and delete tasks directly in your dashboard. Assign tasks to specific areas and give them a unique icon.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/40408802-bd37-41c7-950e-aef76062b458" />
 
-* **Pause & Custom Due Date**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date.
-* **Task Organization**: Assign tasks to specific areas and give them a unique icon.
-* **Task-specific Overdue Thresholds**: Override the global overdue setting for individual tasks.
+* **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f3a24024-4412-4e88-befc-66e4a8100f47" />
+
+* **Subtasks**: Break down complex tasks into smaller sub-steps. Includes a progress indicator (%) and a dedicated completion dialog.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/30f2debe-c15e-4150-af17-783a827d2236" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/1389a275-beb5-4636-8ece-4dfbc8291901" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/4c18de25-250b-4837-b38c-96229667a5f8" />
+
+* **One-time & Recurring Tasks**: Supports both recurring tasks with an interval and one-time tasks that are deleted upon completion.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e032b7c4-72a7-4442-99ec-59972ea352ac" />
+
+* **Task Templates**: Create and manage templates to quickly add frequently used tasks.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/7d278343-8473-42ae-b9ab-1f23f23b8272" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/791eaac0-63b3-48a0-804d-8bfa11cff376" />
+
+* **Points System**: Each task has a complexity level (1-10); points can be distributed flexibly upon completion. For 3+ participants, an interactive spider chart allows shifting the point tendency by dragging a center point. 
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/4d5fa9ba-0a0c-4702-9797-f9da9f8363da" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/389f566d-ab40-4d2e-ada4-7e07b5e11011" />
+
+* **Interval Management**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date. Override the global overdue setting for individual tasks.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/41a75d46-6855-4be5-9bd4-65dec23bec90" />
+
 * **Roommate of the Month**: A podium system visualizes current standings. At the end of the month, points are archived, and a long-term history is maintained.
-* **Import & Export**: Secure your data by exporting all tasks to a JSON file or importing them back.
-* **Configuration**: Manage global settings, colors, overdue thresholds, and task templates.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/8860eb6b-1b92-436b-bbf1-9908bde8f7ec" />
+
+* **History Protocol**: A history log allows you to view the history and modify the points and the assignee afterwards.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
+
+* **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
 
 ## Installation
 ### Option 1: HACS (Recommended)
