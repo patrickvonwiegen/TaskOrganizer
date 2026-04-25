@@ -8,7 +8,7 @@ const I18N_CARD = {
     title: "Household Tasks", unknown: "Unknown", done: "Done!", saved: "Saved", 
     deleted: "Deleted", confirm_delete: "Really delete this task?", today: "Today", 
     in_days: "in {days} days", ago_days: "{days} days ago", points: "pts.", 
-    no_desc: "No description", who_did_it: "Who did it?", fair_points: "Points are shared fairly.", 
+    no_desc: "No description", who_did_it: "Who did it?", fair_points: "Adjust the work shares to keep it fair.", distribute_fairly: "Distribute Fairly", assign_all: "Assign",
     cancel: "Cancel", confirm: "Confirm", save: "Save", task: "Task", name_lbl: "Name", 
     desc_lbl: "Description (optional)", desc_placeholder: "Additional info...",
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
@@ -44,7 +44,7 @@ const I18N_CARD = {
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
     deleted: "Gelöscht", confirm_delete: "Aufgabe wirklich löschen?", today: "Heute", 
     in_days: "in {days} Tage(n)", ago_days: "vor {days} Tage(n)", points: "Pkt.", 
-    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Punkte werden fair geteilt.",
+    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Stelle die Arbeitsanteile ein, damit es fair bleibt.", distribute_fairly: "Gleichmäßig aufteilen", assign_all: "Zuweisen",
     cancel: "Abbrechen", confirm: "Bestätigen", save: "Speichern", task: "Aufgabe", name_lbl: "Name", 
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
@@ -117,6 +117,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._subtasks = [];
     this._currentTaskId = null;
     this._completionSubtasks = [];
+    this._distribution = {};
     this.addEventListener('click', (ev) => this._handleCardClick(ev));
   }
 
@@ -304,7 +305,8 @@ class TaskOrganizerCard extends HTMLElement {
             el.classList.contains('action-btn') ||
             el.classList.contains('suggestion-item') ||
             el.classList.contains('subtask-check') ||
-            el.classList.contains('sub-complete-check')))
+            el.classList.contains('sub-complete-check') ||
+            el.classList.contains('dist-btn')))
     );
     
     if (!target) return;
@@ -355,6 +357,7 @@ class TaskOrganizerCard extends HTMLElement {
     else if (target.id === 'btn-type-recurring') this._updateTaskTypeUI(false);
     else if (target.id === 'btn-type-onetime') this._updateTaskTypeUI(true);
     // Subtask Handlers
+    else if (target.classList.contains('dist-btn')) this._handlePresetDistribution(target.dataset.preset, target.dataset.uid);
     else if (target.id === 'toggle-time-settings') this._toggleSection('time-settings-content');
     else if (target.id === 'toggle-subtasks') this._toggleSection('subtasks-content');
     else if (target.id === 'btn-add-subtask') this._addSubtask();
@@ -531,60 +534,320 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
-   * Checks if a task has multiple assignees and opens the choice modal if necessary.
+   * Logic to determine whether to show the assignee selection dialog or complete directly.
    * @param {string} taskId - The unique identifier of the task.
    */
   _proceedToAssigneeCheck(taskId) {
     const task = this.tasks[taskId];
-    let assignees = task.assignees;
+    const currentUserId = this._hass.user?.id;
+    let assignees = task.assignees || [];
     if (typeof assignees === 'string') assignees = [assignees];
-    if (!assignees) assignees = [];
 
-    if (assignees.length > 1) {
-        this._openChoiceModal(taskId, assignees);
+    // Only skip the dialog if the task is assigned EXCLUSIVELY to the current user
+    const isOnlyMe = assignees.length === 1 && assignees[0] === currentUserId;
+
+    if (isOnlyMe) {
+      this._completeTask(taskId, [currentUserId], { [currentUserId]: 100 });
     } else {
-      const user = assignees.length === 1 ? assignees : [this._hass.user.id];
-      this._completeTask(taskId, user);
+      this._openChoiceModal(taskId);
     }
   }
 
   /**
-   * Opens a modal for selecting which user(s) performed the task.
-   * @param {string} taskId - The task ID.
-   * @param {string[]} assignees - List of user IDs assigned to the task.
+   * Opens the point distribution modal and initializes the state.
+   * @param {string} taskId - The unique identifier of the task.
    */
-  _openChoiceModal(taskId, assignees) {
+  _openChoiceModal(taskId) {
     this._currentTaskId = taskId;
-    const currentUserId = this._hass.user.id;
-    const container = this.shadowRoot.getElementById('choice-assignees');
+    const task = this.tasks[taskId];
+    const currentUserId = this._hass.user?.id;
     
-    container.innerHTML = assignees.map(uid => {
-      const isChecked = (uid === currentUserId) ? 'checked' : '';
-      return `
-        <ha-formfield label="${this.users[uid] || this.localize('unknown')}">
-            <ha-checkbox class="choice-cb" value="${uid}" ${isChecked}></ha-checkbox>
-        </ha-formfield>`;
-    }).join('');
-    
+    // Calculate relevant users: assignees + current user
+    const taskAssignees = Array.isArray(task.assignees) ? task.assignees : [];
+    this._activeUids = Object.keys(this.users).filter(uid => 
+        taskAssignees.length === 0 || taskAssignees.includes(uid) || uid === currentUserId
+    );
+
+    // Initial distribution: current user 100%, others 0%
+    this._distribution = {}; // Reset distribution
+    this._activeUids.forEach(uid => { this._distribution[uid] = (uid === currentUserId) ? 100 : 0; });
+
+    this._renderChoiceModalContent();
     this.shadowRoot.getElementById('choice-modal').classList.add('open');
+  }
+
+  /**
+   * Renders the point distribution UI inside the choice modal.
+   */
+  _renderChoiceModalContent() {
+    const container = this.shadowRoot.getElementById('choice-assignees');
+    if (!container) return;
+
+    const uids = this._activeUids || [];
+    const task = this.tasks[this._currentTaskId];
+    let html = '';
+    const pointStepPct = (0.5 / (task.complexity || 5)) * 100;
+
+    // Render spider chart container only for 3+ users
+    if (uids.length > 2) {
+        html += `<div id="spider-container" style="display:flex; justify-content:center; margin-bottom: 0px;"></div>`;
+    }
+
+    // Distribute Fairly Button (Right-aligned closer to the diagram)
+    html += `
+        <div style="display:flex; justify-content:flex-end; margin-top: -10px; margin-bottom: 8px;">
+            <ha-button appearance="plain" variant="brand" class="dist-btn" data-preset="equal" style="--mdc-typography-button-font-size: 10px; height: 26px;">${this.localize('distribute_fairly')}</ha-button>
+        </div>`;
+
+    // User distribution list
+    html += `<div id="dist-list" style="display:flex; flex-direction:column; gap:12px;">`;
+    uids.forEach(uid => {
+        const pct = (this._distribution[uid] || 0).toFixed(1); // Keep one decimal for display
+        const pts = ((pct / 100) * (task.complexity || 0)).toFixed(1);
+        html += `
+            <div class="dist-row" style="display:flex; align-items:flex-start; gap:12px; padding: 8px 0; border-bottom: 1px solid var(--divider-color);">
+                <div style="display:flex; flex-direction:column; flex:1; min-width:0;">
+                    <span style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${this.users[uid]}</span>
+                    <span class="dist-pct-pts" style="font-size: 11px; color: var(--secondary-text-color);">${pts} ${this.localize('points')}</span>
+                </div>
+                <input type="range" class="user-dist-slider" data-uid="${uid}" min="0" max="100" step="${pointStepPct}" value="${pct}" style="flex:1.5; height:8px; cursor:pointer; margin-top: 6px;">
+                <ha-button appearance="plain" variant="brand" class="dist-btn" data-preset="100" data-uid="${uid}" style="--mdc-typography-button-font-size: 9px; height: 22px; min-width: 90px; margin-top: -5px;">${this.localize('assign_all')}</ha-button>
+            </div>
+        `;
+    });
+    html += `</div>`;
+
+    container.innerHTML = html;
+
+    // Only initialize the spider chart if more than 2 users are involved
+    if (uids.length > 2) {
+        this._renderSpiderChart();
+    }
+    // Attach input listeners for individual user sliders
+    this.shadowRoot.querySelectorAll('.user-dist-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => this._handleUserSliderChange(e.target.dataset.uid, parseFloat(e.target.value)));
+    });
+  }
+
+  /**
+   * Renders a spider chart for 3+ users.
+   */
+  _renderSpiderChart() {
+    const container = this.shadowRoot.getElementById('spider-container');
+    if (!container) return;
+    
+    const uids = this._activeUids || [];
+    const n = uids.length;
+    if (n < 3) return;
+
+    const svgWidth = 200;
+    const svgHeight = 200;
+    const cx = svgWidth / 2, cy = svgHeight / 2;
+    const r = 80; 
+
+    const angleOffset = -Math.PI / 2;
+    const vertices = uids.map((_, i) => ({
+        x: cx + r * Math.cos(2 * Math.PI * i / n + angleOffset),
+        y: cy + r * Math.sin(2 * Math.PI * i / n + angleOffset)
+    }));
+
+    // Current position of the handle based on current distribution
+    let hx = cx, hy = cy;
+    const currentUserId = this._hass.user?.id;
+    if (this._distribution[currentUserId] === 100) {
+        const idx = uids.indexOf(currentUserId);
+        hx = vertices[idx].x; hy = vertices[idx].y;
+    }
+
+    const polyPath = vertices.map(v => `${v.x},${v.y}`).join(' ');
+
+    container.innerHTML = ` 
+        <svg width="${svgWidth}" height="${svgHeight}" style="overflow:visible; cursor:crosshair;" id="spider-svg">
+            <polygon points="${polyPath}" fill="var(--secondary-background-color)" stroke="var(--divider-color)" stroke-width="1" />
+            ${vertices.map((v, i) => {
+                const anchor = "middle";
+                const dx = 0;
+                const dy = v.y < cy ? -10 : 20;
+                const name = this.users[uids[i]].split(' ')[0];
+
+                return `
+                    <line x1="${cx}" y1="${cy}" x2="${v.x}" y2="${v.y}" stroke="var(--divider-color)" stroke-dasharray="2" />
+                    <text x="${v.x}" y="${v.y}" dx="${dx}" dy="${dy}" text-anchor="${anchor}" font-size="10" fill="var(--primary-text-color)">${name}</text>
+                    <circle cx="${v.x}" cy="${v.y}" r="3" fill="var(--divider-color)" />
+                `;
+            }).join('')}
+            <circle id="spider-handle" cx="${hx}" cy="${hy}" r="8" fill="var(--primary-color)" stroke="white" stroke-width="2" style="cursor:grab; shadow: 0 2px 4px rgba(0,0,0,0.3);" />
+        </svg>
+    `;
+
+    const svg = this.shadowRoot.getElementById('spider-svg');
+    const handle = this.shadowRoot.getElementById('spider-handle');
+
+    // Ensure svg and handle exist before attaching listeners
+    if (!svg || !handle) return;
+
+    const update = (e) => {
+        const rect = svg.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+        handle.setAttribute('cx', x);
+        handle.setAttribute('cy', y);
+
+        let totalWeight = 0;
+        const rawWeights = {};
+        uids.forEach((uid, i) => {
+            const d = Math.sqrt((x - vertices[i].x)**2 + (y - vertices[i].y)**2);
+            rawWeights[uid] = Math.pow(Math.max(0, (2 * r) - d), 3);
+            totalWeight += rawWeights[uid];
+        });
+
+        uids.forEach(uid => {
+            this._distribution[uid] = (rawWeights[uid] / totalWeight) * 100;
+        });
+
+        this._normalizeDistribution();
+        this._updateDistributionUI();
+    };
+
+    const onMove = (e) => { if (e.buttons > 0 || e.type === 'touchmove') update(e); };
+    svg.addEventListener('mousedown', update);
+    svg.addEventListener('mousemove', onMove);
+    svg.addEventListener('touchstart', update);
+    svg.addEventListener('touchmove', onMove);
+  }
+
+  /**
+   * Normalizes the current distribution to ensure the sum of points equals task complexity
+   * and points are rounded to 0.5 steps. This prevents values from exceeding 100%.
+   * @param {string|null} excludeUid - Optional UID to exclude from drift correction (keeps current slider stable).
+   */
+  _normalizeDistribution(excludeUid = null) {
+    const uids = this._activeUids || [];
+    const task = this.tasks[this._currentTaskId];
+    const totalComplexity = task.complexity || 5;
+
+    let currentPointSum = 0;
+    const ptsMap = {};
+
+    // 1. Initial rounding to 0.5 points
+    uids.forEach(uid => {
+        let pts = (this._distribution[uid] / 100) * totalComplexity;
+        pts = Math.round(pts * 2) / 2;
+        ptsMap[uid] = pts;
+        currentPointSum += pts;
+    });
+
+    // 2. Correct sum if rounding caused drift (diff is always a multiple of 0.5)
+    let diff = totalComplexity - currentPointSum;
+    if (diff !== 0) {
+        // Filter uids to avoid adjusting the one currently being moved by the user
+        const eligibleUids = uids.filter(uid => uid !== excludeUid);
+        const targetUids = eligibleUids.length > 0 ? eligibleUids : uids;
+        
+        // Adjust the user with the highest share (among eligible) to absorb the error
+        const adjustUid = targetUids.sort((a, b) => ptsMap[b] - ptsMap[a])[0];
+        ptsMap[adjustUid] = Math.max(0, ptsMap[adjustUid] + diff);
+    }
+
+    // 3. Update distribution percentages based on corrected points
+    uids.forEach(uid => {
+        this._distribution[uid] = (ptsMap[uid] / totalComplexity) * 100;
+    });
+  }
+
+  /**
+   * Updates only the labels in the distribution list for performance.
+   */
+  _updateDistributionUI() {
+    const uids = this._activeUids || [];
+    const task = this.tasks[this._currentTaskId];
+    const listItems = this.shadowRoot.querySelectorAll('.dist-row');
+    uids.forEach((uid, i) => {
+        const pts = ((this._distribution[uid] / 100) * task.complexity).toFixed(1);
+        const pct = this._distribution[uid].toFixed(1);
+        
+        const pctPtsSpan = listItems[i].querySelector('.dist-pct-pts');
+        if (pctPtsSpan) pctPtsSpan.textContent = `${pts} ${this.localize('points')}`;
+
+        const slider = listItems[i].querySelector('.user-dist-slider');
+        if (slider) {
+            slider.value = parseFloat(pct);
+        }
+    });
   }
 
   /**
    * Confirms the task completion for the selected users.
    */
   _confirmCompletion() {
-    const selected = [];
-    this.shadowRoot.querySelectorAll('.choice-cb').forEach(cb => {
-        if (cb.checked) selected.push(cb.value);
-    });
-    
+    const selected = (this._activeUids || []).filter(uid => this._distribution[uid] > 0);
     if (selected.length === 0) { 
         alert(this.localize('select_one')); 
         return; 
     }
+
+    // Round distribution values for the backend
+    const roundedDist = {};
+    const task = this.tasks[this._currentTaskId];
+    (this._activeUids || []).forEach(uid => {
+        if (this._distribution[uid] > 0) roundedDist[uid] = this._distribution[uid];
+    });
     
-    this._completeTask(this._currentTaskId, selected);
+    this._completeTask(this._currentTaskId, selected, roundedDist);
     this._closeChoiceModal();
+  }
+
+  /**
+   * Handles preset distribution buttons (100% for one user, or equal distribution).
+   * @param {string} preset - '100' or 'equal'.
+   * @param {string} [targetUid] - The user ID for '100%' preset.
+   */
+  _handlePresetDistribution(preset, targetUid = null) {
+    const uids = this._activeUids || [];
+    if (preset === 'equal') {
+        const share = 100 / uids.length;
+        uids.forEach(uid => this._distribution[uid] = share);
+    } else if (preset === '100' && targetUid) {
+        uids.forEach(uid => this._distribution[uid] = (uid === targetUid) ? 100 : 0);
+    }
+  this._normalizeDistribution();
+    this._updateDistributionUI();
+    this._updateSpiderHandlePosition(); // Update spider handle after preset
+  }
+
+  /**
+   * Handles changes from individual user sliders.
+   * @param {string} changedUid - The user ID whose slider was moved.
+   * @param {number} newValue - The new percentage value for that user.
+   */
+  _handleUserSliderChange(changedUid, newValue) {
+    const uids = this._activeUids || [];
+    const oldPct = this._distribution[changedUid];
+    const newPct = newValue;
+    const deltaPct = newPct - oldPct;
+
+    this._distribution[changedUid] = newPct;
+
+    // Redistribute delta among other users
+    const otherUids = uids.filter(uid => uid !== changedUid);
+    const totalOthersPct = otherUids.reduce((sum, uid) => sum + this._distribution[uid], 0);
+
+    if (totalOthersPct > 0) {
+        otherUids.forEach(uid => {
+            const proportion = this._distribution[uid] / totalOthersPct;
+            this._distribution[uid] = Math.max(0, this._distribution[uid] - (deltaPct * proportion));
+        });
+    } else if (otherUids.length > 0) { // If others are all 0, distribute delta evenly
+        const share = Math.abs(deltaPct) / otherUids.length;
+        otherUids.forEach(uid => {
+            this._distribution[uid] = Math.max(0, this._distribution[uid] + (deltaPct < 0 ? share : -share));
+        });
+    }
+
+    this._normalizeDistribution(changedUid); // Lock the slider the user is touching
+    this._updateDistributionUI();
+    this._updateSpiderHandlePosition(); // Update spider handle after slider change
   }
 
   /**
@@ -599,15 +862,69 @@ class TaskOrganizerCard extends HTMLElement {
    * @param {string} taskId - The task ID.
    * @param {string[]} completedBy - Array of user IDs who completed the task.
    */
-  _completeTask(taskId, completedBy) { 
-      this._hass.callWS({ 
-          type: 'task_organizer/complete_task', 
-          task_id: taskId, 
-          completed_by: completedBy 
-      }).then(() => { 
-          this._showToast(this.localize('done')); 
-          this._fetchData(); 
-      }); 
+  // Sends task completion data to the backend via WebSocket.
+  /**
+   * Sends task completion data to the backend via WebSocket.
+   * @param {string} taskId - The ID of the task to complete.
+   * @param {string[]} completedBy - List of user IDs who completed the task.
+   * @param {object|null} pointsDistribution - Mapping of user ID to point values.
+   */
+  _completeTask(taskId, completedBy, pointsDistribution = null) { 
+    const payload = { 
+      type: 'task_organizer/complete_task', 
+      task_id: taskId, 
+      completed_by: completedBy 
+    };
+    if (pointsDistribution) { 
+      payload.points_distribution = pointsDistribution; 
+    }
+    this._hass.callWS(payload)
+      .catch(err => {
+        console.error("TaskOrganizer: Fehler beim Abschließen der Aufgabe", err);
+        this._showToast("Fehler: " + (err.message || "Unbekannter Fehler beim Abschließen"));
+      });
+  }
+
+  /**
+   * Updates the position of the spider chart handle based on the current distribution.
+   * This is called after preset buttons or individual sliders are used.
+   */
+  _updateSpiderHandlePosition() {
+    const uids = this._activeUids || [];
+    const n = uids.length;
+    if (n < 3) return;
+
+    const svg = this.shadowRoot.getElementById('spider-svg');
+    const handle = this.shadowRoot.getElementById('spider-handle');
+    if (!svg || !handle) return;
+
+    const svgWidth = 200;
+    const svgHeight = 200;
+    const cx = svgWidth / 2, cy = svgHeight / 2;
+    const r = 80; 
+
+    const angleOffset = -Math.PI / 2;
+    const vertices = uids.map((_, i) => ({
+        x: cx + r * Math.cos(2 * Math.PI * i / n + angleOffset),
+        y: cy + r * Math.sin(2 * Math.PI * i / n + angleOffset)
+    }));
+
+    let weightedX = 0;
+    let weightedY = 0;
+    let totalWeight = 0;
+
+    uids.forEach((uid, i) => {
+        const weight = this._distribution[uid] / 100; // Use current percentage as weight
+        weightedX += vertices[i].x * weight;
+        weightedY += vertices[i].y * weight;
+        totalWeight += weight;
+    });
+
+    let finalCx = weightedX / totalWeight;
+    let finalCy = weightedY / totalWeight;
+
+    handle.setAttribute('cx', finalCx);
+    handle.setAttribute('cy', finalCy);
   }
 
   /**
@@ -648,6 +965,7 @@ class TaskOrganizerCard extends HTMLElement {
    * @param {string|null} taskId - The ID of the task to edit, or null for a new task.
    */
   _openModal(taskId = null) {
+    console.log("Opening modal for task:", taskId);
     this._editingTaskId = taskId;
     const modal = this.shadowRoot.getElementById('task-modal');
     this._subtasks = [];
@@ -817,6 +1135,7 @@ class TaskOrganizerCard extends HTMLElement {
    * @param {boolean} completeAfterSave - Whether to trigger the completion workflow immediately after saving.
    */
   _saveTask(completeAfterSave = false) {
+    console.log("Saving task...");
     const name = this.shadowRoot.getElementById('f-name')?.value?.trim();
     if (!name) {
         this._showToast("Name ist erforderlich!");
@@ -994,7 +1313,7 @@ class TaskOrganizerCard extends HTMLElement {
             <div class="modal-content">
                 <h2 style="margin: 0 0 8px 0;">${this.localize('who_did_it')}</h2>
                 <p style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 16px;">${this.localize('fair_points')}</p>
-                <div id="choice-assignees" style="display:flex; flex-direction:column; gap:8px;"></div>
+                <div id="choice-assignees" style="display:flex; flex-direction:column; gap:4px;"></div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
                     <ha-button id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
                     <ha-button raised id="btn-choice-confirm">${this.localize('confirm')}</ha-button>
