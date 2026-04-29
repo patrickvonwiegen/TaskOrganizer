@@ -4,8 +4,8 @@
  * de: German translations.
  */
 const I18N_BOARD = {
-  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points" },
-  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten" }
+  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points", height_lbl: "Height", width_lbl: "Width", title_lbl: "Title", show_history_lbl: "Show History" },
+  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten", height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel", show_history_lbl: "Verlauf anzeigen" }
 };
 
 /**
@@ -91,11 +91,21 @@ class TaskOrganizerLeaderboard extends HTMLElement {
   }
 
   /**
+   * Returns the editor element for GUI configuration.
+   * @returns {HTMLElement}
+   */
+  static getConfigElement() {
+    return document.createElement("task-organizer-leaderboard-editor");
+  }
+
+  /**
    * Sets the configuration from Home Assistant.
    * * @param {object} config - The card configuration.
    */
   setConfig(config) { 
+    if (!config) throw new Error("Invalid configuration");
     this.config = config; 
+    if (this._hass) this.render();
   }
 
   connectedCallback() { 
@@ -172,10 +182,13 @@ class TaskOrganizerLeaderboard extends HTMLElement {
    * Generates the custom CSS for the card view.
    */
   _getStyles() {
+    const width = this.config.card_width || '100%';
+    const height = this.config.card_height || 'auto';
+
     return `
       <style> 
-        :host { display: block; width: 100%; } 
-        ha-card { padding: 16px; text-align: center; width: 100%; box-sizing: border-box; } 
+        :host { display: block; width: ${width}; margin: 0 auto; } 
+        ha-card { padding: 16px; text-align: center; width: 100%; height: ${height}; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; } 
         .header { font-size: 20px; font-weight: bold; margin-bottom: 24px; } 
         .period-text { font-size: 12px; font-weight: normal; color: var(--secondary-text-color); margin-top: 4px; } 
         .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 8px; min-height: 200px; margin-top: 10px; } 
@@ -358,4 +371,91 @@ class TaskOrganizerLeaderboard extends HTMLElement {
   }
 }
 
+/**
+ * Editor for TaskOrganizerLeaderboard.
+ */
+class TaskOrganizerLeaderboardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  /**
+   * Translates a key using the static helper of the card.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  localize(key) {
+    return TaskOrganizerLeaderboard._localize(this._hass, key);
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (this._rendered) {
+        this._updateUI();
+        return;
+    }
+    this.innerHTML = `
+      <div class="card-config">
+        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <div style="display: flex; gap: 8px;">
+          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
+          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+        </div>
+        <ha-formfield label="${this.localize('show_history_lbl')}">
+          <ha-checkbox ${this._config.show_history !== false ? 'checked' : ''} configValue="show_history"></ha-checkbox>
+        </ha-formfield>
+      </div>
+      <style>
+        .card-config ha-textfield { display: block; margin-bottom: 8px; }
+      </style>
+    `;
+
+    this._rendered = true;
+    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
+    this._updateUI();
+  }
+
+  _updateUI() {
+    if (!this._rendered) return;
+    this.querySelectorAll('[configValue]').forEach(el => {
+        const key = el.getAttribute('configValue');
+        const value = this._config[key];
+        if (el.tagName === 'HA-CHECKBOX') {
+            el.checked = value !== false;
+        } else if (value !== undefined) {
+            el.value = value;
+        }
+    });
+  }
+
+  _valueChanged(ev) {
+    if (!this._config || !this._hass) return;
+    ev.stopPropagation();
+    const target = ev.target;
+    const configValue = target.configValue || target.getAttribute('configValue');
+    let newValue = target.value;
+
+    if (target.tagName === 'HA-CHECKBOX') {
+      newValue = target.checked;
+    }
+
+    if (this._config[configValue] === newValue) return;
+
+    const event = new CustomEvent("config-changed", {
+      detail: { config: { ...this._config, [configValue]: newValue } },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
+customElements.define('task-organizer-leaderboard-editor', TaskOrganizerLeaderboardEditor);
 customElements.define('task-organizer-leaderboard', TaskOrganizerLeaderboard);

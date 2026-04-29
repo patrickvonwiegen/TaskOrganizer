@@ -8,7 +8,7 @@ const I18N_CARD = {
     title: "Household Tasks", unknown: "Unknown", done: "Done!", saved: "Saved", 
     deleted: "Deleted", confirm_delete: "Really delete this task?", today: "Today", 
     in_days: "in {days} days", ago_days: "{days} days ago", points: "pts.", 
-    no_desc: "No description", who_did_it: "Who did it?", fair_points: "Points are shared fairly.", 
+    no_desc: "No description", who_did_it: "Who did it?", fair_points: "Adjust the work shares to keep it fair.", distribute_fairly: "Distribute Fairly", assign_all: "Assign",
     cancel: "Cancel", confirm: "Confirm", save: "Save", task: "Task", name_lbl: "Name", 
     desc_lbl: "Description (optional)", desc_placeholder: "Additional info...",
     interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
@@ -25,14 +25,27 @@ const I18N_CARD = {
     complete_subtasks_desc: "Complete some subtasks now or finish the main task completely.",
     prev: "Previous", next: "Next", page: "Page", 
     search_placeholder: "Search tasks...",
-    all_done: "All done",
-    search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear"
+    all_done: "All done", 
+    height_lbl: "Height", width_lbl: "Width", title_lbl: "Title",
+    items_per_page_lbl: "Items per Page",
+    show_search_lbl: "Show Search",
+    show_add_lbl: "Show Add Button",
+    show_edit_lbl: "Show Edit Button",
+    show_delete_lbl: "Show Delete Button",
+    sort_by_lbl: "Sort By",
+    sort_by_placeholder: "due_date, points, assignee, alphabet",
+    sort_order_lbl: "Sort Order",
+    sort_order_placeholder: "default, asc, desc",
+    filter_by_lbl: "Filter By",
+    filter_by_placeholder: "comma separated, e.g. !paused, due",
+    search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear",
+    help_link: "Configuration Guide (README)"
   },
   de: { 
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
     deleted: "Gelöscht", confirm_delete: "Aufgabe wirklich löschen?", today: "Heute", 
     in_days: "in {days} Tage(n)", ago_days: "vor {days} Tage(n)", points: "Pkt.", 
-    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Punkte werden fair geteilt.",
+    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Stelle die Arbeitsanteile ein, damit es fair bleibt.", distribute_fairly: "Gleichmäßig aufteilen", assign_all: "Zuweisen",
     cancel: "Abbrechen", confirm: "Bestätigen", save: "Speichern", task: "Aufgabe", name_lbl: "Name", 
     desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
     interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
@@ -49,8 +62,21 @@ const I18N_CARD = {
     complete_subtasks_desc: "Schließen Sie jetzt einige Unteraufgaben ab oder schließen Sie die Aufgabe komplett ab.",
     prev: "Zurück", next: "Weiter", page: "Seite", 
     search_placeholder: "Aufgaben suchen...",
-    all_done: "Alles erledigen",
-    search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren"
+    all_done: "Alles erledigen", 
+    height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel",
+    items_per_page_lbl: "Einträge pro Seite",
+    show_search_lbl: "Suche anzeigen",
+    show_add_lbl: "Hinzufügen-Button anzeigen",
+    show_edit_lbl: "Bearbeiten-Button anzeigen",
+    show_delete_lbl: "Löschen-Button anzeigen",
+    sort_by_lbl: "Sortieren nach",
+    sort_by_placeholder: "due_date, points, assignee, alphabet",
+    sort_order_lbl: "Sortierreihenfolge",
+    sort_order_placeholder: "default, asc, desc",
+    filter_by_lbl: "Filtern nach",
+    filter_by_placeholder: "Kommagetrennt, z.B. !paused, due",
+    search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren",
+    help_link: "Konfigurations-Handbuch (README)"
   }
 };
 
@@ -93,6 +119,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._subtasks = [];
     this._currentTaskId = null;
     this._completionSubtasks = [];
+    this._distribution = {};
     this.addEventListener('click', (ev) => this._handleCardClick(ev));
   }
 
@@ -149,10 +176,33 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
+   * Normalizes a string for comparison (lowercase and replaces German umlauts).
+   * @param {string} str - The string to normalize.
+   * @returns {string} - The normalized string.
+   */
+  _normalize(str) {
+    if (str === null || str === undefined) return "";
+    return str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss');
+  }
+
+  /**
+   * Returns the editor element for GUI configuration.
+   * @returns {HTMLElement}
+   */
+  static getConfigElement() {
+    return document.createElement("task-organizer-card-editor");
+  }
+
+  /**
    * Sets the configuration from Home Assistant.
    * @param {object} config - The card configuration.
    */
   setConfig(config) { 
+      if (!config) throw new Error("Invalid configuration");
       this._config = config; 
       this._skeletonBuilt = false; 
       if (this._hass) this._render();
@@ -257,7 +307,8 @@ class TaskOrganizerCard extends HTMLElement {
             el.classList.contains('action-btn') ||
             el.classList.contains('suggestion-item') ||
             el.classList.contains('subtask-check') ||
-            el.classList.contains('sub-complete-check')))
+            el.classList.contains('sub-complete-check') ||
+            el.classList.contains('dist-btn')))
     );
     
     if (!target) return;
@@ -308,6 +359,7 @@ class TaskOrganizerCard extends HTMLElement {
     else if (target.id === 'btn-type-recurring') this._updateTaskTypeUI(false);
     else if (target.id === 'btn-type-onetime') this._updateTaskTypeUI(true);
     // Subtask Handlers
+    else if (target.classList.contains('dist-btn')) this._handlePresetDistribution(target.dataset.preset, target.dataset.uid);
     else if (target.id === 'toggle-time-settings') this._toggleSection('time-settings-content');
     else if (target.id === 'toggle-subtasks') this._toggleSection('subtasks-content');
     else if (target.id === 'btn-add-subtask') this._addSubtask();
@@ -484,60 +536,320 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
-   * Checks if a task has multiple assignees and opens the choice modal if necessary.
+   * Logic to determine whether to show the assignee selection dialog or complete directly.
    * @param {string} taskId - The unique identifier of the task.
    */
   _proceedToAssigneeCheck(taskId) {
     const task = this.tasks[taskId];
-    let assignees = task.assignees;
+    const currentUserId = this._hass.user?.id;
+    let assignees = task.assignees || [];
     if (typeof assignees === 'string') assignees = [assignees];
-    if (!assignees) assignees = [];
 
-    if (assignees.length > 1) {
-        this._openChoiceModal(taskId, assignees);
+    // Only skip the dialog if the task is assigned EXCLUSIVELY to the current user
+    const isOnlyMe = assignees.length === 1 && assignees[0] === currentUserId;
+
+    if (isOnlyMe) {
+      this._completeTask(taskId, [currentUserId], { [currentUserId]: 100 });
     } else {
-      const user = assignees.length === 1 ? assignees : [this._hass.user.id];
-      this._completeTask(taskId, user);
+      this._openChoiceModal(taskId);
     }
   }
 
   /**
-   * Opens a modal for selecting which user(s) performed the task.
-   * @param {string} taskId - The task ID.
-   * @param {string[]} assignees - List of user IDs assigned to the task.
+   * Opens the point distribution modal and initializes the state.
+   * @param {string} taskId - The unique identifier of the task.
    */
-  _openChoiceModal(taskId, assignees) {
+  _openChoiceModal(taskId) {
     this._currentTaskId = taskId;
-    const currentUserId = this._hass.user.id;
-    const container = this.shadowRoot.getElementById('choice-assignees');
+    const task = this.tasks[taskId];
+    const currentUserId = this._hass.user?.id;
     
-    container.innerHTML = assignees.map(uid => {
-      const isChecked = (uid === currentUserId) ? 'checked' : '';
-      return `
-        <ha-formfield label="${this.users[uid] || this.localize('unknown')}">
-            <ha-checkbox class="choice-cb" value="${uid}" ${isChecked}></ha-checkbox>
-        </ha-formfield>`;
-    }).join('');
-    
+    // Calculate relevant users: assignees + current user
+    const taskAssignees = Array.isArray(task.assignees) ? task.assignees : [];
+    this._activeUids = Object.keys(this.users).filter(uid => 
+        taskAssignees.length === 0 || taskAssignees.includes(uid) || uid === currentUserId
+    );
+
+    // Initial distribution: current user 100%, others 0%
+    this._distribution = {}; // Reset distribution
+    this._activeUids.forEach(uid => { this._distribution[uid] = (uid === currentUserId) ? 100 : 0; });
+
+    this._renderChoiceModalContent();
     this.shadowRoot.getElementById('choice-modal').classList.add('open');
+  }
+
+  /**
+   * Renders the point distribution UI inside the choice modal.
+   */
+  _renderChoiceModalContent() {
+    const container = this.shadowRoot.getElementById('choice-assignees');
+    if (!container) return;
+
+    const uids = this._activeUids || [];
+    const task = this.tasks[this._currentTaskId];
+    let html = '';
+    const pointStepPct = (0.5 / (task.complexity || 5)) * 100;
+
+    // Render spider chart container only for 3+ users
+    if (uids.length > 2) {
+        html += `<div id="spider-container" style="display:flex; justify-content:center; margin-bottom: 0px;"></div>`;
+    }
+
+    // Distribute Fairly Button (Right-aligned closer to the diagram)
+    html += `
+        <div style="display:flex; justify-content:flex-end; margin-top: -10px; margin-bottom: 8px;">
+            <ha-button appearance="plain" variant="brand" class="dist-btn" data-preset="equal" style="--mdc-typography-button-font-size: 10px; height: 26px;">${this.localize('distribute_fairly')}</ha-button>
+        </div>`;
+
+    // User distribution list
+    html += `<div id="dist-list" style="display:flex; flex-direction:column; gap:12px;">`;
+    uids.forEach(uid => {
+        const pct = (this._distribution[uid] || 0).toFixed(1); // Keep one decimal for display
+        const pts = ((pct / 100) * (task.complexity || 0)).toFixed(1); // Calculate points based on percentage
+        html += `
+            <div class="dist-row" style="display:flex; align-items:flex-start; gap:12px; padding: 8px 0; border-bottom: 1px solid var(--divider-color);">
+                <div style="display:flex; flex-direction:column; flex:1; min-width:0;">
+                    <span style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${this.users[uid]}</span>
+                    <span class="dist-pct-pts" style="font-size: 11px; color: var(--secondary-text-color);">${pts} ${this.localize('points')}</span>
+                </div>
+                <input type="range" class="user-dist-slider" data-uid="${uid}" min="0" max="100" step="${pointStepPct}" value="${pct}" style="flex:1.5; height:8px; cursor:pointer; margin-top: 6px;">
+                <ha-button appearance="plain" variant="brand" class="dist-btn" data-preset="100" data-uid="${uid}" style="--mdc-typography-button-font-size: 9px; height: 22px; min-width: 90px; margin-top: -5px;">${this.localize('assign_all')}</ha-button>
+            </div>
+        `;
+    });
+    html += `</div>`;
+
+    container.innerHTML = html;
+
+    // Only initialize the spider chart if more than 2 users are involved
+    if (uids.length > 2) {
+        this._renderSpiderChart();
+    }
+    // Attach input listeners for individual user sliders
+    this.shadowRoot.querySelectorAll('.user-dist-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => this._handleUserSliderChange(e.target.dataset.uid, parseFloat(e.target.value)));
+    });
+  }
+
+  /**
+   * Renders a spider chart for 3+ users.
+   */
+  _renderSpiderChart() {
+    const container = this.shadowRoot.getElementById('spider-container');
+    if (!container) return;
+    
+    const uids = this._activeUids || [];
+    const n = uids.length;
+    if (n < 3) return;
+
+    const svgWidth = 200;
+    const svgHeight = 200;
+    const cx = svgWidth / 2, cy = svgHeight / 2;
+    const r = 80; 
+
+    const angleOffset = -Math.PI / 2;
+    const vertices = uids.map((_, i) => ({
+        x: cx + r * Math.cos(2 * Math.PI * i / n + angleOffset),
+        y: cy + r * Math.sin(2 * Math.PI * i / n + angleOffset)
+    }));
+
+    // Current position of the handle based on current distribution
+    let hx = cx, hy = cy;
+    const currentUserId = this._hass.user?.id;
+    if (this._distribution[currentUserId] === 100) {
+        const idx = uids.indexOf(currentUserId);
+        hx = vertices[idx].x; hy = vertices[idx].y;
+    }
+
+    const polyPath = vertices.map(v => `${v.x},${v.y}`).join(' ');
+
+    container.innerHTML = ` 
+        <svg width="${svgWidth}" height="${svgHeight}" style="overflow:visible; cursor:crosshair;" id="spider-svg">
+            <polygon points="${polyPath}" fill="var(--secondary-background-color)" stroke="var(--divider-color)" stroke-width="1" />
+            ${vertices.map((v, i) => {
+                const anchor = "middle";
+                const dx = 0;
+                const dy = v.y < cy ? -10 : 20;
+                const name = this.users[uids[i]].split(' ')[0];
+
+                return `
+                    <line x1="${cx}" y1="${cy}" x2="${v.x}" y2="${v.y}" stroke="var(--divider-color)" stroke-dasharray="2" />
+                    <text x="${v.x}" y="${v.y}" dx="${dx}" dy="${dy}" text-anchor="${anchor}" font-size="10" fill="var(--primary-text-color)">${name}</text>
+                    <circle cx="${v.x}" cy="${v.y}" r="3" fill="var(--divider-color)" />
+                `;
+            }).join('')}
+            <circle id="spider-handle" cx="${hx}" cy="${hy}" r="8" fill="var(--primary-color)" stroke="white" stroke-width="2" style="cursor:grab; shadow: 0 2px 4px rgba(0,0,0,0.3);" />
+        </svg>
+    `;
+
+    const svg = this.shadowRoot.getElementById('spider-svg');
+    const handle = this.shadowRoot.getElementById('spider-handle');
+
+    // Ensure svg and handle exist before attaching listeners
+    if (!svg || !handle) return;
+
+    const update = (e) => {
+        const rect = svg.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+        handle.setAttribute('cx', x);
+        handle.setAttribute('cy', y);
+
+        let totalWeight = 0;
+        const rawWeights = {};
+        uids.forEach((uid, i) => {
+            const d = Math.sqrt((x - vertices[i].x)**2 + (y - vertices[i].y)**2);
+            rawWeights[uid] = Math.pow(Math.max(0, (2 * r) - d), 3);
+            totalWeight += rawWeights[uid];
+        });
+
+        uids.forEach(uid => {
+            this._distribution[uid] = (rawWeights[uid] / totalWeight) * 100;
+        });
+
+        this._normalizeDistribution();
+        this._updateDistributionUI();
+    };
+
+    const onMove = (e) => { if (e.buttons > 0 || e.type === 'touchmove') update(e); };
+    svg.addEventListener('mousedown', update);
+    svg.addEventListener('mousemove', onMove);
+    svg.addEventListener('touchstart', update);
+    svg.addEventListener('touchmove', onMove);
+  }
+
+  /**
+   * Normalizes the current distribution to ensure the sum of points equals task complexity
+   * and points are rounded to 0.5 steps. This prevents values from exceeding 100%.
+   * @param {string|null} excludeUid - Optional UID to exclude from drift correction (keeps current slider stable).
+   */
+  _normalizeDistribution(excludeUid = null) {
+    const uids = this._activeUids || [];
+    const task = this.tasks[this._currentTaskId];
+    const totalComplexity = task.complexity || 5;
+
+    let currentPointSum = 0;
+    const ptsMap = {};
+
+    // 1. Initial rounding to 0.5 points
+    uids.forEach(uid => {
+        let pts = (this._distribution[uid] / 100) * totalComplexity;
+        pts = Math.round(pts * 2) / 2;
+        ptsMap[uid] = pts;
+        currentPointSum += pts;
+    });
+
+    // 2. Correct sum if rounding caused drift (diff is always a multiple of 0.5)
+    let diff = totalComplexity - currentPointSum;
+    if (diff !== 0) {
+        // Filter uids to avoid adjusting the one currently being moved by the user
+        const eligibleUids = uids.filter(uid => uid !== excludeUid);
+        const targetUids = eligibleUids.length > 0 ? eligibleUids : uids;
+        
+        // Adjust the user with the highest share (among eligible) to absorb the error
+        const adjustUid = targetUids.sort((a, b) => ptsMap[b] - ptsMap[a])[0];
+        ptsMap[adjustUid] = Math.max(0, ptsMap[adjustUid] + diff);
+    }
+
+    // 3. Update distribution percentages based on corrected points
+    uids.forEach(uid => {
+        this._distribution[uid] = (ptsMap[uid] / totalComplexity) * 100;
+    });
+  }
+
+  /**
+   * Updates only the labels in the distribution list for performance.
+   */
+  _updateDistributionUI() {
+    const uids = this._activeUids || [];
+    const task = this.tasks[this._currentTaskId];
+    const listItems = this.shadowRoot.querySelectorAll('.dist-row');
+    uids.forEach((uid, i) => {
+        const pts = ((this._distribution[uid] / 100) * task.complexity).toFixed(1);
+        const pct = this._distribution[uid].toFixed(1);
+        
+        const pctPtsSpan = listItems[i].querySelector('.dist-pct-pts');
+        if (pctPtsSpan) pctPtsSpan.textContent = `${pts} ${this.localize('points')}`;
+
+        const slider = listItems[i].querySelector('.user-dist-slider');
+        if (slider) {
+            slider.value = parseFloat(pct);
+        }
+    });
   }
 
   /**
    * Confirms the task completion for the selected users.
    */
   _confirmCompletion() {
-    const selected = [];
-    this.shadowRoot.querySelectorAll('.choice-cb').forEach(cb => {
-        if (cb.checked) selected.push(cb.value);
-    });
-    
+    const selected = (this._activeUids || []).filter(uid => this._distribution[uid] > 0);
     if (selected.length === 0) { 
         alert(this.localize('select_one')); 
         return; 
     }
+
+    // Round distribution values for the backend
+    const roundedDist = {};
+    const task = this.tasks[this._currentTaskId];
+    (this._activeUids || []).forEach(uid => {
+        if (this._distribution[uid] > 0) roundedDist[uid] = this._distribution[uid];
+    });
     
-    this._completeTask(this._currentTaskId, selected);
+    this._completeTask(this._currentTaskId, selected, roundedDist);
     this._closeChoiceModal();
+  }
+
+  /**
+   * Handles preset distribution buttons (100% for one user, or equal distribution).
+   * @param {string} preset - '100' or 'equal'.
+   * @param {string} [targetUid] - The user ID for '100%' preset.
+   */
+  _handlePresetDistribution(preset, targetUid = null) {
+    const uids = this._activeUids || [];
+    if (preset === 'equal') {
+        const share = 100 / uids.length;
+        uids.forEach(uid => this._distribution[uid] = share);
+    } else if (preset === '100' && targetUid) {
+        uids.forEach(uid => this._distribution[uid] = (uid === targetUid) ? 100 : 0);
+    }
+  this._normalizeDistribution();
+    this._updateDistributionUI();
+    this._updateSpiderHandlePosition(); // Update spider handle after preset
+  }
+
+  /**
+   * Handles changes from individual user sliders.
+   * @param {string} changedUid - The user ID whose slider was moved.
+   * @param {number} newValue - The new percentage value for that user.
+   */
+  _handleUserSliderChange(changedUid, newValue) {
+    const uids = this._activeUids || [];
+    const oldPct = this._distribution[changedUid];
+    const newPct = newValue;
+    const deltaPct = newPct - oldPct;
+
+    this._distribution[changedUid] = newPct;
+
+    // Redistribute delta among other users
+    const otherUids = uids.filter(uid => uid !== changedUid);
+    const totalOthersPct = otherUids.reduce((sum, uid) => sum + this._distribution[uid], 0);
+
+    if (totalOthersPct > 0) {
+        otherUids.forEach(uid => {
+            const proportion = this._distribution[uid] / totalOthersPct;
+            this._distribution[uid] = Math.max(0, this._distribution[uid] - (deltaPct * proportion));
+        });
+    } else if (otherUids.length > 0) { // If others are all 0, distribute delta evenly
+        const share = Math.abs(deltaPct) / otherUids.length;
+        otherUids.forEach(uid => {
+            this._distribution[uid] = Math.max(0, this._distribution[uid] + (deltaPct < 0 ? share : -share));
+        });
+    }
+
+    this._normalizeDistribution(changedUid); // Lock the slider the user is touching
+    this._updateDistributionUI();
+    this._updateSpiderHandlePosition(); // Update spider handle after slider change
   }
 
   /**
@@ -552,15 +864,69 @@ class TaskOrganizerCard extends HTMLElement {
    * @param {string} taskId - The task ID.
    * @param {string[]} completedBy - Array of user IDs who completed the task.
    */
-  _completeTask(taskId, completedBy) { 
-      this._hass.callWS({ 
-          type: 'task_organizer/complete_task', 
-          task_id: taskId, 
-          completed_by: completedBy 
-      }).then(() => { 
-          this._showToast(this.localize('done')); 
-          this._fetchData(); 
-      }); 
+  // Sends task completion data to the backend via WebSocket.
+  /**
+   * Sends task completion data to the backend via WebSocket.
+   * @param {string} taskId - The ID of the task to complete.
+   * @param {string[]} completedBy - List of user IDs who completed the task.
+   * @param {object|null} pointsDistribution - Mapping of user ID to point values.
+   */
+  _completeTask(taskId, completedBy, pointsDistribution = null) { 
+    const payload = { 
+      type: 'task_organizer/complete_task', 
+      task_id: taskId, 
+      completed_by: completedBy 
+    };
+    if (pointsDistribution) { 
+      payload.points_distribution = pointsDistribution; 
+    }
+    this._hass.callWS(payload)
+      .catch(err => {
+        console.error("TaskOrganizer: Fehler beim Abschließen der Aufgabe", err);
+        this._showToast("Fehler: " + (err.message || "Unbekannter Fehler beim Abschließen"));
+      });
+  }
+
+  /**
+   * Updates the position of the spider chart handle based on the current distribution.
+   * This is called after preset buttons or individual sliders are used.
+   */
+  _updateSpiderHandlePosition() {
+    const uids = this._activeUids || [];
+    const n = uids.length;
+    if (n < 3) return;
+
+    const svg = this.shadowRoot.getElementById('spider-svg');
+    const handle = this.shadowRoot.getElementById('spider-handle');
+    if (!svg || !handle) return;
+
+    const svgWidth = 200;
+    const svgHeight = 200;
+    const cx = svgWidth / 2, cy = svgHeight / 2;
+    const r = 80; 
+
+    const angleOffset = -Math.PI / 2;
+    const vertices = uids.map((_, i) => ({
+        x: cx + r * Math.cos(2 * Math.PI * i / n + angleOffset),
+        y: cy + r * Math.sin(2 * Math.PI * i / n + angleOffset)
+    }));
+
+    let weightedX = 0;
+    let weightedY = 0;
+    let totalWeight = 0;
+
+    uids.forEach((uid, i) => {
+        const weight = this._distribution[uid] / 100; // Use current percentage as weight
+        weightedX += vertices[i].x * weight;
+        weightedY += vertices[i].y * weight;
+        totalWeight += weight;
+    });
+
+    let finalCx = weightedX / totalWeight;
+    let finalCy = weightedY / totalWeight;
+
+    handle.setAttribute('cx', finalCx);
+    handle.setAttribute('cy', finalCy);
   }
 
   /**
@@ -601,6 +967,7 @@ class TaskOrganizerCard extends HTMLElement {
    * @param {string|null} taskId - The ID of the task to edit, or null for a new task.
    */
   _openModal(taskId = null) {
+    console.log("Opening modal for task:", taskId);
     this._editingTaskId = taskId;
     const modal = this.shadowRoot.getElementById('task-modal');
     this._subtasks = [];
@@ -770,6 +1137,7 @@ class TaskOrganizerCard extends HTMLElement {
    * @param {boolean} completeAfterSave - Whether to trigger the completion workflow immediately after saving.
    */
   _saveTask(completeAfterSave = false) {
+    console.log("Saving task...");
     const name = this.shadowRoot.getElementById('f-name')?.value?.trim();
     if (!name) {
         this._showToast("Name ist erforderlich!");
@@ -848,10 +1216,13 @@ class TaskOrganizerCard extends HTMLElement {
    * @returns {string} - The CSS style string.
    */
   _getStyles() {
+      const height = this._config.card_height || '100%';
+      const width = this._config.card_width || '100%';
+
       return `
         <style>
-          :host { display: block; width: 100%; height: 100%; } 
-          ha-card { width: 100%; height: 100%; padding: 16px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; position: relative; } 
+          :host { display: block; width: ${width}; margin: 0 auto; } 
+          ha-card { width: 100%; height: ${height}; padding: 16px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; position: relative; min-height: 100px; } 
           
           .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } 
           .header span { font-size: 20px; font-weight: bold; color: var(--primary-text-color); } 
@@ -944,9 +1315,9 @@ class TaskOrganizerCard extends HTMLElement {
             <div class="modal-content">
                 <h2 style="margin: 0 0 8px 0;">${this.localize('who_did_it')}</h2>
                 <p style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 16px;">${this.localize('fair_points')}</p>
-                <div id="choice-assignees" style="display:flex; flex-direction:column; gap:8px;"></div>
+                <div id="choice-assignees" style="display:flex; flex-direction:column; gap:4px;"></div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                    <ha-button id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button appearance="plain" variant="brand" id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
                     <ha-button raised id="btn-choice-confirm">${this.localize('confirm')}</ha-button>
                 </div>
             </div>
@@ -958,7 +1329,7 @@ class TaskOrganizerCard extends HTMLElement {
                 <p style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 16px; font-style: italic;">${this.localize('complete_subtasks_desc')}</p>
                 <div id="sub-completion-list" style="display:flex; flex-direction:column; gap:8px;"></div>
                 <div style="display:flex; justify-content:flex-end; align-items: center; gap:8px; margin-top:24px; flex-wrap: wrap;">
-                    <ha-button id="btn-submodal-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button appearance="plain" variant="brand" id="btn-submodal-cancel">${this.localize('cancel')}</ha-button>
                     <div style="flex: 1;"></div>
                     <ha-button id="btn-submodal-save">${this.localize('save')}</ha-button>
                     <ha-button raised id="btn-submodal-all">${this.localize('all_done')}</ha-button>
@@ -1050,7 +1421,7 @@ class TaskOrganizerCard extends HTMLElement {
                 </div>
                 
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                    <ha-button id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
                     <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
                 </div>
             </div>
@@ -1284,13 +1655,9 @@ class TaskOrganizerCard extends HTMLElement {
             else if (filterName === 'paused') match = isPausedFilter;
             else if (filterName === 'onetime') match = isOnetime;
             else if (filterName.startsWith('room:')) {
-                const targetArea = filterName.substring(5).toLowerCase();
-                const areaId = (task.area || "").toLowerCase();
-                let areaDisplayName = "";
-                if (task.area && this._hass.areas && this._hass.areas[task.area]) {
-                    areaDisplayName = (this._hass.areas[task.area].name || "").toLowerCase();
-                }
-                match = (areaId === targetArea || areaDisplayName === targetArea);
+                // Normalize both target area from filter and task area for reliable matching
+                const targetArea = this._normalize(filterName.substring(5));
+                match = (this._normalize(task.area) === targetArea);
             } else match = true; // unknown filter, ignore
 
             if (negate) match = !match;
@@ -1442,4 +1809,127 @@ class TaskOrganizerCard extends HTMLElement {
     wrapper.innerHTML = html;
   }
 }
+
+/**
+ * Editor for the TaskOrganizerCard.
+ */
+class TaskOrganizerCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  /**
+   * Translates a key using the static helper of the card.
+   * @param {string} key - The translation key.
+   * @returns {string} - The translated text.
+   */
+  localize(key) {
+    return TaskOrganizerCard._localize(this._hass, key);
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (this._rendered) {
+        this._updateUI();
+        return;
+    }
+    this.innerHTML = `
+      <div class="card-config">
+        <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px; border: 1px solid var(--divider-color);">
+          <ha-icon icon="mdi:help-circle-outline" style="color: var(--primary-color);"></ha-icon>
+          <a href="https://github.com/PatrickvonWiegen/TaskOrganizer/blob/main/README.md#1-household-tasks-task-organizer-card" target="_blank" rel="noreferrer" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">
+            ${this.localize('help_link')}
+          </a>
+        </div>
+        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <div style="display: flex; gap: 8px;">
+          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
+          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+        </div>
+        <ha-textfield label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-textfield>
+        
+        <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px;">
+          <ha-formfield label="${this.localize('show_search_lbl')}">
+            <ha-checkbox ${this._config.show_search !== false ? 'checked' : ''} configValue="show_search"></ha-checkbox>
+          </ha-formfield>
+          <ha-formfield label="${this.localize('show_add_lbl')}">
+            <ha-checkbox ${this._config.show_add !== false ? 'checked' : ''} configValue="show_add"></ha-checkbox>
+          </ha-formfield>
+          <ha-formfield label="${this.localize('show_edit_lbl')}">
+            <ha-checkbox ${this._config.show_edit !== false ? 'checked' : ''} configValue="show_edit"></ha-checkbox>
+          </ha-formfield>
+          <ha-formfield label="${this.localize('show_delete_lbl')}">
+            <ha-checkbox ${this._config.show_delete !== false ? 'checked' : ''} configValue="show_delete"></ha-checkbox>
+          </ha-formfield>
+        </div>
+
+        <ha-textfield label="${this.localize('sort_by_lbl')}" placeholder="${this.localize('sort_by_placeholder')}" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+        <ha-textfield label="${this.localize('sort_order_lbl')}" placeholder="${this.localize('sort_order_placeholder')}" value="${this._config.sort_order || 'default'}" configValue="sort_order" style="width: 100%; margin-top: 8px;"></ha-textfield>
+        <ha-textfield label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || ''}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+      </div>
+      <style>
+        .card-config ha-textfield, .card-config ha-select {
+          display: block;
+          margin-bottom: 8px;
+        }
+        ha-formfield {
+          display: flex;
+          align-items: center;
+        }
+      </style>
+    `;
+
+    this._rendered = true;
+    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
+    this._updateUI();
+  }
+
+  /**
+   * Updates the UI elements with current config values without re-rendering the whole HTML.
+   */
+  _updateUI() {
+    if (!this._rendered) return;
+    this.querySelectorAll('[configValue]').forEach(el => {
+        const key = el.getAttribute('configValue');
+        const value = this._config[key];
+        if (el.tagName === 'HA-CHECKBOX') {
+            el.checked = value !== false;
+        } else if (value !== undefined) {
+            el.value = value;
+        }
+    });
+  }
+
+  _valueChanged(ev) {
+    if (!this._config || !this._hass) return;
+    ev.stopPropagation();
+    const target = ev.target;
+    const configValue = target.configValue || target.getAttribute('configValue');
+    let newValue = (target.value !== undefined) ? target.value : target.getAttribute('value');
+
+    if (target.tagName === 'HA-CHECKBOX') {
+      newValue = target.checked;
+    } else if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
+      newValue = newValue === "" ? undefined : parseInt(newValue);
+    }
+
+    if (this._config[configValue] === newValue) return;
+
+    const event = new CustomEvent("config-changed", {
+      detail: { config: { ...this._config, [configValue]: newValue } },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
+customElements.define('task-organizer-card-editor', TaskOrganizerCardEditor);
 customElements.define('task-organizer-card', TaskOrganizerCard);

@@ -1,6 +1,14 @@
 ﻿﻿# Changelog
 
-## [1.4.0] - 2024-04-16
+## [1.5.0]
+### 🚀 New Features
+- **GUI Configuration Editor:** All Lovelace cards now support the Home Assistant Visual Editor. Parameters can be adjusted via the UI without manual YAML editing.
+- **Flexible Point Distribution:** When completing a task with multiple assignees, users can now distribute points flexibly via a slider. If there are more than two assignees, a network diagram is also provided so that the tasks can be easily assigned.
+
+### 🐛 Bug Fixes
+- **Consistent Cancel Button Styling**: All "Cancel" buttons across the Lovelace cards now have a consistent style (blue text on a transparent background).
+
+## [1.4.0]
 ### 🚀 New Features
 - **Subtasks:** Tasks can now have subtasks. Added progress indicators, hover-text, and backend support for all relevant services and websocket commands.
 - **UI Improvements:** Added a one-time task and subtask indicator icon next to the task name.
@@ -11,7 +19,7 @@
 - **Sensors:** Updated due/overdue calculation to use Home Assistant's local time utilities for consistent task tracking.
 - **Task-Card:** Changed cursor to help (question mark) when hovering over assignees for better UX.
 
-## [1.3.0] - 2024-04-12
+## [1.3.0]
 ### ⚠️ Breaking Changes
 - **task-organizer-card:** The `filter_by` configuration logic has been completely rewritten. It now supports multiple comma-separated filters and negations (e.g., `!due, !paused`). All applied filters are combined with a logical AND.
 - The `active`, `due_and_overdue`, `inactive`, and `unassigned` filter options have been **removed**. If you used them in your Lovelace dashboard cards, you **must update** your configuration:
@@ -28,7 +36,7 @@
 ### 🐛 Bug Fixes
 - Dynamic and redesigned leaderboard
 
-## [1.2.0] - 2024-04-12
+## [1.2.0]
 ### ⚠️ Breaking Changes
 - Sensor `task_organizer_due_tasks` transfered into new sensor `task_organizer_due_and_overdue_tasks`
 
@@ -51,7 +59,7 @@
 - Design adapted to home assistant
 - Replaced browser alerts with Home Assistant toast notifications for better user experience
 
-## [1.1.0] - 2024-03-30
+## [1.1.0]
 ### 🚀 New Features
 - Icon added
 - Options flow (Integration Konfiguration) added
