@@ -1236,7 +1236,7 @@ class TaskOrganizerCard extends HTMLElement {
           
           .search-container { display: none; margin-bottom: 15px; position: relative; }
           .search-container.visible { display: flex; align-items: center; gap: 8px; }
-          .clear-search { position: absolute; right: 10px; cursor: pointer; color: var(--secondary-text-color); transition: color 0.2s; }
+          .clear-search { color: var(--secondary-text-color); transition: color 0.2s; }
           .clear-search:hover { color: var(--primary-text-color); }
           
           #task-list-wrapper { display: flex; flex-direction: column; flex-grow: 1; width: 100%; }
@@ -1305,8 +1305,12 @@ class TaskOrganizerCard extends HTMLElement {
         </div>
         
         <div class="search-container" id="search-container">
-            <ha-textfield class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}" icon="mdi:magnify" style="width: 100%;"></ha-textfield>
-            <ha-icon icon="mdi:close" class="clear-search" id="btn-search-clear" title="${this.localize('clear_btn')}"></ha-icon>
+            <ha-textfield class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}" style="width: 100%;">
+                <ha-icon icon="mdi:magnify" slot="leadingIcon"></ha-icon>
+                <ha-icon-button slot="suffix" class="clear-search" id="btn-search-clear" title="${this.localize('clear_btn')}">
+                    <ha-icon icon="mdi:close"></ha-icon>
+                </ha-icon-button>
+            </ha-textfield>
         </div>
 
         <div id="task-list-wrapper"></div>

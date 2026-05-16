@@ -1,4 +1,8 @@
-﻿﻿# Changelog
+﻿﻿﻿﻿# Changelog
+
+## [1.5.1]
+### 🐛 Bug Fixes
+- **Search Field Compatibility:** Fixed the search field and delete button display behavior in the Task Organizer Card for Home Assistant 2026.5.x and later.
 
 ## [1.5.0]
 ### 🚀 New Features
