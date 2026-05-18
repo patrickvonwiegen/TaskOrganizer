@@ -402,22 +402,22 @@ class TaskOrganizerLeaderboardEditor extends HTMLElement {
     }
     this.innerHTML = `
       <div class="card-config">
-        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <ha-input label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-input>
         <div style="display: flex; gap: 8px;">
-          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
-          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+          <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
+          <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
         <ha-formfield label="${this.localize('show_history_lbl')}">
           <ha-checkbox ${this._config.show_history !== false ? 'checked' : ''} configValue="show_history"></ha-checkbox>
         </ha-formfield>
       </div>
       <style>
-        .card-config ha-textfield { display: block; margin-bottom: 8px; }
+        .card-config ha-input { display: block; margin-bottom: 8px; }
       </style>
     `;
 
     this._rendered = true;
-    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-input').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
     this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
     this._updateUI();
   }

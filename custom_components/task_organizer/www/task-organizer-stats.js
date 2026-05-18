@@ -430,7 +430,7 @@ class TaskOrganizerStats extends HTMLElement {
           <div class="modal-content">
             <h2 style="margin: 0 0 8px 0;">${this.localize('edit')}</h2>
             
-            <ha-textfield id="edit-points" type="number" label="${this.localize('points')}" step="0.1"></ha-textfield>
+            <ha-input id="edit-points" type="number" label="${this.localize('points')}" step="0.1"></ha-input>
             
             <div>
                 <label class="form-label">${this.localize('user')}</label>
@@ -487,16 +487,16 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     }
     this.innerHTML = `
       <div class="card-config">
-        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <ha-input label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-input>
         <div style="display: flex; gap: 8px;">
-          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
-          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+          <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
+          <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-textfield label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-textfield>
-        <ha-textfield label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || 'all'}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+        <ha-input label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-input>
+        <ha-input label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || 'all'}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-input>
       </div>
       <style>
-        .card-config ha-textfield {
+        .card-config ha-input {
           display: block;
           margin-bottom: 8px;
         }
@@ -504,7 +504,7 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     `;
 
     this._rendered = true;
-    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-input').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
     this._updateUI();
   }
 
@@ -524,7 +524,7 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     const configValue = target.configValue || target.getAttribute('configValue');
     let newValue = target.value !== undefined ? target.value : target.getAttribute('value');
 
-    if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
+    if (target.tagName === 'HA-INPUT' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
       newValue = newValue === "" ? undefined : parseInt(newValue);
     }
 
