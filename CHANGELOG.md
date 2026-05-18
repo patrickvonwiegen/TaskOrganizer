@@ -1,4 +1,8 @@
-﻿﻿﻿﻿# Changelog
+﻿﻿# Changelog
+
+## [1.5.2]
+### 🐛 Bug Fixes
+- **Frontend Component Migration:** Updated `ha-textfield` components to `ha-input` and adjusted icon slot names in all cards for compatibility with Home Assistant 2026.5.x
 
 ## [1.5.1]
 ### 🐛 Bug Fixes
