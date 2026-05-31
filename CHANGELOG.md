@@ -4,6 +4,14 @@
 ### 🚀 New Features
 - **Reset Event:** Added `task_organizer_reset` event which is triggered when points are archived (end of month or manual). This enables automations for winner announcements.
 
+## [1.5.2]
+### 🐛 Bug Fixes
+- **Frontend Component Migration:** Updated `ha-textfield` components to `ha-input` and adjusted icon slot names in all cards for compatibility with Home Assistant 2026.5.x
+
+## [1.5.1]
+### 🐛 Bug Fixes
+- **Search Field Compatibility:** Fixed the search field and delete button display behavior in the Task Organizer Card for Home Assistant 2026.5.x and later.
+
 ## [1.5.0]
 ### 🚀 New Features
 - **GUI Configuration Editor:** All Lovelace cards now support the Home Assistant Visual Editor. Parameters can be adjusted via the UI without manual YAML editing.

@@ -1236,7 +1236,7 @@ class TaskOrganizerCard extends HTMLElement {
           
           .search-container { display: none; margin-bottom: 15px; position: relative; }
           .search-container.visible { display: flex; align-items: center; gap: 8px; }
-          .clear-search { position: absolute; right: 10px; cursor: pointer; color: var(--secondary-text-color); transition: color 0.2s; }
+          .clear-search { color: var(--secondary-text-color); transition: color 0.2s; }
           .clear-search:hover { color: var(--primary-text-color); }
           
           #task-list-wrapper { display: flex; flex-direction: column; flex-grow: 1; width: 100%; }
@@ -1305,8 +1305,12 @@ class TaskOrganizerCard extends HTMLElement {
         </div>
         
         <div class="search-container" id="search-container">
-            <ha-textfield class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}" icon="mdi:magnify" style="width: 100%;"></ha-textfield>
-            <ha-icon icon="mdi:close" class="clear-search" id="btn-search-clear" title="${this.localize('clear_btn')}"></ha-icon>
+            <ha-input class="search-input" id="search-field" placeholder="${this.localize('search_placeholder')}" style="width: 100%;">
+                <ha-icon icon="mdi:magnify" slot="prefix"></ha-icon>
+                <ha-icon-button slot="suffix" class="clear-search" id="btn-search-clear" title="${this.localize('clear_btn')}">
+                    <ha-icon icon="mdi:close"></ha-icon>
+                </ha-icon-button>
+            </ha-input>
         </div>
 
         <div id="task-list-wrapper"></div>
@@ -1348,14 +1352,14 @@ class TaskOrganizerCard extends HTMLElement {
 
                 <div style="display:flex; flex-direction:column; gap:16px;">
                     <div>
-                        <ha-textfield id="f-name" label="${this.localize('name_lbl')}" style="width: 100%;"></ha-textfield>
+                        <ha-input id="f-name" label="${this.localize('name_lbl')}" style="width: 100%;"></ha-input>
                         <div id="template-suggestions"></div>
                     </div>
-                    <ha-textfield id="f-description" label="${this.localize('desc_lbl')}"></ha-textfield>
+                    <ha-input id="f-description" label="${this.localize('desc_lbl')}"></ha-input>
                     
                     <div class="form-row">
-                        <ha-textfield id="f-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col"></ha-textfield>
-                        <ha-textfield id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" class="form-col"></ha-textfield>
+                        <ha-input id="f-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col"></ha-input>
+                        <ha-input id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" class="form-col"></ha-input>
                     </div>
 
                     <div class="form-row">
@@ -1396,7 +1400,7 @@ class TaskOrganizerCard extends HTMLElement {
                                 <ha-formfield label="${this.localize('override_overdue_lbl')}">
                                     <ha-switch id="f-override-overdue-cb"></ha-switch>
                                 </ha-formfield>
-                                <ha-textfield id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-textfield>
+                                <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-input>
                             </div>
                             <div style="display:flex; align-items:center; gap:16px;">
                                 <ha-formfield label="${this.localize('pause_until')}">
@@ -1413,7 +1417,7 @@ class TaskOrganizerCard extends HTMLElement {
                     </div>
                     <div id="subtasks-content" class="collapsible-content">
                         <div class="subtask-input-row">
-                            <ha-textfield id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-textfield>
+                            <ha-input id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-input>
                             <ha-button id="btn-add-subtask">${this.localize('confirm')}</ha-button>
                         </div>
                         <div id="subtask-list" class="subtask-list"></div>
@@ -1847,12 +1851,12 @@ class TaskOrganizerCardEditor extends HTMLElement {
             ${this.localize('help_link')}
           </a>
         </div>
-        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <ha-input label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-input>
         <div style="display: flex; gap: 8px;">
-          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
-          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+          <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
+          <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-textfield label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-textfield>
+        <ha-input label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-input>
         
         <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px;">
           <ha-formfield label="${this.localize('show_search_lbl')}">
@@ -1869,12 +1873,12 @@ class TaskOrganizerCardEditor extends HTMLElement {
           </ha-formfield>
         </div>
 
-        <ha-textfield label="${this.localize('sort_by_lbl')}" placeholder="${this.localize('sort_by_placeholder')}" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
-        <ha-textfield label="${this.localize('sort_order_lbl')}" placeholder="${this.localize('sort_order_placeholder')}" value="${this._config.sort_order || 'default'}" configValue="sort_order" style="width: 100%; margin-top: 8px;"></ha-textfield>
-        <ha-textfield label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || ''}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-textfield>
+        <ha-input label="${this.localize('sort_by_lbl')}" placeholder="${this.localize('sort_by_placeholder')}" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-input>
+        <ha-input label="${this.localize('sort_order_lbl')}" placeholder="${this.localize('sort_order_placeholder')}" value="${this._config.sort_order || 'default'}" configValue="sort_order" style="width: 100%; margin-top: 8px;"></ha-input>
+        <ha-input label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || ''}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-input>
       </div>
       <style>
-        .card-config ha-textfield, .card-config ha-select {
+        .card-config ha-input, .card-config ha-select {
           display: block;
           margin-bottom: 8px;
         }
@@ -1886,7 +1890,7 @@ class TaskOrganizerCardEditor extends HTMLElement {
     `;
 
     this._rendered = true;
-    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-input').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
     this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
     this._updateUI();
   }
@@ -1916,7 +1920,7 @@ class TaskOrganizerCardEditor extends HTMLElement {
 
     if (target.tagName === 'HA-CHECKBOX') {
       newValue = target.checked;
-    } else if (target.tagName === 'HA-TEXTFIELD' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
+    } else if (target.tagName === 'HA-INPUT' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
       newValue = newValue === "" ? undefined : parseInt(newValue);
     }
 

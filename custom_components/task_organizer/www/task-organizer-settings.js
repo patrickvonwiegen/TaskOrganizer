@@ -787,12 +787,12 @@ class TaskOrganizerSettings extends HTMLElement {
         <div class="modal-content">
             <h2>${this._editingTemplateId ? this.localize('edit_template') : this.localize('add_template')}</h2>
             <div style="display:flex; flex-direction:column; gap:16px;">
-              <ha-textfield id="tmpl-name" label="${this.localize('template_name')}" value="${template?.name || ''}" required></ha-textfield>
-              <ha-textfield id="tmpl-desc" label="${this.localize('desc_lbl')}" value="${template?.description || ''}"></ha-textfield>
+              <ha-input id="tmpl-name" label="${this.localize('template_name')}" value="${template?.name || ''}" required></ha-input>
+              <ha-input id="tmpl-desc" label="${this.localize('desc_lbl')}" value="${template?.description || ''}"></ha-input>
               
               <div class="form-row">
-                  <ha-textfield id="tmpl-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col" value="${template?.interval ?? 7}"></ha-textfield>
-                  <ha-textfield id="tmpl-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" value="${template?.complexity || 5}" class="form-col"></ha-textfield>
+                  <ha-input id="tmpl-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col" value="${template?.interval ?? 7}"></ha-input>
+                  <ha-input id="tmpl-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" value="${template?.complexity || 5}" class="form-col"></ha-input>
               </div>
 
               <div class="form-row">
@@ -826,7 +826,7 @@ class TaskOrganizerSettings extends HTMLElement {
               </div>
               <div id="subtasks-content" class="collapsible-content">
                   <div class="subtask-input-row">
-                      <ha-textfield id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-textfield>
+                      <ha-input id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-input>
                       <ha-button id="btn-add-subtask">${this.localize('confirm')}</ha-button>
                   </div>
                   <div id="subtask-list" class="subtask-list"></div>
@@ -886,22 +886,22 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
     }
     this.innerHTML = `
       <div class="card-config">
-        <ha-textfield label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-textfield>
+        <ha-input label="${this.localize('title_lbl')}" value="${this._config.title || this.localize('title')}" configValue="title"></ha-input>
         <div style="display: flex; gap: 8px;">
-          <ha-textfield label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-textfield>
-          <ha-textfield label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-textfield>
+          <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
+          <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
         <ha-formfield label="${this.localize('show_advanced_lbl')}">
           <ha-checkbox ${this._config.show_advanced === true ? 'checked' : ''} configValue="show_advanced"></ha-checkbox>
         </ha-formfield>
       </div>
       <style>
-        .card-config ha-textfield { display: block; margin-bottom: 8px; }
+        .card-config ha-input { display: block; margin-bottom: 8px; }
       </style>
     `;
 
     this._rendered = true;
-    this.querySelectorAll('ha-textfield').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
+    this.querySelectorAll('ha-input').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
     this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
     this._updateUI();
   }
