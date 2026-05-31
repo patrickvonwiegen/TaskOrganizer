@@ -1,5 +1,9 @@
 ﻿﻿# Changelog
 
+## [1.6.0]
+### 🚀 New Features
+- **Reset Event:** Added `task_organizer_reset` event which is triggered when points are archived (end of month or manual). This enables automations for winner announcements.
+
 ## [1.5.0]
 ### 🚀 New Features
 - **GUI Configuration Editor:** All Lovelace cards now support the Home Assistant Visual Editor. Parameters can be adjusted via the UI without manual YAML editing.

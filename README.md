@@ -342,6 +342,35 @@ action:
       message: "A new difficult task '{{ trigger.event.data.name }}' has been added."
 ```
 
+### task_organizer_reset
+This event is fired when the monthly points reset occurs (either automatically at the start of a month or manually via service).
+
+#### Event Data:
+- **month**: The month string (e.g., "2024-05").
+- **winner_name**: Friendly name of the user with the most points.
+- **winner_points**: Total points achieved by the winner.
+- **all_scores**: List of all users with `user_id`, `name`, and `points`, sorted descending by points.
+
+#### Example Automation:
+Announce the winner and list the scores of all participants after a reset.
+
+```yml
+alias: "TaskOrganizer: Winner Announcement"
+trigger:
+  - platform: event
+    event_type: "task_organizer_reset"
+action:
+  - action: notify.persistent_notification
+    data:
+      title: "Statistics Reset ({{ trigger.event.data.month }})"
+      message: >
+        Winner of the month: {{ trigger.event.data.winner_name }} with {{ trigger.event.data.winner_points }} points.
+        Other scores: 
+        {%- for entry in trigger.event.data.all_scores[1:] -%}
+          {{ entry.name }} {{ entry.points }}{{ ", " if not loop.last else "" }}
+        {%- endfor -%}
+```
+
 
 ## Installation & Data Storage
 All data is stored securely in the internal Home Assistant database at .storage/task_organizer.storage.
