@@ -248,6 +248,8 @@ class TaskOrganizerPointsSensor(TaskOrganizerBaseSensor):
     def extra_state_attributes(self) -> dict:
         """Return the points list as state attributes."""
         pts = self._data.get("points", {})
+        point_goals = self._data.get("settings", {}).get("point_goals", {})
+
         points_list = []
         for uid, p in pts.items():
             name = uid
@@ -255,8 +257,18 @@ class TaskOrganizerPointsSensor(TaskOrganizerBaseSensor):
                 if state.attributes.get("user_id") == uid:
                     name = state.attributes.get("friendly_name", uid)
                     break
-            points_list.append({"user_id": uid, "name": name, "points": p})
-        return {"json_string": json.dumps(points_list), "data": points_list}
+            
+            goal = point_goals.get(uid, 0)
+            entry = {"user_id": uid, "name": name, "points": p, "goal": goal}
+            if goal > 0:
+                entry["goal_percent"] = round((p / goal) * 100, 1)
+                
+            points_list.append(entry)
+        return {
+            "json_string": json.dumps(points_list), 
+            "data": points_list,
+            "history": self._data.get("history", [])
+        }
 
 
 class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
@@ -284,6 +296,8 @@ class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
     def extra_state_attributes(self) -> dict:
         """Return the sorted leaderboard as state attributes."""
         points = self._data.get("points", {})
+        point_goals = self._data.get("settings", {}).get("point_goals", {})
+
         sorted_users = sorted(points.items(), key=lambda item: item[1], reverse=True)
         leaderboard = []
         for uid, pts in sorted_users:
@@ -292,7 +306,13 @@ class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
                 if state.attributes.get("user_id") == uid:
                     name = state.attributes.get("friendly_name", uid)
                     break
-            leaderboard.append({"user_id": uid, "name": name, "points": pts})
+            
+            goal = point_goals.get(uid, 0)
+            entry = {"user_id": uid, "name": name, "points": pts, "goal": goal}
+            if goal > 0:
+                entry["goal_percent"] = round((pts / goal) * 100, 1)
+                
+            leaderboard.append(entry)
         return {"json_string": json.dumps(leaderboard), "data": leaderboard}
 
 

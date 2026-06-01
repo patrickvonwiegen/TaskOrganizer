@@ -4,8 +4,8 @@
  * de: German translations.
  */
 const I18N_BOARD = {
-  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points", height_lbl: "Height", width_lbl: "Width", title_lbl: "Title", show_history_lbl: "Show History" },
-  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten", height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel", show_history_lbl: "Verlauf anzeigen" }
+  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points", height_lbl: "Height", width_lbl: "Width", title_lbl: "Title", show_history_lbl: "Show History", goal_reached: "Goal reached!" },
+  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten", height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel", show_history_lbl: "Verlauf anzeigen", goal_reached: "Ziel erreicht!" }
 };
 
 /**
@@ -33,6 +33,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
     this.currentMonth = ""; 
     this.currentPeriodStart = ""; 
     this.monthlyHistory = {}; 
+    this.settings = {};
     this._unsubEvents = null;
     this.dataLoaded = false;
   }
@@ -174,6 +175,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
         this.currentMonth = data.current_month || ""; 
         this.currentPeriodStart = data.current_period_start || "";
         this.monthlyHistory = data.monthly_history || {};
+        this.settings = data.settings || {};
         this.render(); 
     }); 
   }
@@ -193,11 +195,27 @@ class TaskOrganizerLeaderboard extends HTMLElement {
         .period-text { font-size: 12px; font-weight: normal; color: var(--secondary-text-color); margin-top: 4px; } 
         .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 8px; min-height: 200px; margin-top: 10px; } 
         .podium-place { display: flex; flex-direction: column; align-items: center; width: 30%; position: relative; justify-content: flex-end; } 
-        .trophy-container { position: relative; display: flex; justify-content: center; margin-bottom: 3px; z-index: 10; }
+        .trophy-container { position: relative; display: flex; justify-content: center; margin-bottom: 3px; }
         .trophy-icon { filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3)); }
-        .place-number { position: absolute; top: 12px; font-size: 18px; font-weight: bold; z-index: 5; text-align: center; width: 100%; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); }
-        .step { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; gap: 4px; font-size: 14px; font-weight: bold; color: rgba(0,0,0,0.8); border-top-left-radius: 8px; border-top-right-radius: 8px; transition: height 0.5s ease;}
-        .step-label { background: rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 12px; font-size: 12px; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+        .place-number { position: absolute; top: 12px; font-size: 18px; font-weight: bold; z-index: 1; text-align: center; width: 100%; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); }
+        .goal-indicator { 
+          position: absolute;
+          top: -12px;
+          right: -8px;
+          background: var(--card-background-color);
+          border-radius: 50%; 
+          width: 26px;
+          height: 26px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
+          color: var(--success-color, #4CAF50);
+          border: 2px solid var(--success-color, #4CAF50);
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .step { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; gap: 4px; font-size: 14px; font-weight: bold; color: rgba(0,0,0,0.8); border-top-left-radius: 8px; border-top-right-radius: 8px; transition: height 0.5s ease; position: relative; overflow: visible; }
+        .step-label { background: rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 12px; font-size: 11px; white-space: nowrap; max-width: 96%; overflow: hidden; text-overflow: ellipsis; }
         /* Colors for the podium steps: Gold, Silver, Bronze */
         .place-1 .step { background: linear-gradient(to top, #FFD700, #FDB931); } 
         .place-2 .step { background: linear-gradient(to top, #C0C0C0, #E0E0E0); } 
@@ -354,14 +372,28 @@ class TaskOrganizerLeaderboard extends HTMLElement {
     };
     const c = colors[place] || colors[3];
     const hoverText = this.localize('podium_hover', { place: place, name: user.name, points: user.points });
+    
+    // Find goal with case-insensitive ID matching
+    const goals = this.settings?.point_goals || {};
+    const userGoalKey = Object.keys(goals).find(k => k.toLowerCase() === user.id.toLowerCase());
+    const goal = userGoalKey ? parseFloat(goals[userGoalKey]) : 0;
+    const currentPoints = parseFloat(user.points);
+    const isGoalReached = !isNaN(goal) && goal > 0 && (currentPoints >= goal - 0.01);
+    const progressPct = (goal > 0) ? Math.min(100, (currentPoints / goal) * 100) : 0;
+
     return `
-      <div class="podium-place place-${place}" title="${hoverText}">
+      <div class="podium-place place-${place} ${isGoalReached ? 'goal-reached' : ''}" title="${hoverText}">
         <div class="trophy-container">
           <ha-icon icon="mdi:trophy" class="trophy-icon" style="color: ${c.icon}; --mdc-icon-size: 55px;"></ha-icon>
           <div class="place-number" style="color: ${c.text};">${place}</div>
         </div>
-        <div class="step" style="height: ${height}px; position: relative; z-index: 1;">
-          <div class="step-label" style="text-align: center; white-space: normal; line-height: 1.2;">
+        <div class="step" style="height: ${height}px;">
+          ${isGoalReached ? `
+            <div class="goal-indicator" title="${this.localize('goal_reached')}">
+              <ha-icon icon="mdi:flag-checkered" style="--mdc-icon-size: 18px;"></ha-icon>
+            </div>
+          ` : ''}
+          <div class="step-label" style="text-align: center; white-space: normal; line-height: 1.1; display: flex; flex-direction: column; align-items: center; min-height: auto; overflow: visible;">
             ${user.name.split(' ')[0]}<br>
             ${user.points} ${this.localize('pts')}
           </div>

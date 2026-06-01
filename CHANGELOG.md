@@ -1,5 +1,14 @@
 ﻿﻿# Changelog
 
+## [1.7.0]
+### ⚠️ Breaking Changes
+- **New Protocol Card:** Separated the history log into its own dedicated card (`task-organizer-protocol`) for better organization.
+
+### 🚀 New Features
+- **Monthly Point Goals:** Settings-Cards user can now set monthly point goals in the settings.
+- **Goal Achievement Indicator:** A flag icon appears in the leaderboard once a goal is reached.
+- **Advanced Reporting:** The Stats card has been renamed to "Reports" and now offers two distinct views: "Completed Tasks" and "Goal Setting"
+
 ## [1.6.0]
 ### 🚀 New Features
 - **Reset Event:** Added `task_organizer_reset` event which is triggered when points are archived (end of month or manual). This enables automations for winner announcements.

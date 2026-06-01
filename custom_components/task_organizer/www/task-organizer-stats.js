@@ -5,7 +5,7 @@
  */
 const I18N_STATS = { 
   en: {
-    title: "Household Log", empty: "No entries.", unknown: "Unknown",
+    title: "Household Reports", empty: "No entries.", unknown: "Unknown",
     confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points",
     user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All",
     prev: "Previous", next: "Next", page: "Page",
@@ -17,10 +17,23 @@ const I18N_STATS = {
     items_per_page_lbl: "Items per Page",
     filter_by_lbl: "Filter By",
     filter_by_placeholder: "all, mine",
-    entry_deleted: "Entry deleted!"
+    user_filter_lbl: "User",
+    show_user_select_lbl: "Show User Selection",
+    points_per_day: "Points per day",
+    goal_progress: "Goal progress",
+    goal_reached_congrats: "Goal achieved! 🎉",
+    all_users: "All Users",
+    report_type: "Report Type",
+    report_overview: "Completed Tasks",
+    report_burndown: "Goal Setting",
+    remaining_points: "Remaining Points",
+    pending: "pending",
+    today_target_tooltip: "Today's target: {target} pts, Current: {current} pts",
+    today_points_tooltip: "Current points: {current} pts, Avg last 3 days: {average} pts",
+    above_goal: "above goal"
   },
   de: { 
-    title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
+    title: "Haushaltsberichte", empty: "Keine Einträge.", unknown: "Unbekannt", 
     confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
     user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle",
     prev: "Zurück", next: "Weiter", page: "Seite",
@@ -32,7 +45,20 @@ const I18N_STATS = {
     items_per_page_lbl: "Einträge pro Seite",
     filter_by_lbl: "Filtern nach",
     filter_by_placeholder: "all, mine",
-    entry_deleted: "Eintrag gelöscht!"
+    user_filter_lbl: "Benutzer",
+    show_user_select_lbl: "Benutzerauswahl anzeigen",
+    points_per_day: "Punkte pro Tag",
+    goal_progress: "Ziel-Fortschritt",
+    goal_reached_congrats: "Ziel erreicht! 🎉",
+    all_users: "Alle Benutzer",
+    report_type: "Berichtsart",
+    report_overview: "Abgeschlossene Aufgaben",
+    report_burndown: "Zielsetzung",
+    remaining_points: "Verbleibende Punkte",
+    pending: "ausstehend",
+    today_target_tooltip: "Heutiges Soll: {target} Pkt, Aktuell: {current} Pkt",
+    today_points_tooltip: "Aktuelle Punkte: {current} Pkt, Ø letzte 3 Tage: {average} Pkt",
+    above_goal: "über dem Ziel"
   }
 };
 
@@ -42,8 +68,8 @@ const I18N_STATS = {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "task-organizer-stats",
-  name: "Task Organizer: Statistics",
-  description: "Displays a log of completed tasks and allows editing.",
+  name: "Task Organizer: Reports",
+  description: "Displays graphical reports and point progress charts.",
   preview: true,
 });
 
@@ -58,14 +84,16 @@ class TaskOrganizerStats extends HTMLElement {
     // Global properties
     this.history = []; 
     this.users = {}; 
+    this.settings = {};
+    this.points = {};
     this.editingEntryId = null; 
     this._unsubEvents = null;
     this.dataLoaded = false;
+    this._selectedUserId = 'all';
+    this._reportType = 'overview';
+    this.currentPeriodStart = "";
     
-    // Pagination
-    this.currentPage = 1;
-    
-    this.addEventListener('click', (ev) => this._handleClick(ev));
+    this.shadowRoot.addEventListener('change', (ev) => this._handleChange(ev));
   }
 
   /**
@@ -74,10 +102,16 @@ class TaskOrganizerStats extends HTMLElement {
    * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
-  static _localize(hass, key) {
+  static _localize(hass, key, replace = null) {
     const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
     const dict = I18N_STATS[lang] || I18N_STATS['en'];
-    return dict[key] || key;
+    let text = dict[key] || I18N_STATS['en'][key] || key;
+    if (replace) {
+      for (const [k, v] of Object.entries(replace)) {
+        text = text.replace(`{${k}}`, v);
+      }
+    }
+    return text;
   }
 
   /**
@@ -85,8 +119,8 @@ class TaskOrganizerStats extends HTMLElement {
    * * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
-  localize(key) { 
-    return TaskOrganizerStats._localize(this._hass, key);
+  localize(key, replace = null) { 
+    return TaskOrganizerStats._localize(this._hass, key, replace);
   }
 
   /**
@@ -103,7 +137,9 @@ class TaskOrganizerStats extends HTMLElement {
     return { 
       type: "custom:task-organizer-stats", 
       title: this._localize(hass, 'title'),
-      items_per_page: 10, 
+      items_per_page: 10,
+      show_user_select: true,
+      report_type: "overview",
       filter_by: "all" 
     }; 
   }
@@ -123,6 +159,10 @@ class TaskOrganizerStats extends HTMLElement {
   setConfig(config) { 
     if (!config) throw new Error("Invalid configuration");
     this.config = config; 
+    // Nur aus Config setzen, wenn der Nutzer noch nicht manuell gewechselt hat
+    if (this._reportTypeManual === undefined) {
+      this._reportType = config.report_type || 'overview';
+    }
     if (this._hass) this.render();
   }
 
@@ -156,10 +196,15 @@ class TaskOrganizerStats extends HTMLElement {
    */
   set hass(hass) {
     this._hass = hass;
+    this.mapUsers(); 
+
     if (!this.dataLoaded && hass) { 
-      this.mapUsers(); 
       this.fetchData(); 
       this.dataLoaded = true; 
+    }
+    // Standardmäßig den aktuellen Benutzer auswählen, falls noch auf 'all'
+    if (this._selectedUserId === 'all' && hass.user && hass.user.id) {
+      this._selectedUserId = hass.user.id;
     }
     if (!this._unsubEvents) { 
       this._subscribeToUpdates(); 
@@ -185,130 +230,24 @@ class TaskOrganizerStats extends HTMLElement {
    */
   fetchData() { 
     this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => { 
-      this.history = data.history || []; 
+      this.history = data.history || [];
+      this.points = data.points || {};
+      this.settings = data.settings || {};
+      this.currentPeriodStart = data.current_period_start || "";
       this.render(); 
     }); 
   }
 
-  /**
-   * Central click handler for action buttons inside the shadow DOM.
-   * * @param {Event} ev - The click event.
-   */
-  _handleClick(ev) {
-    const path = ev.composedPath();
-    const target = path.find(el => 
-        el.classList?.contains('action-btn') || 
-        el.id === 'btn-edit-save' || 
-        el.id === 'btn-edit-cancel' ||
-        el.id === 'btn-prev-page' ||
-        el.id === 'btn-next-page'
-    );
-    
-    if (!target) {
-      return;
-    }
-    
-    const entryId = target.dataset.id;
-    
-    if (target.classList.contains('btn-edit')) this.openEditModal(entryId);
-    if (target.classList.contains('btn-delete')) this.deleteEntry(entryId);
-    if (target.id === 'btn-edit-cancel') this.closeModal();
-    if (target.id === 'btn-edit-save') this.saveEdit();
-    
-    // Pagination Handler
-    if (target.id === 'btn-prev-page') {
-      this.currentPage = Math.max(1, this.currentPage - 1);
+  _handleChange(ev) {
+    ev.stopPropagation();
+    if (ev.target.id === 'user-select') {
+      this._selectedUserId = ev.target.value;
+      this.render();
+    } else if (ev.target.id === 'report-select') {
+      this._reportType = ev.target.value;
+      this._reportTypeManual = true;
       this.render();
     }
-    if (target.id === 'btn-next-page') {
-      this.currentPage++;
-      this.render();
-    }
-  }
-
-  /**
-   * Opens the edit modal for a specific history entry.
-   * * @param {string} entryId - The UUID of the history entry.
-   */
-  openEditModal(entryId) { 
-    const entry = this.history.find(h => h.id === entryId); 
-    if (!entry) {
-      return; 
-    }
-    
-    this.editingEntryId = entryId; 
-    const modal = this.shadowRoot.getElementById('edit-modal'); 
-    
-    this.shadowRoot.getElementById('edit-points').value = entry.points; 
-    
-    // Set active radio button based on the entry's user_id
-    this.shadowRoot.querySelectorAll('.edit-user-radio').forEach(radio => {
-        radio.checked = (radio.value === entry.user_id);
-    });
-    
-    modal.classList.add('open'); 
-  }
-
-  closeModal() { 
-    this.shadowRoot.getElementById('edit-modal').classList.remove('open'); 
-    this.editingEntryId = null; 
-  }
-
-  saveEdit() { 
-    const points = parseFloat(this.shadowRoot.getElementById('edit-points').value); 
-    
-    // Read the selected user_id from the active radio button
-    let userId = null;
-    this.shadowRoot.querySelectorAll('.edit-user-radio').forEach(radio => {
-        if (radio.checked) {
-            userId = radio.value;
-        }
-    });
-
-    if (!userId) {
-        return; // Safety guard if somehow nothing is selected
-    }
-    
-    this._hass.callWS({ 
-      type: 'task_organizer/edit_history_item', 
-      entry_id: this.editingEntryId, 
-      points: points, 
-      user_id: userId 
-    }).then(() => { 
-      this._showToast(this.localize('entry_saved'));
-      this.closeModal();
-      this.fetchData();
-    }); 
-  }
-
-  _showToast(message) {
-    const event = new CustomEvent("hass-notification", {
-        detail: { message: message, duration: 3000 },
-        bubbles: true,
-        composed: true
-    });
-    this.dispatchEvent(event);
-    
-    const root = document.querySelector("home-assistant");
-    if (root) { 
-        root.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: message, duration: 3000 } })); 
-    }
-  }
-
-  /**
-   * Deletes a history entry after user confirmation.
-   * * @param {string} entryId - The UUID of the history entry.
-   */
-  deleteEntry(entryId) { 
-    if (confirm(this.localize('confirm_delete'))) { 
-      this._hass.callWS({ 
-        type: 'task_organizer/delete_history_item', 
-        entry_id: entryId 
-      }).then(() => {
-        this._showToast(this.localize('entry_deleted'));
-        this.fetchData();
-      });
-    } 
   }
 
   _getStyles() {
@@ -319,9 +258,9 @@ class TaskOrganizerStats extends HTMLElement {
       <style> 
         :host { display: block; width: ${width}; margin: 0 auto; } 
         * { box-sizing: border-box; } 
-        ha-card { padding: 16px; display: flex; flex-direction: column; width: 100%; height: ${height}; overflow-x: hidden; overflow-y: auto; min-height: 100px;} 
+        ha-card { padding: 8px 12px 2px 12px; display: flex; flex-direction: column; width: 100%; height: ${height}; overflow-x: hidden; overflow-y: auto; min-height: 100px;} 
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .header { font-size: 20px; font-weight: bold; color: var(--primary-text-color); } 
         
         .hist-list { display: flex; flex-direction: column; gap: 10px; width: 100%; } 
@@ -347,7 +286,262 @@ class TaskOrganizerStats extends HTMLElement {
         .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); } 
         
         .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; }
+        
+        .chart-container { margin: 0; padding: 2px 8px 0 8px; border-radius: 8px; position: relative; }
+        .chart-title { font-size: 12px; font-weight: bold; margin-bottom: 2px; color: var(--secondary-text-color); }
+        .progress-bar-bg { height: 12px; background: var(--divider-color); border-radius: 6px; position: relative; overflow: hidden; margin-top: 5px; }
+        .progress-bar-fill { height: 100%; background: var(--primary-color); transition: width 0.5s ease; }
+        .progress-text { font-size: 11px; margin-top: 4px; text-align: right; font-weight: bold; }
+
+        .selector-row { display: flex; gap: 8px; margin-bottom: 2px; }
+        select { 
+          flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--divider-color);
+          background: var(--card-background-color); color: var(--primary-text-color);
+          font-family: inherit; font-size: 13px;
+        }
+        .chart-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .trend-indicator {
+          display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold;
+          color: var(--secondary-text-color);
+        }
       </style>
+    `;
+  }
+
+  _renderOverviewChart(userId) {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const periodStart = this.currentPeriodStart ? new Date(this.currentPeriodStart) : null;
+    const dailyPoints = new Array(daysInMonth).fill(0);
+    const cumulativePoints = []; // Initialisierung als const, da nicht neu zugewiesen
+
+    this.history.forEach(h => {
+      const d = new Date(h.timestamp);
+      // Nur Einträge zählen, die im aktuellen Monat UND nach dem letzten Reset liegen
+      if (d.getMonth() === month && d.getFullYear() === year && h.user_id === userId && (!periodStart || d >= periodStart)) {
+        dailyPoints[d.getDate() - 1] += h.points;
+      }
+    });
+
+    let currentCumulative = 0;
+    for (let i = 0; i < daysInMonth; i++) { // Schleife zur Berechnung der kumulativen Punkte
+      currentCumulative += dailyPoints[i];
+      cumulativePoints.push(currentCumulative);
+    }
+
+    const maxScale = Math.max(...cumulativePoints, 1);
+
+    const svgWidth = 500;
+    const svgHeight = 150;
+    const chartLeft = 42;
+    const xAxisY = 125;
+    const chartHeight = 105;
+    const barSpacing = (svgWidth - chartLeft) / daysInMonth;
+    const pointRadius = 3; // Radius for data points
+    const yAxisLabelOffset = 5;
+
+    // Y-Achsen-Beschriftungen berechnen (min. 0.5 Abstand)
+    const yAxisLabels = [];
+    const step = Math.max(1, Math.ceil((maxScale / 4) / 5) * 5); // Ensure step is a multiple of 5 for cleaner labels, min 1
+    for (let val = 0; val <= maxScale + step; val += step) { // Iterate up to maxScale + step to ensure max is included
+      const yPos = xAxisY - (val / maxScale) * chartHeight;
+      if (yPos >= (xAxisY - chartHeight - 1) && yPos <= xAxisY + 1) { // Adjusted bounds
+        yAxisLabels.push({ 
+          value: val % 1 === 0 ? val.toFixed(0) : val.toFixed(1), 
+          y: yPos 
+        });
+      }
+    }
+    // Sicherstellen, dass der Maximalwert beschriftet ist
+    if (yAxisLabels.length === 0 || Math.abs(yAxisLabels[yAxisLabels.length - 1].value - maxScale) > step / 2) {
+      yAxisLabels.push({ value: maxScale % 1 === 0 ? maxScale.toFixed(0) : maxScale.toFixed(1), y: xAxisY - chartHeight });
+    }
+    yAxisLabels.sort((a, b) => a.y - b.y); // Sort labels by y-position
+
+    // Nur Punkte bis zum heutigen Tag zeichnen
+    const lastDayToDraw = now.getDate();
+    const visiblePoints = cumulativePoints.slice(0, lastDayToDraw);
+
+    // Generate path for the line and area
+    const linePoints = visiblePoints.map((pts, i) => {
+      const x = chartLeft + (i * barSpacing) + (barSpacing / 2); // Center of the day
+      const y = xAxisY - (pts / maxScale) * chartHeight;
+      return `${x},${y}`;
+    }).join(' ');
+
+    const firstX = chartLeft + (barSpacing / 2);
+    const lastX = chartLeft + ((visiblePoints.length - 1) * barSpacing) + (barSpacing / 2);
+    const areaPathPoints = `${firstX},${xAxisY} ${linePoints} ${lastX},${xAxisY}`; // Close the area at the bottom
+
+    return `
+      <div class="chart-container">
+        <div class="chart-header-row">
+          <div class="chart-title">${this.localize('points_per_day')}</div>
+        </div>
+        <svg width="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" style="overflow:visible; display: block; shape-rendering: geometricPrecision; max-height: 200px;">
+          <!-- Achsen -->
+          <line x1="${chartLeft}" y1="0" x2="${chartLeft}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
+          <line x1="${chartLeft}" y1="${xAxisY}" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
+          
+          <!-- Y-Achsen-Beschriftungen -->
+          ${yAxisLabels.map(label => `
+            <line x1="${chartLeft}" y1="${label.y}" x2="${chartLeft - 3}" y2="${label.y}" stroke="var(--divider-color)" stroke-width="0.5" />
+            <text x="${yAxisLabelOffset}" y="${label.y + 4}" text-anchor="start" font-size="11" font-weight="bold" fill="var(--secondary-text-color)">${label.value}</text>
+          `).join('')}
+
+          <!-- Tatsächlicher Verlauf (Fläche) -->
+          <polygon points="${areaPathPoints}" fill="var(--primary-color)" opacity="0.2" />
+          <polyline points="${linePoints}" fill="none" stroke="var(--primary-color)" stroke-width="2.5" />
+
+          <!-- Datenpunkte -->
+          ${cumulativePoints.map((pts, i) => {
+            const x = chartLeft + (i * barSpacing) + (barSpacing / 2);
+            const y = xAxisY - (pts / maxScale) * chartHeight;
+            let elements = ''; // Initialisierung als leer
+
+            // Nur einen Kreis zeichnen, wenn an diesem spezifischen Tag Punkte hinzugefügt wurden
+            if (dailyPoints[i] > 0) {
+                elements += `<circle cx="${x}" cy="${y}" r="${pointRadius}" fill="var(--primary-color)" stroke="var(--card-background-color)" stroke-width="1" />`;
+            }
+
+            // Datum auf der X-Achse (alle 5 Tage + erster/letzter Tag)
+            if ((i + 1) === 1 || (i + 1) % 5 === 0 || (i + 1) === daysInMonth) {
+              const labelX = chartLeft + (i * barSpacing) + (barSpacing / 2);
+              elements += `
+                <line x1="${labelX}" y1="${xAxisY}" x2="${labelX}" y2="${xAxisY + 4}" stroke="var(--divider-color)" stroke-width="0.5" />
+                <text x="${labelX}" y="${xAxisY + 18}" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--secondary-text-color)">${i + 1}</text>
+              `;
+            }
+            return elements;
+          }).join('')}
+        </svg>
+      </div>
+    `;
+  }
+
+  _renderBurnDownChart(userId) {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const goal = this.settings?.point_goals?.[userId] || 0;
+    if (!goal) return `<div class="chart-container"><p style="font-size:12px; color:var(--secondary-text-color); text-align:center;">Kein Ziel gesetzt.</p></div>`;
+
+    const periodStart = this.currentPeriodStart ? new Date(this.currentPeriodStart) : null;
+    const dailyPoints = new Array(daysInMonth).fill(0);
+    this.history.forEach(h => {
+      const d = new Date(h.timestamp);
+      if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && h.user_id === userId && (!periodStart || d >= periodStart)) {
+        dailyPoints[d.getDate() - 1] += h.points;
+      }
+    });
+
+    // Pre-calculated values from backend
+    const totalAchievedSoFar = this.points[userId] || 0;
+    const currentPointsRemaining = goal - totalAchievedSoFar;
+
+    // Running points for the visual line path
+    let runningPoints = goal;
+    const burnPoints = [goal];
+    for (let i = 0; i < now.getDate(); i++) {
+      runningPoints -= dailyPoints[i];
+      burnPoints.push(Math.max(0, runningPoints));
+    }
+
+    const svgWidth = 500;
+    const svgHeight = 150;
+    const chartLeft = 42;
+    const chartAreaWidth = svgWidth - chartLeft;
+    const chartAreaHeight = 120;
+    const scale = chartAreaHeight / goal;
+    const yAxisLabelOffset = 5; 
+    const xAxisY = 125;
+
+    // Pfade generieren
+    const idealPoints = burnPoints.map((_, i) => `${chartLeft + (i / daysInMonth) * chartAreaWidth},${xAxisY - (goal - (i * (goal / daysInMonth))) * scale}`);
+    const actualPoints = burnPoints.map((p, i) => `${chartLeft + (i / daysInMonth) * chartAreaWidth},${xAxisY - p * scale}`);
+    const areaPath = `${chartLeft},${xAxisY} ` + actualPoints.join(' ') + ` ${chartLeft + (burnPoints.length - 1) / daysInMonth * chartAreaWidth},${xAxisY}`;
+
+    // Y-Achsen-Beschriftungen berechnen (min. 0.5 Abstand)
+    const yAxisLabels = [];
+    const step = Math.max(0.5, Math.ceil((goal / 4) * 2) / 2);
+    for (let val = 0; val <= goal + 0.01; val += step) {
+      const yPos = xAxisY - (val * scale);
+      if (yPos >= -1) {
+        yAxisLabels.push({ 
+          value: val % 1 === 0 ? val.toFixed(0) : val.toFixed(1), 
+          y: yPos 
+        });
+      }
+    }
+    // Sicherstellen, dass das Ziel (100%) beschriftet ist
+    if (!yAxisLabels.some(l => Math.abs(l.y) < 2)) {
+      yAxisLabels.push({ value: goal % 1 === 0 ? goal.toFixed(0) : goal.toFixed(1), y: 0 });
+    }
+
+    // Current day line
+    const currentDay = Math.min(now.getDate(), daysInMonth);
+    const currentDayX = chartLeft + ((currentDay - 0.5) / daysInMonth) * chartAreaWidth;
+
+    // Calculate trend based on total points achieved vs cumulative target
+    const cumulativeTargetToday = (currentDay / daysInMonth) * goal;
+
+    let trendIcon = 'mdi:minus';
+    let trendColor = 'var(--secondary-text-color)';
+    if (totalAchievedSoFar > cumulativeTargetToday + 0.1) {
+      trendIcon = 'mdi:arrow-up';
+      trendColor = 'var(--success-color, #4CAF50)';
+    } else if (totalAchievedSoFar < cumulativeTargetToday - 0.1) {
+      trendIcon = 'mdi:arrow-down';
+      trendColor = 'var(--error-color, #F44336)';
+    }
+    
+    const trendTooltip = this.localize('today_target_tooltip', {target: cumulativeTargetToday.toFixed(1), current: totalAchievedSoFar.toFixed(1)});
+
+    const pointsDiff = Math.abs(currentPointsRemaining).toFixed(1);
+    const subtitleText = currentPointsRemaining >= 0 
+      ? `${pointsDiff} ${this.localize('points')} ${this.localize('pending')}`
+      : `${pointsDiff} ${this.localize('points')} ${this.localize('above_goal')}`;
+
+    return `
+      <div class="chart-container">
+        <div class="chart-header-row">
+          <div class="chart-title" style="margin-bottom: 0;">${subtitleText}</div>
+          <div class="trend-indicator" title="${trendTooltip}">
+            <ha-icon icon="${trendIcon}" style="color: ${trendColor}; --mdc-icon-size: 16px;"></ha-icon>
+          </div>
+        </div>
+        <svg width="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" style="overflow:visible; display: block; shape-rendering: geometricPrecision; max-height: 200px;">
+          <!-- Achsen -->
+          <line x1="${chartLeft}" y1="0" x2="${chartLeft}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
+          <line x1="${chartLeft}" y1="${xAxisY}" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
+          
+          <!-- Ideallinie -->
+          <line x1="${chartLeft}" y1="0" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--error-color)" stroke-width="1" stroke-dasharray="2" />
+          
+          <!-- Aktueller Tag -->
+          <line x1="${currentDayX}" y1="0" x2="${currentDayX}" y2="${xAxisY}" stroke="var(--primary-color)" stroke-width="1" stroke-dasharray="4" opacity="0.6" />
+
+          <!-- Tatsächlicher Verlauf (Fläche) -->
+          <polyline points="${areaPath}" fill="var(--primary-color)" opacity="0.2" />
+          <polyline points="${actualPoints.join(' ')}" fill="none" stroke="var(--primary-color)" stroke-width="2.5" />
+          
+          <!-- Y-Achsen-Beschriftungen -->
+          ${yAxisLabels.map(label => `
+            <line x1="${chartLeft}" y1="${label.y}" x2="${chartLeft - 3}" y2="${label.y}" stroke="var(--divider-color)" stroke-width="0.5" />
+            <text x="${yAxisLabelOffset}" y="${label.y + 4}" text-anchor="start" font-size="11" font-weight="bold" fill="var(--secondary-text-color)">${label.value}</text>
+          `).join('')}
+
+          <!-- X-Achsen-Beschriftungen -->
+          ${[1, 10, 20, daysInMonth].map(d => {
+             const labelX = chartLeft + ((d - 1) / daysInMonth) * chartAreaWidth;
+             return `
+               <line x1="${labelX}" y1="${xAxisY}" x2="${labelX}" y2="${xAxisY + 4}" stroke="var(--divider-color)" stroke-width="0.5" />
+               <text x="${labelX}" y="${xAxisY + 18}" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--secondary-text-color)">${d}</text>
+             `;
+          }).join('')}
+        </svg>
+      </div>
     `;
   }
 
@@ -356,101 +550,42 @@ class TaskOrganizerStats extends HTMLElement {
       return;
     }
 
+    // Fallback falls noch kein User ausgewählt ist oder 'all' (was entfernt wurde)
+    if (this._selectedUserId === 'all' && Object.keys(this.users).length > 0) {
+      if (this._hass.user && this._hass.user.id && this.users[this._hass.user.id]) {
+        this._selectedUserId = this._hass.user.id;
+      } else {
+        this._selectedUserId = Object.keys(this.users)[0];
+      }
+    }
+
+    const showUserSelect = this.config.show_user_select !== false;
     const displayTitle = this.config.title || this.localize('title');
     let html = this._getStyles();
     
-    // Filter History based on YAML configuration
-    const filterBy = this.config.filter_by || 'all';
-    let filteredHistory = this.history;
-    
-    if (filterBy === 'mine') {
-      const currentUserId = this._hass.user.id;
-      filteredHistory = filteredHistory.filter(h => h.user_id === currentUserId);
-    }
-    
-    const itemsPerPage = this.config.items_per_page || 10;
-    const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
-    if (this.currentPage > totalPages) this.currentPage = Math.max(1, totalPages);
-    
-    const startIndex = (this.currentPage - 1) * itemsPerPage;
-    const paginatedHistory = filteredHistory.slice(startIndex, startIndex + itemsPerPage);
+    html += `<ha-card><div class="top-bar"><div class="header">${displayTitle}</div></div>`;
 
-    html += `
-      <ha-card>
-        <div class="top-bar">
-          <div class="header">${displayTitle}</div>
-        </div>
-        <div class="hist-list">
-    `;
-    
-    if (paginatedHistory.length === 0) {
-      html += `<div style="text-align:center; color: var(--secondary-text-color); padding:20px;">${this.localize('empty')}</div>`;
-    }
-    
-    paginatedHistory.forEach(entry => {
-      const date = new Date(entry.timestamp).toLocaleString([], {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
-      });
-      const userName = this.users[entry.user_id] || this.localize('unknown');
-      
+    html += `<div class="selector-row">`;
+    if (showUserSelect) {
       html += `
-        <div class="hist-item">
-          <div class="hist-info">
-            <span class="task-name">${entry.task_name}</span>
-            <span class="meta">${date} • ${userName}</span>
-          </div>
-          <div class="actions">
-            <span class="points-badge">+${entry.points}</span>
-            <button class="action-btn btn-edit" data-id="${entry.id}" title="${this.localize('edit_hover')}">
-              <ha-icon icon="mdi:pencil"></ha-icon>
-            </button>
-            <button class="action-btn btn-delete" data-id="${entry.id}" title="${this.localize('delete_hover')}">
-              <ha-icon icon="mdi:delete"></ha-icon>
-            </button>
-          </div>
-        </div>`;
-    });
-    
-    html += `</div>`;
-    
-    // Render Pagination Controls
-    if (filteredHistory.length > itemsPerPage) {
-        html += `
-            <div class="pagination">
-                <ha-button id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</ha-button>
-                <span style="font-size: 14px; color: var(--secondary-text-color); font-weight: 500;">${this.localize('page')} ${this.currentPage} / ${totalPages}</span>
-                <ha-button id="btn-next-page" ${this.currentPage === totalPages ? 'disabled' : ''}>${this.localize('next')}</ha-button>
-            </div>
-        `;
+        <select id="user-select">
+          ${Object.entries(this.users).map(([uid, name]) => `<option value="${uid}" ${this._selectedUserId === uid ? 'selected' : ''}>${name}</option>`).join('')}
+        </select>`;
     }
 
-    // Render Edit Modal
     html += `
-        <div id="edit-modal" class="modal">
-          <div class="modal-content">
-            <h2 style="margin: 0 0 8px 0;">${this.localize('edit')}</h2>
-            
-            <ha-input id="edit-points" type="number" label="${this.localize('points')}" step="0.1"></ha-input>
-            
-            <div>
-                <label class="form-label">${this.localize('user')}</label>
-                <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
-                    ${Object.entries(this.users).map(([uid, name]) => `
-                        <ha-formfield label="${name}">
-                            <ha-radio class="edit-user-radio" name="edit_user_radio" value="${uid}"></ha-radio>
-                        </ha-formfield>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-              <ha-button appearance="plain" variant="brand" id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
-              <ha-button raised id="btn-edit-save">${this.localize('save')}</ha-button>
-            </div>
-          </div>
-        </div>
-      </ha-card>
-    `;
+      <select id="report-select">
+        <option value="overview" ${this._reportType === 'overview' ? 'selected' : ''}>${this.localize('report_overview')}</option>
+        <option value="burndown" ${this._reportType === 'burndown' ? 'selected' : ''}>${this.localize('report_burndown')}</option>
+      </select>
+    </div>`;
+
+    if (this._selectedUserId !== 'all') {
+      if (this._reportType === 'overview') html += this._renderOverviewChart(this._selectedUserId);
+      else if (this._reportType === 'burndown') html += this._renderBurnDownChart(this._selectedUserId);
+    }
+
+    html += `</ha-card>`;
     
     this.shadowRoot.innerHTML = html;
   }
@@ -492,8 +627,16 @@ class TaskOrganizerStatsEditor extends HTMLElement {
           <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
           <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-input label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-input>
-        <ha-input label="${this.localize('filter_by_lbl')}" placeholder="${this.localize('filter_by_placeholder')}" value="${this._config.filter_by || 'all'}" configValue="filter_by" style="width: 100%; margin-top: 16px;"></ha-input>
+
+        <select configValue="report_type" style="width:100%; padding:8px; margin: 8px 0; border-radius:4px; background:var(--card-background-color); color:var(--primary-text-color); border:1px solid var(--divider-color);">
+           <option value="overview" ${this._config.report_type === 'overview' ? 'selected' : ''}>${this.localize('report_overview')}</option>
+           <option value="burndown" ${this._config.report_type === 'burndown' ? 'selected' : ''}>${this.localize('report_burndown')}</option>
+        </select>
+        
+        <ha-formfield label="${this.localize('show_user_select_lbl')}">
+          <ha-checkbox ${this._config.show_user_select !== false ? 'checked' : ''} configValue="show_user_select"></ha-checkbox>
+        </ha-formfield>
+
       </div>
       <style>
         .card-config ha-input {
@@ -506,11 +649,15 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     this._rendered = true;
     this.querySelectorAll('ha-input').forEach(el => el.addEventListener('input', ev => this._valueChanged(ev)));
     this._updateUI();
+    this.querySelectorAll('ha-checkbox').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
+    this.querySelectorAll('select').forEach(el => el.addEventListener('change', ev => this._valueChanged(ev)));
   }
 
   _updateUI() {
     if (!this._rendered) return;
     this.querySelectorAll('[configValue]').forEach(el => {
+        if (el.tagName === 'HA-CHECKBOX') return; // Handled below
+
         const key = el.getAttribute('configValue');
         const value = this._config[key];
         if (value !== undefined) el.value = value;
@@ -523,6 +670,16 @@ class TaskOrganizerStatsEditor extends HTMLElement {
     const target = ev.target;
     const configValue = target.configValue || target.getAttribute('configValue');
     let newValue = target.value !== undefined ? target.value : target.getAttribute('value');
+
+    if (target.tagName === 'SELECT') {
+      newValue = target.value;
+      if (this._config[configValue] === newValue) return;
+    }
+
+    if (target.tagName === 'HA-CHECKBOX') {
+      newValue = target.checked;
+      if (this._config[configValue] === newValue) return;
+    }
 
     if (target.tagName === 'HA-INPUT' && (target.type === 'number' || target.getAttribute('type') === 'number' || target.hasAttribute('type') && target.getAttribute('type') === 'number')) {
       newValue = newValue === "" ? undefined : parseInt(newValue);

@@ -697,14 +697,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
             "monthly_history": {}, "current_month": dt_util.now().strftime("%Y-%m"), 
-            "current_period_start": dt_util.start_of_local_day(dt_util.now().replace(day=1)).isoformat(),
+            "current_period_start": dt_util.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(),
             "templates": {}
         }
     
     # Ensure all required keys exist
     data.setdefault("monthly_history", {})
     data.setdefault("current_month", dt_util.now().strftime("%Y-%m"))
-    data.setdefault("current_period_start", dt_util.start_of_local_day(dt_util.now().replace(day=1)).isoformat())
+    data.setdefault("current_period_start", dt_util.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat())
     data.setdefault("templates", {})
 
     # IMPORTANT: Ensure settings from config entry options are always reflected in data
@@ -1095,7 +1095,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"{base_path}/task-organizer-card.js", 
             f"{base_path}/task-organizer-leaderboard.js", 
             f"{base_path}/task-organizer-stats.js", 
-            f"{base_path}/task-organizer-settings.js"
+            f"{base_path}/task-organizer-settings.js",
+            f"{base_path}/task-organizer-protocol.js"
         ]
         
         current_resources = {

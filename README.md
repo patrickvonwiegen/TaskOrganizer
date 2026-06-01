@@ -46,6 +46,14 @@ Suggestions for improvement or bug reports are welcome.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
 
+* **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis and a "Goal Setting" burndown chart to track your monthly point targets.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
+
+* **Monthly Point Goals**: Set personal point goals for each roommate in the settings. If a user reaches their goal, a checkered flag icon appears in the leaderboard and a progress bar is shown in the log when filtering by that user.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
+
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
@@ -129,7 +137,8 @@ A list of recently completed tasks with the option to correct or delete entries.
 ```yaml
 type: custom:task-organizer-stats
 title: "Who did what?"
-filter_by: all      # Options: all, mine (Default all)
+show_user_select: true # Allows selecting a specific user to see their monthly point chart and progress.
+filter_by: all      # Options: all (Default all)
 items_per_page: 10  # Number of displayed items
 ```
 ### 4. Settings (task-organizer-settings)
