@@ -55,7 +55,7 @@ Suggestions for improvement or bug reports are welcome.
 * **Monthly Point Goals**: Set personal point goals for each roommate in the settings. If a user reaches their goal, a checkered flag icon appears in the leaderboard and a progress bar is shown in the log when filtering by that user.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/fe5df6ad-65d2-41e1-b746-1eff50cb03b1" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
+  <img width="10%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
 
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
   <br>
