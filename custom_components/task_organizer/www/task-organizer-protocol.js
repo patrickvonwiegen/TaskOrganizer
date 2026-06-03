@@ -161,16 +161,18 @@ class TaskOrganizerProtocol extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
-        ha-card { padding: 16px; display: flex; flex-direction: column; gap: 10px; height: ${this.config.card_height || 'auto'}; overflow-y: auto; }
+        ha-card { padding: 16px; display: flex; flex-direction: column; height: ${this.config.card_height || 'auto'}; overflow-y: auto; }
         .header { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
-        .hist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); margin-bottom: 8px; }
+        .protocol-list { display: flex; flex-direction: column; gap: 10px; }
+        .hist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); }
         .task-name { font-weight: bold; display: block; }
         .meta { font-size: 12px; color: var(--secondary-text-color); }
         .actions { display: flex; align-items: center; gap: 4px; }
         .points-badge { font-weight: bold; color: var(--primary-color); margin-right: 8px; }
         .action-btn { background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); padding: 8px; border-radius: 50%; width: 40px; height: 40px; }
         .action-btn:hover { background: var(--secondary-background-color); color: var(--primary-text-color); }
-        .btn-edit { color: var(--info-color); } .btn-delete { color: var(--error-color); }
+        .btn-edit { color: var(--info-color, #2196F3); } 
+        .btn-delete { color: var(--error-color, #F44336); }
         .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; }
         .modal.open { display: flex; }
@@ -178,19 +180,21 @@ class TaskOrganizerProtocol extends HTMLElement {
       </style>
       <ha-card>
         <div class="header">${this.config.title || this.localize('title')}</div>
-        ${paginated.map(entry => `
-          <div class="hist-item">
-            <div style="flex:1; min-width:0;">
-              <span class="task-name">${entry.task_name}</span>
-              <span class="meta">${new Date(entry.timestamp).toLocaleString()} • ${this.users[entry.user_id] || this.localize('unknown')}</span>
+        <div class="protocol-list">
+          ${paginated.map(entry => `
+            <div class="hist-item">
+              <div style="flex:1; min-width:0;">
+                <span class="task-name">${entry.task_name}</span>
+                <span class="meta">${new Date(entry.timestamp).toLocaleString()} • ${this.users[entry.user_id] || this.localize('unknown')}</span>
+              </div>
+              <div class="actions">
+                <span class="points-badge">+${entry.points}</span>
+                <button class="action-btn btn-edit" data-id="${entry.id}" title="${this.localize('edit_hover')}"><ha-icon icon="mdi:pencil"></ha-icon></button>
+                <button class="action-btn btn-delete" data-id="${entry.id}" title="${this.localize('delete_hover')}"><ha-icon icon="mdi:delete"></ha-icon></button>
+              </div>
             </div>
-            <div class="actions">
-              <span class="points-badge">+${entry.points}</span>
-              <button class="action-btn btn-edit" data-id="${entry.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>
-              <button class="action-btn btn-delete" data-id="${entry.id}"><ha-icon icon="mdi:delete"></ha-icon></button>
-            </div>
-          </div>
-        `).join('')}
+          `).join('')}
+        </div>
         <div class="pagination">
           <ha-button id="btn-prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>${this.localize('prev')}</ha-button>
           <span>${this.currentPage} / ${totalPages}</span>
