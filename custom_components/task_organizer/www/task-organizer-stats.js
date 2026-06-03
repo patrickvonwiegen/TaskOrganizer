@@ -315,23 +315,39 @@ class TaskOrganizerStats extends HTMLElement {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const periodStart = this.currentPeriodStart ? new Date(this.currentPeriodStart) : null;
     const dailyPoints = new Array(daysInMonth).fill(0);
-    const cumulativePoints = []; // Initialisierung als const, da nicht neu zugewiesen
 
     this.history.forEach(h => {
       const d = new Date(h.timestamp);
-      // Nur Einträge zählen, die im aktuellen Monat UND nach dem letzten Reset liegen
+      // Only count entries from the current month AND after the last reset
       if (d.getMonth() === month && d.getFullYear() === year && h.user_id === userId && (!periodStart || d >= periodStart)) {
-        dailyPoints[d.getDate() - 1] += h.points;
+        dailyPoints[d.getDate() - 1] = (dailyPoints[d.getDate() - 1] || 0) + h.points;
       }
     });
 
-    let currentCumulative = 0;
-    for (let i = 0; i < daysInMonth; i++) { // Schleife zur Berechnung der kumulativen Punkte
-      currentCumulative += dailyPoints[i];
-      cumulativePoints.push(currentCumulative);
+    // Calculate trend based on last 3 days average
+    const todayIndex = now.getDate() - 1;
+    const todayPoints = dailyPoints[todayIndex] || 0;
+    let last3DaysPoints = 0;
+    let daysCounted = 0;
+    for (let i = 1; i <= 3; i++) {
+        if (todayIndex - i >= 0) {
+            last3DaysPoints += dailyPoints[todayIndex - i];
+            daysCounted++;
+        }
     }
+    const avgLast3Days = daysCounted > 0 ? last3DaysPoints / daysCounted : 0;
+    let trendIcon = 'mdi:minus';
+    let trendColor = 'var(--secondary-text-color)';
+    if (todayPoints > avgLast3Days + 0.1) {
+      trendIcon = 'mdi:arrow-up';
+      trendColor = 'var(--success-color, #4CAF50)';
+    } else if (todayPoints < avgLast3Days - 0.1) {
+      trendIcon = 'mdi:arrow-down';
+      trendColor = 'var(--error-color, #F44336)';
+    }
+    const trendTooltip = this.localize('today_points_tooltip', {current: todayPoints.toFixed(1), average: avgLast3Days.toFixed(1)});
 
-    const maxScale = Math.max(...cumulativePoints, 1);
+    const maxScale = Math.max(...dailyPoints, 1);
 
     const svgWidth = 500;
     const svgHeight = 150;
@@ -339,71 +355,62 @@ class TaskOrganizerStats extends HTMLElement {
     const xAxisY = 125;
     const chartHeight = 105;
     const barSpacing = (svgWidth - chartLeft) / daysInMonth;
-    const pointRadius = 3; // Radius for data points
+    const barWidth = Math.max(1, barSpacing * 0.6);
     const yAxisLabelOffset = 5;
 
-    // Y-Achsen-Beschriftungen berechnen (min. 0.5 Abstand)
+    // Calculate Y-axis labels
     const yAxisLabels = [];
     const step = Math.max(1, Math.ceil((maxScale / 4) / 5) * 5); // Ensure step is a multiple of 5 for cleaner labels, min 1
-    for (let val = 0; val <= maxScale + step; val += step) { // Iterate up to maxScale + step to ensure max is included
+    for (let val = 0; val <= maxScale + step; val += step) {
       const yPos = xAxisY - (val / maxScale) * chartHeight;
-      if (yPos >= (xAxisY - chartHeight - 1) && yPos <= xAxisY + 1) { // Adjusted bounds
+      if (yPos >= (xAxisY - chartHeight - 1) && yPos <= xAxisY + 1) {
         yAxisLabels.push({ 
           value: val % 1 === 0 ? val.toFixed(0) : val.toFixed(1), 
           y: yPos 
         });
       }
     }
-    // Sicherstellen, dass der Maximalwert beschriftet ist
+    // Ensure the maximum value is labeled
     if (yAxisLabels.length === 0 || Math.abs(yAxisLabels[yAxisLabels.length - 1].value - maxScale) > step / 2) {
       yAxisLabels.push({ value: maxScale % 1 === 0 ? maxScale.toFixed(0) : maxScale.toFixed(1), y: xAxisY - chartHeight });
     }
     yAxisLabels.sort((a, b) => a.y - b.y); // Sort labels by y-position
 
-    // Nur Punkte bis zum heutigen Tag zeichnen
-    const lastDayToDraw = now.getDate();
-    const visiblePoints = cumulativePoints.slice(0, lastDayToDraw);
-
-    // Generate path for the line and area
-    const linePoints = visiblePoints.map((pts, i) => {
-      const x = chartLeft + (i * barSpacing) + (barSpacing / 2); // Center of the day
-      const y = xAxisY - (pts / maxScale) * chartHeight;
-      return `${x},${y}`;
-    }).join(' ');
-
-    const firstX = chartLeft + (barSpacing / 2);
-    const lastX = chartLeft + ((visiblePoints.length - 1) * barSpacing) + (barSpacing / 2);
-    const areaPathPoints = `${firstX},${xAxisY} ${linePoints} ${lastX},${xAxisY}`; // Close the area at the bottom
 
     return `
       <div class="chart-container">
         <div class="chart-header-row">
           <div class="chart-title">${this.localize('points_per_day')}</div>
+          <div class="trend-indicator" title="${trendTooltip}">
+            <ha-icon icon="${trendIcon}" style="color: ${trendColor}; --mdc-icon-size: 16px;"></ha-icon>
+          </div>
         </div>
         <svg width="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" style="overflow:visible; display: block; shape-rendering: geometricPrecision; max-height: 200px;">
-          <!-- Achsen -->
+          <!-- Axes -->
           <line x1="${chartLeft}" y1="0" x2="${chartLeft}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
           <line x1="${chartLeft}" y1="${xAxisY}" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
           
-          <!-- Y-Achsen-Beschriftungen -->
+          <!-- Y-Axis Labels -->
           ${yAxisLabels.map(label => `
             <line x1="${chartLeft}" y1="${label.y}" x2="${chartLeft - 3}" y2="${label.y}" stroke="var(--divider-color)" stroke-width="0.5" />
             <text x="${yAxisLabelOffset}" y="${label.y + 4}" text-anchor="start" font-size="11" font-weight="bold" fill="var(--secondary-text-color)">${label.value}</text>
           `).join('')}
 
-          <!-- Tatsächlicher Verlauf (Fläche) -->
-          <polygon points="${areaPathPoints}" fill="var(--primary-color)" opacity="0.2" />
-          <polyline points="${linePoints}" fill="none" stroke="var(--primary-color)" stroke-width="2.5" />
-
-          <!-- Datenpunkte -->
-          ${cumulativePoints.map((pts, i) => {
+          <!-- Bars and X-Axis Labels -->
+          ${dailyPoints.map((pts, i) => {
             const x = chartLeft + (i * barSpacing) + (barSpacing / 2);
-            const y = xAxisY - (pts / maxScale) * chartHeight;
-            let elements = ''; // Initialisierung als leer
+            const barHeight = (pts / maxScale) * chartHeight;
+            let elements = '';
 
-            // Nur einen Kreis zeichnen, wenn an diesem spezifischen Tag Punkte hinzugefügt wurden
-            if (dailyPoints[i] > 0) {
-                elements += `<circle cx="${x}" cy="${y}" r="${pointRadius}" fill="var(--primary-color)" stroke="var(--card-background-color)" stroke-width="1" />`;
+            // Nur Balken zeichnen, wenn Punkte vorhanden sind
+            if (pts > 0) {
+                const dayDate = new Date(year, month, i + 1);
+                const formattedDate = dayDate.toLocaleDateString(this._hass.language || 'de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const hoverText = `${formattedDate}: ${pts.toFixed(1)} ${this.localize('points')}`;
+                elements += `<g>
+                  <title>${hoverText}</title>
+                  <rect x="${x - barWidth / 2}" y="${xAxisY - barHeight}" width="${barWidth}" height="${barHeight}" fill="var(--primary-color)" rx="2" />
+                </g>`;
             }
 
             // Datum auf der X-Achse (alle 5 Tage + erster/letzter Tag)
@@ -462,21 +469,21 @@ class TaskOrganizerStats extends HTMLElement {
     const actualPoints = burnPoints.map((p, i) => `${chartLeft + (i / daysInMonth) * chartAreaWidth},${xAxisY - p * scale}`);
     const areaPath = `${chartLeft},${xAxisY} ` + actualPoints.join(' ') + ` ${chartLeft + (burnPoints.length - 1) / daysInMonth * chartAreaWidth},${xAxisY}`;
 
-    // Y-Achsen-Beschriftungen berechnen (min. 0.5 Abstand)
+    // Calculate Y-axis labels, only whole numbers and without overlap
     const yAxisLabels = [];
-    const step = Math.max(0.5, Math.ceil((goal / 4) * 2) / 2);
-    for (let val = 0; val <= goal + 0.01; val += step) {
-      const yPos = xAxisY - (val * scale);
-      if (yPos >= -1) {
-        yAxisLabels.push({ 
-          value: val % 1 === 0 ? val.toFixed(0) : val.toFixed(1), 
-          y: yPos 
-        });
-      }
+    const maxLabels = 5; // Maximum of 5 labels to avoid overlap
+    let step = Math.max(1, Math.ceil(goal / maxLabels));
+    if (goal > 10) {
+        step = Math.ceil(step / 5) * 5; // Round to steps of 5 for cleaner axes
     }
-    // Sicherstellen, dass das Ziel (100%) beschriftet ist
-    if (!yAxisLabels.some(l => Math.abs(l.y) < 2)) {
-      yAxisLabels.push({ value: goal % 1 === 0 ? goal.toFixed(0) : goal.toFixed(1), y: 0 });
+
+    for (let val = 0; val <= goal; val += step) {
+        const yPos = xAxisY - (val * scale);
+        yAxisLabels.push({ value: val.toFixed(0), y: yPos });
+    }
+    // Ensure the goal value (maximum) is always displayed if it's not already part of the steps.
+    if (goal % step !== 0) {
+        yAxisLabels.push({ value: goal.toFixed(0), y: xAxisY - chartAreaHeight });
     }
 
     // Current day line
@@ -512,27 +519,37 @@ class TaskOrganizerStats extends HTMLElement {
           </div>
         </div>
         <svg width="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" style="overflow:visible; display: block; shape-rendering: geometricPrecision; max-height: 200px;">
-          <!-- Achsen -->
+          <!-- Axes -->
           <line x1="${chartLeft}" y1="0" x2="${chartLeft}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
           <line x1="${chartLeft}" y1="${xAxisY}" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
           
-          <!-- Ideallinie -->
+          <!-- Ideal line -->
           <line x1="${chartLeft}" y1="0" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--error-color)" stroke-width="1" stroke-dasharray="2" />
           
-          <!-- Aktueller Tag -->
+          <!-- Current day -->
           <line x1="${currentDayX}" y1="0" x2="${currentDayX}" y2="${xAxisY}" stroke="var(--primary-color)" stroke-width="1" stroke-dasharray="4" opacity="0.6" />
 
-          <!-- Tatsächlicher Verlauf (Fläche) -->
+          <!-- Actual progress (area) -->
           <polyline points="${areaPath}" fill="var(--primary-color)" opacity="0.2" />
           <polyline points="${actualPoints.join(' ')}" fill="none" stroke="var(--primary-color)" stroke-width="2.5" />
+
+          <!-- Hover points for actual progress -->
+          ${burnPoints.map((p, i) => {
+            const x = chartLeft + (i / daysInMonth) * chartAreaWidth;
+            const y = xAxisY - p * scale;
+            const dayDate = new Date(now.getFullYear(), now.getMonth(), i + 1);
+            const formattedDate = dayDate.toLocaleDateString(this._hass.language || 'de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const hoverText = `${formattedDate}: ${p.toFixed(1)} ${this.localize('remaining_points')}`;
+            return `<circle cx="${x}" cy="${y}" r="8" fill="transparent"><title>${hoverText}</title></circle>`;
+          }).join('')}
           
-          <!-- Y-Achsen-Beschriftungen -->
+          <!-- Y-Axis Labels -->
           ${yAxisLabels.map(label => `
             <line x1="${chartLeft}" y1="${label.y}" x2="${chartLeft - 3}" y2="${label.y}" stroke="var(--divider-color)" stroke-width="0.5" />
             <text x="${yAxisLabelOffset}" y="${label.y + 4}" text-anchor="start" font-size="11" font-weight="bold" fill="var(--secondary-text-color)">${label.value}</text>
           `).join('')}
 
-          <!-- X-Achsen-Beschriftungen -->
+          <!-- X-Axis Labels -->
           ${[1, 10, 20, daysInMonth].map(d => {
              const labelX = chartLeft + ((d - 1) / daysInMonth) * chartAreaWidth;
              return `
@@ -550,7 +567,7 @@ class TaskOrganizerStats extends HTMLElement {
       return;
     }
 
-    // Fallback falls noch kein User ausgewählt ist oder 'all' (was entfernt wurde)
+    // Fallback if no user is selected yet or 'all' (which was removed)
     if (this._selectedUserId === 'all' && Object.keys(this.users).length > 0) {
       if (this._hass.user && this._hass.user.id && this.users[this._hass.user.id]) {
         this._selectedUserId = this._hass.user.id;
