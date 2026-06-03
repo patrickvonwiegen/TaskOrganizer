@@ -48,11 +48,14 @@ Suggestions for improvement or bug reports are welcome.
 
 * **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis and a "Goal Setting" burndown chart to track your monthly point targets.
   <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3f28e234-6ed6-406c-8577-9fd4e22de873" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/c98534b9-3283-482e-a356-b35185c9c521" />
+
 
 * **Monthly Point Goals**: Set personal point goals for each roommate in the settings. If a user reaches their goal, a checkered flag icon appears in the leaderboard and a progress bar is shown in the log when filtering by that user.
   <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/fe5df6ad-65d2-41e1-b746-1eff50cb03b1" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
 
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
   <br>
