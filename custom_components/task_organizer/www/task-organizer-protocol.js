@@ -131,7 +131,8 @@ class TaskOrganizerProtocol extends HTMLElement {
     if (!entry) return;
     this.editingEntryId = entryId; 
     this.shadowRoot.getElementById('edit-points').value = entry.points; 
-    this.shadowRoot.querySelectorAll('.edit-user-radio').forEach(radio => { radio.checked = (radio.value === entry.user_id); });
+    const userSelect = this.shadowRoot.getElementById('edit-user-select');
+    if (userSelect) userSelect.value = entry.user_id;
     this.shadowRoot.getElementById('edit-modal').classList.add('open'); 
   }
 
@@ -139,8 +140,8 @@ class TaskOrganizerProtocol extends HTMLElement {
 
   _saveEdit() { 
     const points = parseFloat(this.shadowRoot.getElementById('edit-points').value); 
-    let userId = null;
-    this.shadowRoot.querySelectorAll('.edit-user-radio').forEach(radio => { if (radio.checked) userId = radio.value; });
+    const userSelect = this.shadowRoot.getElementById('edit-user-select');
+    const userId = userSelect ? userSelect.value : null;
     this._hass.callWS({ type: 'task_organizer/edit_history_item', entry_id: this.editingEntryId, points: points, user_id: userId }).then(() => { this._closeModal(); this._fetchData(); }); 
   }
 
@@ -177,6 +178,8 @@ class TaskOrganizerProtocol extends HTMLElement {
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; }
         .modal.open { display: flex; }
         .modal-content { background: var(--card-background-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 16px; }
+        select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-family: inherit; font-size: 14px; }
+        .form-label { font-size: 12px; color: var(--secondary-text-color); margin-bottom: 4px; display: block; }
       </style>
       <ha-card>
         <div class="header">${this.config.title || this.localize('title')}</div>
@@ -204,10 +207,13 @@ class TaskOrganizerProtocol extends HTMLElement {
           <div class="modal-content">
             <h2>${this.localize('edit')}</h2>
             <ha-input id="edit-points" type="number" label="${this.localize('points')}" step="0.1"></ha-input>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              ${Object.entries(this.users).map(([uid, name]) => `
-                <ha-formfield label="${name}"><ha-radio class="edit-user-radio" name="u" value="${uid}"></ha-radio></ha-formfield>
-              `).join('')}
+            <div>
+              <label class="form-label">${this.localize('user')}</label>
+              <select id="edit-user-select">
+                ${Object.entries(this.users).map(([uid, name]) => `
+                  <option value="${uid}">${name}</option>
+                `).join('')}
+              </select>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:8px;">
               <ha-button id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
