@@ -1,5 +1,14 @@
 ﻿﻿# Changelog
 
+## [1.6.0]
+### ⚠️ Breaking Changes
+- **New Protocol Card:** Separated the history log into its own dedicated card (`task-organizer-protocol`) for better organization.
+
+### 🚀 New Features
+- **Monthly Point Goals:** Settings-Cards user can now set monthly point goals in the settings. A flag icon appears in the leaderboard once a goal is reached. Target attributes are provided within the sensor entities.
+- **Advanced Reporting:** The Stats card has been renamed to "Reports" and now offers two distinct views: "Completed Tasks" and "Goal Setting"
+- **Reset Event:** Added `task_organizer_reset` event which is triggered when points are archived (end of month or manual). This enables automations for winner announcements.
+
 ## [1.5.2]
 ### 🐛 Bug Fixes
 - **Frontend Component Migration:** Updated `ha-textfield` components to `ha-input` and adjusted icon slot names in all cards for compatibility with Home Assistant 2026.5.x

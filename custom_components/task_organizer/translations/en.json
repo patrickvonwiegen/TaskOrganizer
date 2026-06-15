@@ -17,6 +17,7 @@
         "data": {
           "overdue_days": "Days until overdue",
           "color_done": "Color: Done (Hex Code)",
+          "point_goals": "Monthly Point Goals",
           "color_due": "Color: Due (Hex Code)",
           "color_overdue": "Color: Overdue (Hex Code)"
         }
@@ -29,60 +30,65 @@
       "due_tasks": { "name": "Due Tasks" },
       "overdue_tasks": { "name": "Overdue Tasks" },
       "due_and_overdue_tasks": { "name": "Due and Overdue Tasks" },
-      "settings": { "name": "Settings" },
+      "settings": { "name": "TaskOrganizer: Settings" },
+      "protocol": { "name": "TaskOrganizer: Protocol" },
       "points": { "name": "Points" },
-      "leaderboard": { "name": "Roommate of the Month" }
+      "leaderboard": { "name": "Roommate of the Month" }, 
+      "entry_saved": { "name": "Entry saved!" },
+      "entry_deleted": { "name": "Entry deleted!" },
+      "success": { "name": "Settings successfully saved!" },
+      "templates": { "name": "Templates" }
     },
     "button": {
-      "reset_month": { "name": "Complete Month" },
+      "reset_month": { "name": "Finish Month" },
       "factory_reset": { "name": "Factory Reset" }
     }
   },
   "services": {
     "reset_monthly_points": {
       "name": "Reset monthly points",
-      "description": "Manually resets all roommate points to 0 and archives the month."
+      "description": "Manually resets all roommates' points to 0 and archives the month."
     },
     "factory_reset": {
       "name": "Factory reset",
-      "description": "Deletes all tasks, history and points."
+      "description": "Deletes all tasks, history, and points."
     },
     "complete_task_by_name": {
       "name": "Complete task",
       "description": "Marks a task as completed by its exact name.",
       "fields": {
-        "task_name": { "name": "Task name", "description": "The exact name of the task." },
-        "user_id": { "name": "User (Optional)", "description": "The HA User-ID or entity." }
+        "task_name": { "name": "Task Name", "description": "The exact name of the task." },
+        "user_id": { "name": "User (Optional)", "description": "The HA user ID or entity." }
       }
     },
     "add_task": {
       "name": "Add task",
       "description": "Creates a new recurring or one-time task. Can be created from scratch or based on a template.",
       "fields": {
-        "template": { "name": "Template (Optional)", "description": "The name of a template to use. Fills in other fields if they are not provided." },
-        "name": { "name": "Name (Optional if template is used)", "description": "What should the task be called?" },
-        "description": { "name": "Description (Optional)", "description": "Additional info." },
-        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
-        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done? 0 for one-time tasks. If not set, taken from template or defaults to 7." },
-        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
-        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
-        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
-        "override_overdue_days": { "name": "Days until overdue (optional)", "description": "Overrides the global setting for the number of days after which this task is considered overdue." },
+        "template": { "name": "Template (Optional)", "description": "The name of a template to use. Fills other fields if not provided." },
+        "name": { "name": "Name (Optional with template)", "description": "What should the task be named?" },
+        "description": { "name": "Description (Optional)", "description": "Additional information." },
+        "area": { "name": "Area (Optional)", "description": "In which room/area does the task occur?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often should the task be done? 0 for one-time tasks. If not set, the value from the template or default (7) is used." },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is the task worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi icon, e.g., mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Comma-separated user IDs or person entities." },
+        "override_overdue_days": { "name": "Days until overdue (Optional)", "description": "Overrides the global setting for the number of days after which this task is considered overdue." },
         "subtasks": { "name": "Subtasks (Optional)", "description": "A list of subtasks." }
       }
     },
     "set_task_due_by_name": {
-      "name": "Set task due",
-      "description": "Marks a task as due immediately by its exact name.",
+      "name": "Set task due immediately",
+      "description": "Sets a task as due immediately by its exact name.",
       "fields": {
-        "task_name": { "name": "Task name", "description": "The exact name of the task." }
+        "task_name": { "name": "Task Name", "description": "The exact name of the task." }
       }
     },
     "pause_task_by_name": {
       "name": "Pause task",
-      "description": "Pauses a task until a specific date by its exact name.",
+      "description": "Pauses a task by its exact name until a specific date.",
       "fields": {
-        "task_name": { "name": "Task name", "description": "The exact name of the task." },
+        "task_name": { "name": "Task Name", "description": "The exact name of the task." },
         "pause_until": { "name": "Pause until", "description": "The date until which the task should be paused (e.g., '2024-12-31')." }
       }
     },
@@ -90,36 +96,36 @@
       "name": "Remove task",
       "description": "Removes a task by its exact name.",
       "fields": {
-        "task_name": { "name": "Task name", "description": "The exact name of the task to remove." }
+        "task_name": { "name": "Task Name", "description": "The exact name of the task to be removed." }
       }
     },
     "edit_task_by_name": {
       "name": "Edit task",
       "description": "Edits an existing task by its exact name.",
       "fields": {
-        "task_name": { "name": "Task name", "description": "The exact name of the task to edit." },
+        "task_name": { "name": "Task Name", "description": "The exact name of the task to be edited." },
         "new_name": { "name": "New Name (Optional)", "description": "The new name for the task." },
-        "description": { "name": "Description (Optional)", "description": "Additional info." },
-        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
-        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
-        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
-        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
-        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
-        "override_overdue_days": { "name": "Overdue after (Days, Optional)", "description": "Overrides the global setting." },
+        "description": { "name": "Description (Optional)", "description": "Additional information." },
+        "area": { "name": "Area (Optional)", "description": "In which room/area does the task occur?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often should the task be done?" },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is the task worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi icon, e.g., mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Comma-separated user IDs or person entities." },
+        "override_overdue_days": { "name": "Days until overdue (Optional)", "description": "Overrides the global setting." },
         "subtasks": { "name": "Subtasks (Optional)", "description": "The updated list of subtasks." }
       }
     },
     "add_template": {
-      "name": "Add template",
+      "name": "Create template",
       "description": "Creates a new template.",
       "fields": {
-        "name": { "name": "Name", "description": "What should the template be called?" },
-        "description": { "name": "Description (Optional)", "description": "Additional info." },
-        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
-        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
-        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
-        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
-        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
+        "name": { "name": "Name", "description": "What should the template be named?" },
+        "description": { "name": "Description (Optional)", "description": "Additional information." },
+        "area": { "name": "Area (Optional)", "description": "In which room/area does the task occur?" },
+        "interval": { "name": "Interval (Days, Optional)", "description": "How often should the task be done?" },
+        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is the task worth?" },
+        "icon": { "name": "Icon (Optional)", "description": "An mdi icon, e.g., mdi:broom" },
+        "assignees": { "name": "Assignees (Optional)", "description": "Comma-separated user IDs or person entities." },
         "subtasks": { "name": "Subtasks (Optional)", "description": "Subtasks for this template." }
       }
     },
@@ -127,21 +133,15 @@
       "name": "Remove template",
       "description": "Removes a template by its exact name.",
       "fields": {
-        "template_name": { "name": "Template name", "description": "The exact name of the template to remove." }
+        "template_name": { "name": "Template Name", "description": "The exact name of the template to be removed." }
       }
     },
     "edit_template_by_name": {
       "name": "Edit template",
       "description": "Edits an existing template by its exact name.",
       "fields": {
-        "template_name": { "name": "Template name", "description": "The exact name of the template to edit." },
+        "template_name": { "name": "Template Name", "description": "The exact name of the template to be edited." },
         "new_name": { "name": "New Name (Optional)", "description": "The new name for the template." },
-        "description": { "name": "Description (Optional)", "description": "Additional info." },
-        "area": { "name": "Area (Optional)", "description": "Which area does the task belong to?" },
-        "interval": { "name": "Interval (Days, Optional)", "description": "How often does it need to be done?" },
-        "complexity": { "name": "Points (1-10, Optional)", "description": "How many points is it worth?" },
-        "icon": { "name": "Icon (Optional)", "description": "An mdi-icon, e.g. mdi:broom" },
-        "assignees": { "name": "Assignees (Optional)", "description": "Who is responsible? (Comma separated user IDs or person.name entities)." },
         "subtasks": { "name": "Subtasks (Optional)", "description": "The updated list of subtasks." }
       }
     }

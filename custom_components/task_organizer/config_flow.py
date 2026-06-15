@@ -51,7 +51,9 @@ class TaskOrganizerOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            options = dict(self.config_entry.options)
+            options.update(user_input)
+            return self.async_create_entry(title="", data=options)
 
         options = self.config_entry.options
         data_schema = vol.Schema({

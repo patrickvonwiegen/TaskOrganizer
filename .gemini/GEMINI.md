@@ -35,7 +35,11 @@ Please adhere to the following rules for every request:
     *   **`README.md`**: Add or modify the description of features, sensors, services, events, or card configurations.
     *   **`CHANGELOG.md`**: Use the current version of manifest.json and category (`🚀 New Features`, `🐛 Bug Fixes`, `⚠️ Breaking Changes`).
 
-4.  **Versioning Logic**: Follow the `Major.Minor.Bugfix` semantic versioning scheme. 
+4.  **No Special Characters**: 
+    *   Do not use control characters or non-standard special symbols in the text fields (especially in `CHANGELOG.md`).
+    *   Specific category emojis (🚀, 🐛, ⚠️) are allowed for structure, but the content must remain clean.
+
+5.  **Versioning Logic**: Follow the `Major.Minor.Bugfix` semantic versioning scheme. 
     *   Consolidate all changes for a feature set or bugfix round into a "Next" section in `CHANGELOG.md`. 
     *   Do not increment the version for every minor code adjustment. Only increment the version when a logical development block is completed.
 

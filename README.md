@@ -46,6 +46,17 @@ Suggestions for improvement or bug reports are welcome.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
 
+* **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis and a "Goal Setting" burndown chart to track your monthly point targets.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3f28e234-6ed6-406c-8577-9fd4e22de873" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/c98534b9-3283-482e-a356-b35185c9c521" />
+
+
+* **Monthly Point Goals**: Set personal point goals for each roommate in the settings. If a user reaches their goal, a checkered flag icon appears in the leaderboard and a progress bar is shown in the log when filtering by that user.
+  <br>
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/fe5df6ad-65d2-41e1-b746-1eff50cb03b1" />
+  <img width="10%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
+
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
@@ -129,7 +140,8 @@ A list of recently completed tasks with the option to correct or delete entries.
 ```yaml
 type: custom:task-organizer-stats
 title: "Who did what?"
-filter_by: all      # Options: all, mine (Default all)
+show_user_select: true # Allows selecting a specific user to see their monthly point chart and progress.
+filter_by: all      # Options: all (Default all)
 items_per_page: 10  # Number of displayed items
 ```
 ### 4. Settings (task-organizer-settings)
@@ -340,6 +352,35 @@ action:
     data:
       title: "Important New Task!"
       message: "A new difficult task '{{ trigger.event.data.name }}' has been added."
+```
+
+### task_organizer_reset
+This event is fired when the monthly points reset occurs (either automatically at the start of a month or manually via service).
+
+#### Event Data:
+- **month**: The month string (e.g., "2024-05").
+- **winner_name**: Friendly name of the user with the most points.
+- **winner_points**: Total points achieved by the winner.
+- **all_scores**: List of all users with `user_id`, `name`, and `points`, sorted descending by points.
+
+#### Example Automation:
+Announce the winner and list the scores of all participants after a reset.
+
+```yml
+alias: "TaskOrganizer: Winner Announcement"
+trigger:
+  - platform: event
+    event_type: "task_organizer_reset"
+action:
+  - action: notify.persistent_notification
+    data:
+      title: "Statistics Reset ({{ trigger.event.data.month }})"
+      message: >
+        Winner of the month: {{ trigger.event.data.winner_name }} with {{ trigger.event.data.winner_points }} points.
+        Other scores: 
+        {%- for entry in trigger.event.data.all_scores[1:] -%}
+          {{ entry.name }} {{ entry.points }}{{ ", " if not loop.last else "" }}
+        {%- endfor -%}
 ```
 
 

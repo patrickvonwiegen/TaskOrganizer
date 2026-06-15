@@ -17,6 +17,7 @@
         "data": {
           "overdue_days": "Tage bis überfällig",
           "color_done": "Farbe: Erledigt (Hex-Code)",
+          "point_goals": "Monatliche Punktziele",
           "color_due": "Farbe: Fällig (Hex-Code)",
           "color_overdue": "Farbe: Überfällig (Hex-Code)"
         }
@@ -29,7 +30,8 @@
       "due_tasks": { "name": "Fällige Aufgaben" },
       "overdue_tasks": { "name": "Überfällige Aufgaben" },
       "due_and_overdue_tasks": { "name": "Fällige und überfällige Aufgaben" },
-      "settings": { "name": "Einstellungen" },
+      "settings": { "name": "TaskOrganizer: Einstellungen" },
+      "protocol": { "name": "TaskOrganizer: Protokoll" },
       "points": { "name": "Punktestand" },
       "leaderboard": { "name": "Mitbewohner des Monats" }, 
       "entry_saved": { "name": "Eintrag gespeichert!" },

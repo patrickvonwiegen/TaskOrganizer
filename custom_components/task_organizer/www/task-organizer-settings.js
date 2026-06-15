@@ -16,6 +16,8 @@ const I18N_SETTINGS = {
     add_template: "Add Template", edit_template: "Edit Template", template_name: "Template Name",
     confirm_delete_template: "Do you really want to delete this template? It cannot be recovered.",
     template_saved: "Template saved!", template_deleted: "Template deleted!", no_templates: "No templates found. Create a new one!",
+    point_goals: "Monthly Point Goals",
+    goal_lbl: "Goal for {user}",
     template_name_placeholder: "e.g. Take out trash",
     subtasks: "Subtasks", 
     add_subtask: "Add Subtask", 
@@ -47,6 +49,8 @@ const I18N_SETTINGS = {
     add_template: "Vorlage hinzufügen", edit_template: "Vorlage bearbeiten", template_name: "Name der Vorlage",
     confirm_delete_template: "Möchtest du diese Vorlage wirklich löschen? Sie kann nicht wiederhergestellt werden.",
     template_saved: "Vorlage gespeichert!", template_deleted: "Vorlage gelöscht!", no_templates: "Keine Vorlagen vorhanden. Erstelle eine neue!",
+    point_goals: "Monatliche Punktziele",
+    goal_lbl: "Ziel für {user}",
     template_name_placeholder: "z.B. Müll rausbringen",
     subtasks: "Unteraufgaben", 
     add_subtask: "Unteraufgabe hinzufügen", 
@@ -245,11 +249,18 @@ class TaskOrganizerSettings extends HTMLElement {
    * Gathers modified settings from the UI and saves them via websocket.
    */
   _saveSettings() { 
+    const pointGoals = {};
+    this.shadowRoot.querySelectorAll('.user-goal-input').forEach(input => {
+      const val = parseInt(input.value);
+      if (!isNaN(val) && val > 0) pointGoals[input.dataset.uid] = val;
+    });
+
     const newSettings = { 
       color_done: this.shadowRoot.getElementById('c-done').value, 
       color_due: this.shadowRoot.getElementById('c-due').value, 
       color_overdue: this.shadowRoot.getElementById('c-overdue').value, 
-      overdue_days: parseInt(this.shadowRoot.getElementById('num-overdue').value) 
+      overdue_days: parseInt(this.shadowRoot.getElementById('num-overdue').value),
+      point_goals: pointGoals
     }; 
     
     this._hass.callWS({ type: 'task_organizer/update_settings', settings: newSettings }).then(() => { 
@@ -317,6 +328,7 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (target.id === 'btn-modal-save') this._saveTemplate();
     else if (target.id === 'toggle-subtasks') this._toggleSection('subtasks-content');
     else if (target.id === 'btn-add-subtask') this._addSubtask();
+    else if (target.id === 'toggle-goals') this._toggleSection('goals-content');
     else if (target.classList.contains('btn-del-subtask')) this._removeSubtask(target.dataset.index);
     else if (target.classList.contains('subtask-check')) this._toggleSubtaskStatus(target.dataset.index);
   }
@@ -768,6 +780,20 @@ class TaskOrganizerSettings extends HTMLElement {
               </div>
             `}).join('') : `<div class="no-templates-msg">${this.localize('no_templates')}</div>`}
           </div>
+        </div>
+
+        <div class="collapsible-header" id="toggle-goals">
+          <span>${this.localize('point_goals')}</span>
+          <ha-icon icon="mdi:chevron-down"></ha-icon>
+        </div>
+        <div class="collapsible-content" id="goals-content">
+          ${Object.entries(this.users).map(([uid, name]) => `
+            <div class="setting-row">
+              <span class="setting-label">${name}</span>
+              <input type="number" class="user-goal-input" data-uid="${uid}" 
+                     value="${this.settings.point_goals?.[uid] || ''}" placeholder="0">
+            </div>
+          `).join('')}
         </div>
 
         ${showAdvanced ? `

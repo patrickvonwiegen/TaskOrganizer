@@ -23,6 +23,7 @@ from .const import (
     EVENT_LEADERBOARD_CHANGED,
     EVENT_TASK_COMPLETED,
     EVENT_TASK_CREATED,
+    EVENT_RESET,
     STORAGE_KEY,
     STORAGE_VERSION,
     WS_TYPE_ADD_TASK,
@@ -642,6 +643,32 @@ async def _async_check_monthly_reset(hass: HomeAssistant, force: bool = False):
         if saved_month: 
             data["monthly_history"][saved_month] = data["points"].copy()
             
+        # Fire monthly reset event with scores before clearing them
+        # Resolve names and sort scores for the event payload
+        sorted_scores = sorted(old_points.items(), key=lambda item: item[1], reverse=True)
+        resolved_scores = []
+        for u_id, pts in sorted_scores:
+            name = u_id
+            # Try to resolve friendly name from person entities
+            for state in hass.states.async_all("person"):
+                if state.attributes.get("user_id") == u_id:
+                    name = state.attributes.get("friendly_name", u_id)
+                    break
+            resolved_scores.append({
+                "user_id": u_id,
+                "name": name,
+                "points": pts
+            })
+
+        if resolved_scores:
+            winner = resolved_scores[0]
+            hass.bus.async_fire(EVENT_RESET, {
+                "month": saved_month or current_actual_month,
+                "winner_name": winner["name"],
+                "winner_points": winner["points"],
+                "all_scores": resolved_scores
+            })
+
         for user in data["points"]: 
             data["points"][user] = 0
             
@@ -670,14 +697,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = {
             "tasks": {}, "points": {}, "history": [], "settings": {}, 
             "monthly_history": {}, "current_month": dt_util.now().strftime("%Y-%m"), 
-            "current_period_start": dt_util.start_of_local_day(dt_util.now().replace(day=1)).isoformat(),
+            "current_period_start": dt_util.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(),
             "templates": {}
         }
     
     # Ensure all required keys exist
     data.setdefault("monthly_history", {})
     data.setdefault("current_month", dt_util.now().strftime("%Y-%m"))
-    data.setdefault("current_period_start", dt_util.start_of_local_day(dt_util.now().replace(day=1)).isoformat())
+    data.setdefault("current_period_start", dt_util.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat())
     data.setdefault("templates", {})
 
     # IMPORTANT: Ensure settings from config entry options are always reflected in data
@@ -1068,7 +1095,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"{base_path}/task-organizer-card.js", 
             f"{base_path}/task-organizer-leaderboard.js", 
             f"{base_path}/task-organizer-stats.js", 
-            f"{base_path}/task-organizer-settings.js"
+            f"{base_path}/task-organizer-settings.js",
+            f"{base_path}/task-organizer-protocol.js"
         ]
         
         current_resources = {

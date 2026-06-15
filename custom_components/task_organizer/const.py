@@ -21,6 +21,7 @@ EVENT_TASK_UPDATED = "task_organizer_updated"
 EVENT_LEADERBOARD_CHANGED = "task_organizer_leaderboard_changed"
 EVENT_TASK_COMPLETED = "task_organizer_task_completed"
 EVENT_TASK_CREATED = "task_organizer_task_created"
+EVENT_RESET = "task_organizer_reset"
 
 # WebSocket Command Types
 WS_TYPE_GET_DATA = "task_organizer/get_data"
