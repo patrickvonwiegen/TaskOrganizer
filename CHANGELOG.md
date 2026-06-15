@@ -1,4 +1,10 @@
-﻿﻿# Changelog
+﻿﻿﻿﻿# Changelog
+
+## [1.6.1]
+### 🐛 Bug Fixes
+- **Protocol Card:** Fixed an issue where assignees could not be changed in the edit dialog due to Home Assistant frontend component updates in 2026.6.x (replaced `ha-radio` with a native `select` dropdown).
+- **Reports:** Added a blue dashed line representing the current day in the "Points per day" chart.
+- **Sensors:** Set `state_class` to `MEASUREMENT` and replaced `state` with `native_value` for numeric sensors so they render as graphs instead of strings in the history.
 
 ## [1.6.0]
 ### ⚠️ Breaking Changes

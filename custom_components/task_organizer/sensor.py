@@ -2,7 +2,7 @@
 import json
 from datetime import timedelta
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
@@ -62,12 +62,14 @@ class TaskOrganizerBaseSensor(SensorEntity):
 class TaskOrganizerAllTasksSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the total number of tasks."""
     
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
     def __init__(self, hass: HomeAssistant):
         super().__init__(hass, "task_organizer_all_tasks", "all_tasks")
         self._attr_icon = "mdi:calendar-check-outline"
 
     @property
-    def state(self) -> int:
+    def native_value(self) -> int:
         """Return the total amount of tasks."""
         return len(self._data.get("tasks", {}))
 
@@ -84,6 +86,8 @@ class TaskOrganizerAllTasksSensor(TaskOrganizerBaseSensor):
 class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the number of currently due tasks."""
     
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
     def __init__(self, hass: HomeAssistant):
         """Initialize the sensor for due tasks."""
         super().__init__(hass, "task_organizer_due_tasks", "due_tasks")
@@ -115,7 +119,7 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
         return due_tasks
 
     @property
-    def state(self) -> int:
+    def native_value(self) -> int:
         """Return the count of due tasks."""
         return len(self._get_due_tasks())
 
@@ -131,6 +135,8 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
 
 class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the number of overdue tasks."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, hass: HomeAssistant):
         """Initialize the sensor for overdue tasks."""
@@ -163,7 +169,7 @@ class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
         return overdue_tasks
 
     @property
-    def state(self) -> int:
+    def native_value(self) -> int:
         """Return the count of overdue tasks."""
         return len(self._get_overdue_tasks())
 
@@ -176,6 +182,8 @@ class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
 
 class TaskOrganizerDueAndOverdueTasksSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the number of due and overdue tasks combined."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, hass: HomeAssistant):
         """Initialize the sensor for due and overdue tasks."""
@@ -203,7 +211,7 @@ class TaskOrganizerDueAndOverdueTasksSensor(TaskOrganizerBaseSensor):
         return due_tasks
 
     @property
-    def state(self) -> int:
+    def native_value(self) -> int:
         """Return the count of due and overdue tasks."""
         return len(self._get_due_and_overdue_tasks())
 
@@ -222,7 +230,7 @@ class TaskOrganizerSettingsSensor(TaskOrganizerBaseSensor):
         self._attr_icon = "mdi:cog"
 
     @property
-    def state(self) -> str:
+    def native_value(self) -> str:
         """Return a generic OK state."""
         return "OK"
 
@@ -235,12 +243,14 @@ class TaskOrganizerSettingsSensor(TaskOrganizerBaseSensor):
 class TaskOrganizerPointsSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the points of all users."""
 
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
     def __init__(self, hass: HomeAssistant):
         super().__init__(hass, "task_organizer_points", "points")
         self._attr_icon = "mdi:star"
 
     @property
-    def state(self) -> float:
+    def native_value(self) -> float:
         """Return the sum of all points."""
         return sum(self._data.get("points", {}).values())
 
@@ -279,7 +289,7 @@ class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
         self._attr_icon = "mdi:trophy"
 
     @property
-    def state(self) -> str:
+    def native_value(self) -> str:
         """Return the name of the user with the most points."""
         points = self._data.get("points", {})
         if not points:
@@ -319,13 +329,15 @@ class TaskOrganizerLeaderboardSensor(TaskOrganizerBaseSensor):
 class TaskOrganizerTemplatesSensor(TaskOrganizerBaseSensor):
     """Sensor tracking the total number of templates."""
 
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
     def __init__(self, hass: HomeAssistant):
         """Initialize the sensor for templates."""
         super().__init__(hass, "task_organizer_templates", "templates")
         self._attr_icon = "mdi:file-document-multiple-outline"
 
     @property
-    def state(self) -> int:
+    def native_value(self) -> int:
         """Return the total amount of templates."""
         return len(self._data.get("templates", {}))
 

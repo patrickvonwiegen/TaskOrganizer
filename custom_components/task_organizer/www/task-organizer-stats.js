@@ -358,6 +358,8 @@ class TaskOrganizerStats extends HTMLElement {
     const barWidth = Math.max(1, barSpacing * 0.6);
     const yAxisLabelOffset = 5;
 
+    const currentDayX = chartLeft + (todayIndex * barSpacing) + (barSpacing / 2);
+
     // Calculate Y-axis labels
     const yAxisLabels = [];
     const step = Math.max(1, Math.ceil((maxScale / 4) / 5) * 5); // Ensure step is a multiple of 5 for cleaner labels, min 1
@@ -389,6 +391,9 @@ class TaskOrganizerStats extends HTMLElement {
           <!-- Axes -->
           <line x1="${chartLeft}" y1="0" x2="${chartLeft}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
           <line x1="${chartLeft}" y1="${xAxisY}" x2="${svgWidth}" y2="${xAxisY}" stroke="var(--divider-color)" stroke-width="0.5" />
+          
+          <!-- Current day -->
+          <line x1="${currentDayX}" y1="0" x2="${currentDayX}" y2="${xAxisY}" stroke="var(--primary-color)" stroke-width="1" stroke-dasharray="4" opacity="0.6" />
           
           <!-- Y-Axis Labels -->
           ${yAxisLabels.map(label => `
