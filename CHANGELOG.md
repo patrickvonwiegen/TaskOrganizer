@@ -1,4 +1,9 @@
-﻿﻿﻿﻿# Changelog
+﻿﻿# Changelog
+
+## [1.6.2]
+### 🐛 Bug Fixes
+- **Reports:** Fixed an issue where the report type selection dropdown was cut off on small screens.
+- **Reports:** Tooltips now support mouse hover (desktop) and tap interactions (mobile) 
 
 ## [1.6.1]
 ### 🐛 Bug Fixes

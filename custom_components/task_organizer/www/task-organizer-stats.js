@@ -94,6 +94,9 @@ class TaskOrganizerStats extends HTMLElement {
     this.currentPeriodStart = "";
     
     this.shadowRoot.addEventListener('change', (ev) => this._handleChange(ev));
+    this.shadowRoot.addEventListener('click', (ev) => this._handleTooltip(ev, 'click'));
+    this.shadowRoot.addEventListener('mouseover', (ev) => this._handleTooltip(ev, 'over'));
+    this.shadowRoot.addEventListener('mouseout', (ev) => this._handleTooltip(ev, 'out'));
   }
 
   /**
@@ -159,7 +162,7 @@ class TaskOrganizerStats extends HTMLElement {
   setConfig(config) { 
     if (!config) throw new Error("Invalid configuration");
     this.config = config; 
-    // Nur aus Config setzen, wenn der Nutzer noch nicht manuell gewechselt hat
+    // Set from config only if the user hasn't manually switched yet
     if (this._reportTypeManual === undefined) {
       this._reportType = config.report_type || 'overview';
     }
@@ -202,7 +205,7 @@ class TaskOrganizerStats extends HTMLElement {
       this.fetchData(); 
       this.dataLoaded = true; 
     }
-    // Standardmäßig den aktuellen Benutzer auswählen, falls noch auf 'all'
+    // Select the current user by default if it's still set to 'all'
     if (this._selectedUserId === 'all' && hass.user && hass.user.id) {
       this._selectedUserId = hass.user.id;
     }
@@ -247,6 +250,83 @@ class TaskOrganizerStats extends HTMLElement {
       this._reportType = ev.target.value;
       this._reportTypeManual = true;
       this.render();
+    }
+  }
+
+  _handleTooltip(ev, action) {
+    const tooltip = this.shadowRoot.getElementById('custom-tooltip');
+    if (!tooltip) return;
+
+    const path = ev.composedPath();
+    let target = path.find(el => el.classList && el.classList.contains('data-point'));
+
+    // If clicked, but no direct data point was hit: 
+    // Find the closest point in the chart (increase hitbox / catch area)
+    if (action === 'click' && !target) {
+      const chartContainer = path.find(el => el.classList && el.classList.contains('chart-container'));
+      if (chartContainer) {
+        const dataPoints = chartContainer.querySelectorAll('.data-point');
+        let minDistance = Infinity;
+        
+        const clientX = ev.clientX;
+        const clientY = ev.clientY;
+
+        if (clientX !== undefined && clientY !== undefined) {
+          dataPoints.forEach(pt => {
+            const rect = pt.getBoundingClientRect();
+            const ptX = rect.left + rect.width / 2;
+            const ptY = rect.top + rect.height / 2;
+            
+            // Pythagorean theorem for distance calculation
+            const dist = Math.hypot(ptX - clientX, ptY - clientY);
+            
+            // Generous catch area of 50 pixels
+            if (dist < minDistance && dist < 50) {
+              minDistance = dist;
+              target = pt;
+            }
+          });
+        }
+      }
+    }
+
+    // Hide the tooltip directly on "mouseout"
+    if (action === 'out') {
+      tooltip.style.display = 'none';
+      return;
+    }
+
+    // Also hide the tooltip when clicking on an empty area
+    if (action === 'click' && !target) {
+      tooltip.style.display = 'none';
+      return;
+    }
+
+    if (target && (action === 'click' || action === 'over')) {
+      const text = target.getAttribute('data-tooltip');
+      if (!text) return;
+      
+      tooltip.textContent = text;
+      tooltip.style.display = 'block';
+
+      const rect = target.getBoundingClientRect();
+      let left = rect.left + rect.width / 2;
+      let top = rect.top;
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+
+      // Dynamically adjust tooltip at screen edges
+      tooltip.style.transform = `translate(-50%, -100%)`;
+      const ttRect = tooltip.getBoundingClientRect();
+
+      if (ttRect.left < 5) {
+        tooltip.style.transform = `translate(0, -100%)`;
+        tooltip.style.left = `${rect.left}px`;
+      } else if (ttRect.right > window.innerWidth - 5) {
+        tooltip.style.transform = `translate(-100%, -100%)`;
+        tooltip.style.left = `${rect.right}px`;
+      }
     }
   }
 
@@ -297,12 +377,29 @@ class TaskOrganizerStats extends HTMLElement {
         select { 
           flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--divider-color);
           background: var(--card-background-color); color: var(--primary-text-color);
-          font-family: inherit; font-size: 13px;
+          font-family: inherit; font-size: 13px; min-width: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
         }
         .chart-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .trend-indicator {
           display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold;
           color: var(--secondary-text-color);
+        }
+        #custom-tooltip {
+          position: fixed;
+          display: none;
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color, #000);
+          border: 1px solid var(--divider-color, #e0e0e0);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          z-index: 10000;
+          pointer-events: none;
+          white-space: nowrap;
+          transform: translate(-50%, -100%);
+          margin-top: -8px;
         }
       </style>
     `;
@@ -383,7 +480,7 @@ class TaskOrganizerStats extends HTMLElement {
       <div class="chart-container">
         <div class="chart-header-row">
           <div class="chart-title">${this.localize('points_per_day')}</div>
-          <div class="trend-indicator" title="${trendTooltip}">
+          <div class="trend-indicator data-point" data-tooltip="${trendTooltip}" style="cursor: pointer;">
             <ha-icon icon="${trendIcon}" style="color: ${trendColor}; --mdc-icon-size: 16px;"></ha-icon>
           </div>
         </div>
@@ -407,18 +504,15 @@ class TaskOrganizerStats extends HTMLElement {
             const barHeight = (pts / maxScale) * chartHeight;
             let elements = '';
 
-            // Nur Balken zeichnen, wenn Punkte vorhanden sind
+            // Only draw bars if points exist
             if (pts > 0) {
                 const dayDate = new Date(year, month, i + 1);
                 const formattedDate = dayDate.toLocaleDateString(this._hass.language || 'de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 const hoverText = `${formattedDate}: ${pts.toFixed(1)} ${this.localize('points')}`;
-                elements += `<g>
-                  <title>${hoverText}</title>
-                  <rect x="${x - barWidth / 2}" y="${xAxisY - barHeight}" width="${barWidth}" height="${barHeight}" fill="var(--primary-color)" rx="2" />
-                </g>`;
+                elements += `<rect class="data-point" data-tooltip="${hoverText}" x="${x - barWidth / 2}" y="${xAxisY - barHeight}" width="${barWidth}" height="${barHeight}" fill="var(--primary-color)" rx="2" style="cursor: pointer;" />`;
             }
 
-            // Datum auf der X-Achse (alle 5 Tage + erster/letzter Tag)
+            // Date on the X-axis (every 5 days + first/last day)
             if ((i + 1) === 1 || (i + 1) % 5 === 0 || (i + 1) === daysInMonth) {
               const labelX = chartLeft + (i * barSpacing) + (barSpacing / 2);
               elements += `
@@ -469,7 +563,7 @@ class TaskOrganizerStats extends HTMLElement {
     const yAxisLabelOffset = 5; 
     const xAxisY = 125;
 
-    // Pfade generieren
+    // Generate paths
     const idealPoints = burnPoints.map((_, i) => `${chartLeft + (i / daysInMonth) * chartAreaWidth},${xAxisY - (goal - (i * (goal / daysInMonth))) * scale}`);
     const actualPoints = burnPoints.map((p, i) => `${chartLeft + (i / daysInMonth) * chartAreaWidth},${xAxisY - p * scale}`);
     const areaPath = `${chartLeft},${xAxisY} ` + actualPoints.join(' ') + ` ${chartLeft + (burnPoints.length - 1) / daysInMonth * chartAreaWidth},${xAxisY}`;
@@ -519,7 +613,7 @@ class TaskOrganizerStats extends HTMLElement {
       <div class="chart-container">
         <div class="chart-header-row">
           <div class="chart-title" style="margin-bottom: 0;">${subtitleText}</div>
-          <div class="trend-indicator" title="${trendTooltip}">
+          <div class="trend-indicator data-point" data-tooltip="${trendTooltip}" style="cursor: pointer;">
             <ha-icon icon="${trendIcon}" style="color: ${trendColor}; --mdc-icon-size: 16px;"></ha-icon>
           </div>
         </div>
@@ -545,7 +639,7 @@ class TaskOrganizerStats extends HTMLElement {
             const dayDate = new Date(now.getFullYear(), now.getMonth(), i + 1);
             const formattedDate = dayDate.toLocaleDateString(this._hass.language || 'de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const hoverText = `${formattedDate}: ${p.toFixed(1)} ${this.localize('remaining_points')}`;
-            return `<circle cx="${x}" cy="${y}" r="8" fill="transparent"><title>${hoverText}</title></circle>`;
+            return `<circle class="data-point" data-tooltip="${hoverText}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor: pointer;"></circle>`;
           }).join('')}
           
           <!-- Y-Axis Labels -->
@@ -607,7 +701,8 @@ class TaskOrganizerStats extends HTMLElement {
       else if (this._reportType === 'burndown') html += this._renderBurnDownChart(this._selectedUserId);
     }
 
-    html += `</ha-card>`;
+    html += `</ha-card>
+    <div id="custom-tooltip"></div>`;
     
     this.shadowRoot.innerHTML = html;
   }
