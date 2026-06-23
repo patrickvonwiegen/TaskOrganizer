@@ -1,5 +1,10 @@
 ﻿﻿# Changelog
 
+## [1.6.3]
+### 🐛 Bug Fixes
+- Optimized and removed duplicated brand assets to significantly reduce the integration's installation size.
+- Removed the unused `filename` key from `hacs.json`.
+
 ## [1.6.2]
 ### 🐛 Bug Fixes
 - **Reports:** Fixed an issue where the report type selection dropdown was cut off on small screens.
