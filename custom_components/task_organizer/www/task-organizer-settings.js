@@ -35,7 +35,10 @@ const I18N_SETTINGS = {
     show_advanced_lbl: "Show Advanced Settings",
     height_lbl: "Height",
     width_lbl: "Width",
-    title_lbl: "Title"
+    title_lbl: "Title",
+    color_done_lbl: "Color Done", color_due_lbl: "Color Due", color_overdue_lbl: "Color Overdue",
+    transparency_lbl: "Transparency", color_adjustments: "Color Adjustments",
+    set_default: "Set Default"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
@@ -68,7 +71,10 @@ const I18N_SETTINGS = {
     show_advanced_lbl: "Erweiterte Einstellungen anzeigen",
     height_lbl: "Höhe",
     width_lbl: "Breite",
-    title_lbl: "Titel"
+    title_lbl: "Titel",
+    color_done_lbl: "Farbe Erledigt", color_due_lbl: "Farbe Fällig", color_overdue_lbl: "Farbe Überfällig",
+    transparency_lbl: "Transparenz", color_adjustments: "Farbanpassungen",
+    set_default: "Standard setzen"
   }
 };
 
@@ -87,9 +93,10 @@ class TaskOrganizerSettings extends HTMLElement {
   /**
    * Initializes the TaskOrganizerSettings element.
    */
-  constructor() {
+    constructor() {
     super(); 
     this.attachShadow({ mode: 'open' });
+    this._themeView = 'light';
     
     // Global properties
     this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', overdue_days: 5 };
@@ -255,10 +262,16 @@ class TaskOrganizerSettings extends HTMLElement {
       if (!isNaN(val) && val > 0) pointGoals[input.dataset.uid] = val;
     });
 
+    // We merge the currently visible values into this.settings first
+    ['done', 'due', 'overdue'].forEach(status => {
+      const cInput = this.shadowRoot.getElementById(`c-${status}`);
+      if (cInput) this.settings[`color_${status}_${this._themeView}`] = cInput.value;
+      const tInput = this.shadowRoot.getElementById(`t-${status}`);
+      if (tInput) this.settings[`transparency_${status}_${this._themeView}`] = parseInt(tInput.value);
+    });
+
     const newSettings = { 
-      color_done: this.shadowRoot.getElementById('c-done').value, 
-      color_due: this.shadowRoot.getElementById('c-due').value, 
-      color_overdue: this.shadowRoot.getElementById('c-overdue').value, 
+      ...this.settings,
       overdue_days: parseInt(this.shadowRoot.getElementById('num-overdue').value),
       point_goals: pointGoals
     }; 
@@ -305,30 +318,47 @@ class TaskOrganizerSettings extends HTMLElement {
   _handleClick(ev) {
     const path = ev.composedPath();
     const target = path.find(el =>
-        (el.id && (el.id.startsWith('btn-') || el.id.startsWith('toggle-') || el.id === 'ie-toggle' || el.id === 'templates-toggle' || el.id === 'adv-toggle')) ||
+        (el.id && (el.id.startsWith('btn-') || el.id.startsWith('toggle-') || el.id === 'theme-toggle' || el.id.endsWith('-toggle'))) ||
         (el.classList && (el.classList.contains('action-btn') || el.classList.contains('subtask-check')))
     );
 
     if (!target) return;
     ev.stopPropagation();
-
-    if (target.id === 'btn-save') this._saveSettings();
-    else if (target.id === 'ie-toggle') this._toggleIE();
-    else if (target.id === 'btn-export') this._exportTasks();
-    else if (target.id === 'btn-import-trigger') this.shadowRoot.getElementById('file-import').click();
-    else if (target.id === 'templates-toggle') this._toggleTemplates();
-    else if (target.id === 'btn-add-template') this._openTemplateModal();
+    
+    const id = target.id;
+    if (id === 'btn-save') this._saveSettings();
+    else if (id === 'theme-toggle') {
+      this._themeView = target.checked ? 'dark' : 'light';
+      this._render();
+    }
+    else if (id === 'btn-default-colors') {
+      ['done', 'due', 'overdue'].forEach(status => {
+        delete this.settings[`color_${status}_light`];
+        delete this.settings[`transparency_${status}_light`];
+        delete this.settings[`color_${status}_dark`];
+        delete this.settings[`transparency_${status}_dark`];
+        delete this.settings[`color_${status}`];
+      });
+      this._render();
+    }
+    else if (id === 'color-toggle') { this._colorOpen = !this._colorOpen; this._render(); }
+    else if (id === 'overdue-toggle') { this._overdueOpen = !this._overdueOpen; this._render(); }
+    else if (id === 'ie-toggle') { this._ieOpen = !this._ieOpen; this._render(); }
+    else if (id === 'templates-toggle') { this._templatesOpen = !this._templatesOpen; this._render(); }
+    else if (id === 'adv-toggle') { this._advancedOpen = !this._advancedOpen; this._render(); }
+    else if (id === 'goals-toggle') { this._goalsOpen = !this._goalsOpen; this._render(); }
+    else if (id === 'btn-export') this._exportTasks();
+    else if (id === 'btn-import-trigger') this.shadowRoot.getElementById('file-import').click();
+    else if (id === 'btn-add-template') this._openTemplateModal();
     else if (target.classList.contains('btn-edit-template')) this._openTemplateModal(target.dataset.id);
     else if (target.classList.contains('btn-delete-template')) this._deleteTemplate(target.dataset.id);
-    else if (target.id === 'adv-toggle') this._toggleAdvanced();
-    else if (target.id === 'btn-reset') this._triggerReset();
-    else if (target.id === 'btn-factory') this._factoryReset();
+    else if (id === 'btn-reset') this._triggerReset();
+    else if (id === 'btn-factory') this._factoryReset();
     // Modal Handlers
-    else if (target.id === 'btn-modal-cancel') this._closeTemplateModal();
-    else if (target.id === 'btn-modal-save') this._saveTemplate();
-    else if (target.id === 'toggle-subtasks') this._toggleSection('subtasks-content');
-    else if (target.id === 'btn-add-subtask') this._addSubtask();
-    else if (target.id === 'toggle-goals') this._toggleSection('goals-content');
+    else if (id === 'btn-modal-cancel') this._closeTemplateModal();
+    else if (id === 'btn-modal-save') this._saveTemplate();
+    else if (id === 'toggle-subtasks') this._toggleSection('subtasks-content');
+    else if (id === 'btn-add-subtask') this._addSubtask();
     else if (target.classList.contains('btn-del-subtask')) this._removeSubtask(target.dataset.index);
     else if (target.classList.contains('subtask-check')) this._toggleSubtaskStatus(target.dataset.index);
   }
@@ -622,6 +652,11 @@ class TaskOrganizerSettings extends HTMLElement {
         .header { font-size: 20px; font-weight: bold; margin-bottom: 10px; } 
         .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card-background-color); border-radius: 8px; border: 1px solid var(--divider-color); box-shadow: var(--ha-card-box-shadow, 0 2px 2px rgba(0,0,0,0.1)); margin-bottom: 8px; } 
         .setting-label { font-weight: bold; font-size: 14px; color: var(--primary-text-color); } 
+        .section-card { background: var(--card-background-color); border-radius: 8px; border: 1px solid var(--divider-color); box-shadow: var(--ha-card-box-shadow, 0 2px 2px rgba(0,0,0,0.1)); margin-bottom: 12px; padding: 12px; width: 100%; box-sizing: border-box; }
+        .section-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .section-title { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 14px; color: var(--primary-text-color); }
+        .section-content { display: none; margin-top: 16px; flex-direction: column; gap: 10px; }
+        .section-content.open { display: flex; }
         .color-group { display: flex; gap: 8px; }
         input[type="color"] { width: 35px; height: 35px; border: none; border-radius: 6px; cursor: pointer; background: none; padding: 0; } 
         input[type="number"] { width: 60px; padding: 6px; border: 1px solid var(--divider-color); border-radius: 6px; background: var(--primary-background-color); color: var(--primary-text-color); text-align: center; } 
@@ -687,6 +722,7 @@ class TaskOrganizerSettings extends HTMLElement {
       return;
     }
     
+    if (this._themeView === undefined) this._themeView = 'light';
     const displayTitle = this._config.title || this.localize('title');
     const showAdvanced = this._config.show_advanced === true;
     const template = this._editingTemplateId ? this.templates[this._editingTemplateId] : null;
@@ -698,114 +734,160 @@ class TaskOrganizerSettings extends HTMLElement {
       <ha-card>
         <div class="header">${displayTitle}</div>
         
-        <div class="setting-row">
-          <span class="setting-label">${this.localize('colors')}</span>
-          <div class="color-group">
-            <input type="color" id="c-done" value="${this.settings.color_done}" title="${this.localize('c_done')}">
-            <input type="color" id="c-due" value="${this.settings.color_due}" title="${this.localize('c_due')}">
-            <input type="color" id="c-overdue" value="${this.settings.color_overdue}" title="${this.localize('c_overdue')}">
+        <div class="section-card">
+          <div class="section-header" id="color-toggle">
+            <div class="section-title">
+              <ha-icon icon="${this._colorOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+              <span>${this.localize('color_adjustments')}</span>
+            </div>
+            <div style="display: ${this._colorOpen ? 'flex' : 'none'}; align-items: center; gap: 8px;" @click="ev => ev.stopPropagation()">
+              <ha-icon icon="mdi:weather-sunny" style="color: ${this._themeView === 'light' ? 'var(--primary-color)' : 'var(--disabled-text-color)'};"></ha-icon>
+              <ha-switch id="theme-toggle" ${this._themeView === 'dark' ? 'checked' : ''}></ha-switch>
+              <ha-icon icon="mdi:weather-night" style="color: ${this._themeView === 'dark' ? 'var(--primary-color)' : 'var(--disabled-text-color)'};"></ha-icon>
+            </div>
+          </div>
+          
+          <div class="section-content ${this._colorOpen ? 'open' : ''}">
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+              ${['done', 'due', 'overdue'].map(status => {
+                const colorKey = `color_${status}_${this._themeView}`;
+                const transpKey = `transparency_${status}_${this._themeView}`;
+                
+                const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status==='done'?'#4CAF50':status==='due'?'#FFC107':'#F44336');
+                const transpVal = this.settings[transpKey] !== undefined ? this.settings[transpKey] : 8;
+                
+                return `
+                <div style="display: grid; grid-template-columns: 35px 80px 1fr 35px; align-items: center; gap: 8px;">
+                  <input type="color" id="c-${status}" value="${colorVal}" title="${this.localize(`color_${status}_lbl`)}" style="justify-self: center;">
+                  <span style="font-size: 14px;">${this.localize(`c_${status}`)}</span>
+                  <input type="range" min="0" max="100" value="${transpVal}" class="transparency-slider" id="t-${status}" style="width: 100%; cursor: pointer;">
+                  <span style="font-size: 13px; color: var(--secondary-text-color); text-align: right;" id="tl-${status}">${transpVal}%</span>
+                </div>
+                `;
+              }).join('')}
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; margin-top: -8px;">
+              <ha-button appearance="plain" id="btn-default-colors">${this.localize('set_default')}</ha-button>
+            </div>
           </div>
         </div>
         
-        <div class="setting-row">
-          <span class="setting-label">${this.localize('days_overdue')}</span>
+        <div class="section-card" style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 500; font-size: 14px; color: var(--primary-text-color);">${this.localize('days_overdue')}</span>
           <input type="number" id="num-overdue" min="1" value="${this.settings.overdue_days}">
         </div>
         
-        <button class="btn btn-save" id="btn-save" title="${this.localize('save_hover')}">${this.localize('save')}</button>
-        
-        <div class="collapsible-header" id="ie-toggle">
-          <span>${this.localize('import_export')}</span>
-          <ha-icon icon="${this._ieOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
-        </div>
-        <div class="collapsible-content ${this._ieOpen ? 'open' : ''}">
-          <div style="display: flex; gap: 16px; margin-bottom: 8px;">
-            <ha-formfield label="${this.localize('export_tasks_cb')}">
-              <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
-            </ha-formfield>
-            <ha-formfield label="${this.localize('export_templates_cb')}">
-              <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
-            </ha-formfield>
-            <ha-formfield label="${this.localize('export_history_cb')}">
-              <ha-checkbox id="cb-export-history"></ha-checkbox>
-            </ha-formfield>
+        <div class="section-card">
+          <div class="section-header" id="ie-toggle">
+            <div class="section-title">
+              <ha-icon icon="${this._ieOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+              <span>${this.localize('import_export')}</span>
+            </div>
           </div>
-          <div style="display: flex; gap: 10px; width: 100%;">
-            <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
-            <input type="file" id="file-import" accept=".json" style="display:none;">
-            <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
+          <div class="section-content ${this._ieOpen ? 'open' : ''}">
+            <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+              <ha-formfield label="${this.localize('export_tasks_cb')}">
+                <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
+              </ha-formfield>
+              <ha-formfield label="${this.localize('export_templates_cb')}">
+                <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
+              </ha-formfield>
+              <ha-formfield label="${this.localize('export_history_cb')}">
+                <ha-checkbox id="cb-export-history"></ha-checkbox>
+              </ha-formfield>
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
+              <input type="file" id="file-import" accept=".json" style="display:none;">
+              <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
+            </div>
           </div>
         </div>
 
-        <div class="collapsible-header" id="templates-toggle">
-          <span>${this.localize('templates')}</span>
-          <ha-icon icon="${this._templatesOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
-        </div>
-        <div class="collapsible-content ${this._templatesOpen ? 'open' : ''}" id="templates-content">
-          <div class="templates-header">
-            <p class="templates-desc">${this.localize('templates_desc')}</p>
-            <button class="icon-button add-button" id="btn-add-template" title="${this.localize('add_template')}">
-              <ha-icon icon="mdi:plus"></ha-icon>
-            </button>
+        <div class="section-card">
+          <div class="section-header" id="templates-toggle">
+            <div class="section-title">
+              <ha-icon icon="${this._templatesOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+              <span>${this.localize('templates')}</span>
+            </div>
           </div>
-          <div id="template-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-            ${Object.values(this.templates).length > 0 ? Object.values(this.templates).map(t => {
-              const descTooltip = t.description ? t.description.replace(/"/g, '&quot;') : "";
-              let subtaskTooltip = "";
-              if (t.subtasks && t.subtasks.length > 0) {
-                  const subtaskList = t.subtasks.map(st => `${st.done ? '✓' : '○'} ${st.title}`).join('&#10;');
-                  subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
-              }
-              return `
-              <div class="template-card">
-                <div class="template-info">
-                  <ha-icon icon="${t.icon || 'mdi:label-outline'}"></ha-icon>
-                  <div class="template-text">
-                    <div class="template-name">
-                        <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${t.name}</span>
-                        ${t.subtasks?.length > 0 ? `
-                            <ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; opacity: 0.7; flex-shrink: 0;" title="${subtaskTooltip}"></ha-icon>
-                        ` : ''}
-                        ${t.interval === 0 ? `
-                            <ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; opacity: 0.7; flex-shrink: 0;" title="${this.localize('onetime')}"></ha-icon>
-                        ` : ''}
+          <div class="section-content ${this._templatesOpen ? 'open' : ''}" id="templates-content">
+            <div class="templates-header">
+              <p class="templates-desc">${this.localize('templates_desc')}</p>
+              <button class="icon-button add-button" id="btn-add-template" title="${this.localize('add_template')}">
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+            </div>
+            <div id="template-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+              ${Object.values(this.templates).length > 0 ? Object.values(this.templates).map(t => {
+                const descTooltip = t.description ? t.description.replace(/"/g, '&quot;') : "";
+                let subtaskTooltip = "";
+                if (t.subtasks && t.subtasks.length > 0) {
+                    const subtaskList = t.subtasks.map(st => `${st.done ? '✓' : '○'} ${st.title}`).join('&#10;');
+                    subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
+                }
+                return `
+                <div class="template-card">
+                  <div class="template-info">
+                    <ha-icon icon="${t.icon || 'mdi:label-outline'}"></ha-icon>
+                    <div class="template-text">
+                      <div class="template-name">
+                          <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${t.name}</span>
+                          ${t.subtasks?.length > 0 ? `
+                              <ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; opacity: 0.7; flex-shrink: 0;" title="${subtaskTooltip}"></ha-icon>
+                          ` : ''}
+                          ${t.interval === 0 ? `
+                              <ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; opacity: 0.7; flex-shrink: 0;" title="${this.localize('onetime')}"></ha-icon>
+                          ` : ''}
+                      </div>
+                      <div class="template-meta">${t.area || ''}</div>
                     </div>
-                    <div class="template-meta">${t.area || ''}</div>
+                  </div>
+                  <div class="template-actions">
+                    <button class="action-btn btn-edit-template" data-id="${t.id}" title="${this.localize('edit_template_hover')}"><ha-icon icon="mdi:pencil"></ha-icon></button>
+                    <button class="action-btn btn-delete-template" data-id="${t.id}" title="${this.localize('delete_template_hover')}"><ha-icon icon="mdi:delete"></ha-icon></button>
                   </div>
                 </div>
-                <div class="template-actions">
-                  <button class="action-btn btn-edit-template" data-id="${t.id}" title="${this.localize('edit_template_hover')}"><ha-icon icon="mdi:pencil"></ha-icon></button>
-                  <button class="action-btn btn-delete-template" data-id="${t.id}" title="${this.localize('delete_template_hover')}"><ha-icon icon="mdi:delete"></ha-icon></button>
-                </div>
-              </div>
-            `}).join('') : `<div class="no-templates-msg">${this.localize('no_templates')}</div>`}
+              `}).join('') : `<div class="no-templates-msg">${this.localize('no_templates')}</div>`}
+            </div>
           </div>
         </div>
 
-        <div class="collapsible-header" id="toggle-goals">
-          <span>${this.localize('point_goals')}</span>
-          <ha-icon icon="mdi:chevron-down"></ha-icon>
-        </div>
-        <div class="collapsible-content" id="goals-content">
-          ${Object.entries(this.users).map(([uid, name]) => `
-            <div class="setting-row">
-              <span class="setting-label">${name}</span>
-              <input type="number" class="user-goal-input" data-uid="${uid}" 
-                     value="${this.settings.point_goals?.[uid] || ''}" placeholder="0">
+        <div class="section-card">
+          <div class="section-header" id="goals-toggle">
+            <div class="section-title">
+              <ha-icon icon="${this._goalsOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+              <span>${this.localize('point_goals')}</span>
             </div>
-          `).join('')}
+          </div>
+          <div class="section-content ${this._goalsOpen ? 'open' : ''}" id="goals-content">
+            ${Object.entries(this.users).map(([uid, name]) => `
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; font-size: 14px; color: var(--primary-text-color);">${name}</span>
+                <input type="number" class="user-goal-input" data-uid="${uid}" 
+                       value="${this.settings.point_goals?.[uid] || ''}" placeholder="0">
+              </div>
+            `).join('')}
+          </div>
         </div>
 
         ${showAdvanced ? `
-          <div class="collapsible-header" id="adv-toggle" style="margin-top: 15px;">
-            <span>${this.localize('advanced')}</span>
-            <ha-icon icon="${this._advancedOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
-          </div>
-          <div class="collapsible-content ${this._advancedOpen ? 'open' : ''}">
-            <button class="btn btn-reset" id="btn-reset" title="${this.localize('confirm_reset')}">${this.localize('archive_btn')}</button>
-            <button class="btn btn-factory" id="btn-factory" title="${this.localize('confirm_factory')}">${this.localize('factory_btn')}</button>
+          <div class="section-card">
+            <div class="section-header" id="adv-toggle">
+              <div class="section-title">
+                <ha-icon icon="${this._advancedOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+                <span>${this.localize('advanced')}</span>
+              </div>
+            </div>
+            <div class="section-content ${this._advancedOpen ? 'open' : ''}">
+              <button class="btn btn-reset" id="btn-reset" title="${this.localize('confirm_reset')}">${this.localize('archive_btn')}</button>
+              <button class="btn btn-factory" id="btn-factory" title="${this.localize('confirm_factory')}">${this.localize('factory_btn')}</button>
+            </div>
           </div>
         ` : ''}
+        
+        <button class="btn btn-save" id="btn-save" title="${this.localize('save_hover')}" style="margin-top: 12px;">${this.localize('save')}</button>
         
       </ha-card>
 
@@ -868,8 +950,27 @@ class TaskOrganizerSettings extends HTMLElement {
     
     this.shadowRoot.innerHTML = html;
     
+    // Bind click events
+    this.shadowRoot.querySelector('ha-card').addEventListener('click', (ev) => this._handleClick(ev));
+    this.shadowRoot.querySelector('#template-modal').addEventListener('click', (ev) => this._handleClick(ev));
+
     // Bind File Import
     this.shadowRoot.getElementById('file-import').addEventListener('change', (ev) => this._handleImport(ev));
+
+    // Bind slider events
+    this.shadowRoot.querySelectorAll('.transparency-slider').forEach(el => {
+      el.addEventListener('input', (ev) => {
+        const status = ev.target.id.substring(2);
+        this.shadowRoot.getElementById(`tl-${status}`).innerText = `${ev.target.value}%`;
+        this.settings[`transparency_${status}_${this._themeView}`] = parseInt(ev.target.value);
+      });
+    });
+    this.shadowRoot.querySelectorAll('input[type="color"]').forEach(el => {
+      el.addEventListener('input', (ev) => {
+        const status = ev.target.id.substring(2);
+        this.settings[`color_${status}_${this._themeView}`] = ev.target.value;
+      });
+    });
 
     if (this._templateModalOpen) {
       const iconPicker = this.shadowRoot.getElementById('tmpl-icon');

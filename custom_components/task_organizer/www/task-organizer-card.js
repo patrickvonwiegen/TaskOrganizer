@@ -1242,8 +1242,8 @@ class TaskOrganizerCard extends HTMLElement {
           #task-list-wrapper { display: flex; flex-direction: column; flex-grow: 1; width: 100%; }
           .task-list { display: flex; flex-direction: column; gap: 10px; width: 100%; } 
           
-          .task-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border-left: 6px solid var(--status-color); border: 1px solid var(--divider-color); background-color: color-mix(in srgb, var(--status-color), transparent 92%); transition: transform 0.2s; min-height: 75px; box-sizing: border-box; } 
-          .task-item:hover { background-color: color-mix(in srgb, var(--status-color), transparent 85%); transform: translateX(2px); box-shadow: -2px 4px 8px rgba(0,0,0,0.1); } 
+          .task-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; border-left: 6px solid var(--status-color); border: 1px solid var(--divider-color); background-color: color-mix(in srgb, var(--status-color), transparent var(--status-transparency, 92%)); transition: transform 0.2s; min-height: 75px; box-sizing: border-box; } 
+          .task-item:hover { background-color: color-mix(in srgb, var(--status-color), transparent var(--status-transparency-hover, 85%)); transform: translateX(2px); box-shadow: -2px 4px 8px rgba(0,0,0,0.1); } 
           .task-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; color: var(--primary-text-color); } 
           .task-text { flex: 1; min-width: 0; word-break: break-word; text-align: left; } 
           .task-title { font-weight: bold; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 4px; cursor: help; overflow: hidden; } 
@@ -1731,15 +1731,27 @@ class TaskOrganizerCard extends HTMLElement {
         ? task.override_overdue_days
         : this.settings.overdue_days;
       
-      let borderColor = this.settings.color_done;
+      const isDarkMode = this._hass && this._hass.themes && this._hass.themes.darkMode;
+      const themeSuffix = isDarkMode ? 'dark' : 'light';
+      
+      const configColorDone = this.settings[`color_done_${themeSuffix}`] || this.settings.color_done || 'var(--success-color, #4CAF50)';
+      const configColorDue = this.settings[`color_due_${themeSuffix}`] || this.settings.color_due || 'var(--warning-color, #FFC107)';
+      const configColorOverdue = this.settings[`color_overdue_${themeSuffix}`] || this.settings.color_overdue || 'var(--error-color, #F44336)';
+      
+      const transpDone = this.settings[`transparency_done_${themeSuffix}`] !== undefined ? this.settings[`transparency_done_${themeSuffix}`] : 8;
+      const transpDue = this.settings[`transparency_due_${themeSuffix}`] !== undefined ? this.settings[`transparency_due_${themeSuffix}`] : 8;
+      const transpOverdue = this.settings[`transparency_overdue_${themeSuffix}`] !== undefined ? this.settings[`transparency_overdue_${themeSuffix}`] : 8;
+
+      let borderColor = configColorDone;
+      let transparency = transpDone;
       let timeText = this.localize('today');
       
       if (isPaused) {
         borderColor = 'var(--disabled-text-color, #9e9e9e)'; 
         timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
       } else {
-        if (diff <= 0) borderColor = this.settings.color_due;
-        if (diff <= -overdueThreshold) borderColor = this.settings.color_overdue;
+        if (diff <= 0) { borderColor = configColorDue; transparency = transpDue; }
+        if (diff <= -overdueThreshold) { borderColor = configColorOverdue; transparency = transpOverdue; }
         
         if (diff > 0) timeText = this.localize('in_days', {days: diff});
         else if (diff < 0) timeText = this.localize('ago_days', {days: Math.abs(diff)});
@@ -1772,7 +1784,9 @@ class TaskOrganizerCard extends HTMLElement {
       }
 
       const descTooltip = task.description ? task.description.replace(/"/g, '&quot;') : "";
-      let itemStyle = `--status-color: ${borderColor};`;
+      
+      const hoverTransparency = Math.min(100, transparency + 7);
+      let itemStyle = `--status-color: ${borderColor}; --status-transparency: ${100 - transparency}%; --status-transparency-hover: ${100 - hoverTransparency}%;`;
       if (isPaused) itemStyle += ` opacity: 0.6; filter: grayscale(0.8);`;
 
       html += `
