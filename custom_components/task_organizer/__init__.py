@@ -497,11 +497,22 @@ async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.Ac
     vol.Optional("monthly_history"): dict,
     vol.Optional("current_month"): str,
     vol.Optional("current_period_start"): str,
+    vol.Optional("settings"): dict,
 })
 @websocket_api.async_response
 async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
     data = hass.data[DOMAIN]["data"]
     
+    if "settings" in msg:
+        for k, v in msg["settings"].items():
+            data.setdefault("settings", {})[k] = v
+        entries = hass.config_entries.async_entries(DOMAIN)
+        if entries:
+            entry = entries[0]
+            new_options = dict(entry.options)
+            new_options.update(msg["settings"])
+            hass.config_entries.async_update_entry(entry, options=new_options)
+
     if "tasks" in msg:
         imported = msg["tasks"]
         for tid, tdata in imported.items():
