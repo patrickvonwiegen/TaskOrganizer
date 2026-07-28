@@ -54,12 +54,12 @@ Suggestions for improvement or bug reports are welcome.
 
 * **Monthly Point Goals**: Set personal point goals for each roommate in the settings. If a user reaches their goal, a checkered flag icon appears in the leaderboard and a progress bar is shown in the log when filtering by that user.
   <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/fe5df6ad-65d2-41e1-b746-1eff50cb03b1" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3a5bbe6e-c67c-419a-886b-3fc4895a72ef" />
   <img width="10%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
 
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
   <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
+  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/119748db-9521-4125-b44e-71b9f21afebb" />
 
 ## Installation
 ### Option 1: HACS (Recommended)
@@ -147,6 +147,9 @@ items_per_page: 10  # Number of displayed items
 ### 4. Reports (task-organizer-stats)
 Provides advanced reporting with different views like "Completed Tasks" and "Goal Setting", including monthly point charts and progress tracking.
 
+<img width="24%" alt="image" src="https://github.com/user-attachments/assets/3f28e234-6ed6-406c-8577-9fd4e22de873" />
+<img width="24%" alt="image" src="https://github.com/user-attachments/assets/c98534b9-3283-482e-a356-b35185c9c521" />
+
 **YAML Configuration:**
 ```yaml
 type: custom:task-organizer-stats
@@ -158,7 +161,7 @@ show_user_select: true # Allows selecting a specific user
 ### 5. Settings (task-organizer-settings)
 Allows customization of colors, data export, and factory resets.
 
-<img width="385" height="713" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
+<img width="385" height="713" alt="image" src="https://github.com/user-attachments/assets/119748db-9521-4125-b44e-71b9f21afebb" />
 
 **YAML Configuration:**
 ```yaml
