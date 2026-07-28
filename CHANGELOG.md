@@ -7,6 +7,7 @@
 ### 🚀 New Features
 - **Configurable Colors:** The settings card now allows for independent configuration of colors and transparency for Light and Dark Mode. 
 - **Settings Redesign:** UI redesign of the settings card with collapsible section cards for better navigation.
+- **Export & Import Settings:** The export function has been expanded so that all task organizer general settings can now be saved into backups. Additionally, a new Import Assistant with a dedicated modal and progress tracking has been added to safely guide you through restoring your backups.
 
 ## [1.6.3]
 ### 🐛 Bug Fixes

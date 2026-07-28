@@ -30,7 +30,7 @@ const I18N_SETTINGS = {
     desc_lbl: "Description (optional)", area_lbl: "Area", points_lbl: "Points (1-10)", icon_lbl: "Icon",
     interval_lbl: "Days (Interval)", assignees_lbl: "Assignees",
     cancel: "Cancel", save: "Save",
-    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points",
+    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points", export_settings_cb: "Settings",
     no_desc: "No description", onetime: "One-time",
     show_advanced_lbl: "Show Advanced Settings",
     height_lbl: "Height",
@@ -38,7 +38,10 @@ const I18N_SETTINGS = {
     title_lbl: "Title",
     color_done_lbl: "Color Done", color_due_lbl: "Color Due", color_overdue_lbl: "Color Overdue",
     transparency_lbl: "Transparency", color_adjustments: "Color Adjustments",
-    set_default: "Set Default"
+    set_default: "Set Default",
+    import_tasks_title: "Import Tasks", metadata_title: "Import Overview", tasks_lbl: "Tasks", 
+    templates_lbl: "Templates", history_lbl: "History Entries", settings_included: "Settings", 
+    yes: "Yes", no: "No", start_import: "Start Import", confirm_reload: "Confirm & Reload"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
@@ -66,7 +69,7 @@ const I18N_SETTINGS = {
     desc_lbl: "Beschreibung (optional)", area_lbl: "Bereich", points_lbl: "Punkte (1-10)", icon_lbl: "Icon",
     interval_lbl: "Tage (Intervall)", assignees_lbl: "Bearbeiter",
     cancel: "Abbrechen", save: "Speichern",
-    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie",
+    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie", export_settings_cb: "Einstellungen",
     no_desc: "Keine Beschreibung", onetime: "Einmalig",
     show_advanced_lbl: "Erweiterte Einstellungen anzeigen",
     height_lbl: "Höhe",
@@ -74,7 +77,10 @@ const I18N_SETTINGS = {
     title_lbl: "Titel",
     color_done_lbl: "Farbe Erledigt", color_due_lbl: "Farbe Fällig", color_overdue_lbl: "Farbe Überfällig",
     transparency_lbl: "Transparenz", color_adjustments: "Farbanpassungen",
-    set_default: "Standard setzen"
+    set_default: "Standard setzen",
+    import_tasks_title: "Aufgaben importieren", metadata_title: "Import Übersicht", tasks_lbl: "Aufgaben", 
+    templates_lbl: "Vorlagen", history_lbl: "Historien-Einträge", settings_included: "Einstellungen", 
+    yes: "Ja", no: "Nein", start_import: "Import starten", confirm_reload: "Bestätigen & Neuladen"
   }
 };
 
@@ -114,6 +120,10 @@ class TaskOrganizerSettings extends HTMLElement {
     this._ieOpen = false; 
     this._templatesOpen = false;
     this._templateModalOpen = false;
+    this._importModalOpen = false;
+    this._importState = 'initial';
+    this._importData = null;
+    this._importProgress = 0;
     this._editingTemplateId = null;
     this._unsubEvents = null;
     this.addEventListener('click', (ev) => this._handleClick(ev));
@@ -348,7 +358,10 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (id === 'adv-toggle') { this._advancedOpen = !this._advancedOpen; this._render(); }
     else if (id === 'goals-toggle') { this._goalsOpen = !this._goalsOpen; this._render(); }
     else if (id === 'btn-export') this._exportTasks();
-    else if (id === 'btn-import-trigger') this.shadowRoot.getElementById('file-import').click();
+    else if (id === 'btn-import-trigger') this._openImportModal();
+    else if (id === 'btn-import-cancel') this._closeImportModal();
+    else if (id === 'btn-import-start') this._startImport();
+    else if (id === 'btn-import-reload') location.reload();
     else if (id === 'btn-add-template') this._openTemplateModal();
     else if (target.classList.contains('btn-edit-template')) this._openTemplateModal(target.dataset.id);
     else if (target.classList.contains('btn-delete-template')) this._deleteTemplate(target.dataset.id);
@@ -570,6 +583,7 @@ class TaskOrganizerSettings extends HTMLElement {
     const exportTasks = this.shadowRoot.getElementById('cb-export-tasks').checked;
     const exportTemplates = this.shadowRoot.getElementById('cb-export-templates').checked;
     const exportHistory = this.shadowRoot.getElementById('cb-export-history').checked;
+    const exportSettings = this.shadowRoot.getElementById('cb-export-settings').checked;
     
     let dataToExport = {};
     if (exportTasks) dataToExport.tasks = this.tasks;
@@ -581,6 +595,7 @@ class TaskOrganizerSettings extends HTMLElement {
       dataToExport.current_month = this.current_month;
       dataToExport.current_period_start = this.current_period_start;
     }
+    if (exportSettings) dataToExport.settings = this.settings;
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
     const downloadAnchorNode = document.createElement('a');
@@ -592,15 +607,25 @@ class TaskOrganizerSettings extends HTMLElement {
     downloadAnchorNode.remove();
   }
 
-  /**
-   * Handles the file input change event to read and import JSON tasks.
-   * * @param {Event} event - The file input change event.
-   */
-  _handleImport(event) {
+  _openImportModal() {
+    this._importModalOpen = true;
+    this._importState = 'initial';
+    this._importData = null;
+    this._importProgress = 0;
+    this._render();
+  }
+
+  _closeImportModal() {
+    this._importModalOpen = false;
+    this._importState = 'initial';
+    this._importData = null;
+    this._importProgress = 0;
+    this._render();
+  }
+
+  _handleImportFileChange(event) {
     const file = event.target.files[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
     
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -609,10 +634,10 @@ class TaskOrganizerSettings extends HTMLElement {
         
         let payload = { type: 'task_organizer/import_tasks' };
         
-        // Detect if it's the new format containing tasks, templates, or history
-        if (importedData.tasks || importedData.templates || importedData.history) {
+        if (importedData.tasks || importedData.templates || importedData.history || importedData.settings) {
             if (importedData.tasks) payload.tasks = importedData.tasks;
             if (importedData.templates) payload.templates = importedData.templates;
+            if (importedData.settings) payload.settings = importedData.settings;
             if (importedData.history) {
                 payload.history = importedData.history;
                 if (importedData.points) payload.points = importedData.points;
@@ -621,21 +646,47 @@ class TaskOrganizerSettings extends HTMLElement {
                 if (importedData.current_period_start) payload.current_period_start = importedData.current_period_start;
             }
         } else {
-            // Assume old format containing only tasks directly at root
             payload.tasks = importedData;
         }
 
-        this._hass.callWS(payload).then(() => {
-          this._showToast(this.localize('import_success'));
-          this._fetchData();
-        });
+        this._importData = payload;
+        this._importState = 'ready';
+        this._render();
       } catch (err) {
-        this._showToast(this.localize('import_error'));
+        this._importState = 'error';
+        this._render();
       }
     };
     
     reader.readAsText(file);
-    event.target.value = ''; // Reset input to allow the same file again
+    event.target.value = '';
+  }
+
+  _startImport() {
+    if (!this._importData) return;
+    this._importState = 'importing';
+    this._importProgress = 0;
+    this._render();
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+        if (this._importProgress < 90) {
+            this._importProgress += 10;
+            this._render();
+        }
+    }, 100);
+
+    this._hass.callWS(this._importData).then(() => {
+        clearInterval(progressInterval);
+        this._importProgress = 100;
+        this._importState = 'done';
+        this._fetchData();
+        this._render();
+    }).catch(() => {
+        clearInterval(progressInterval);
+        this._importState = 'error';
+        this._render();
+    });
   }
 
   /**
@@ -786,7 +837,7 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
           </div>
           <div class="section-content ${this._ieOpen ? 'open' : ''}">
-            <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+            <div style="display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap;">
               <ha-formfield label="${this.localize('export_tasks_cb')}">
                 <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
               </ha-formfield>
@@ -796,10 +847,12 @@ class TaskOrganizerSettings extends HTMLElement {
               <ha-formfield label="${this.localize('export_history_cb')}">
                 <ha-checkbox id="cb-export-history"></ha-checkbox>
               </ha-formfield>
+              <ha-formfield label="${this.localize('export_settings_cb')}">
+                <ha-checkbox id="cb-export-settings" checked></ha-checkbox>
+              </ha-formfield>
             </div>
             <div style="display: flex; gap: 10px; width: 100%;">
               <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
-              <input type="file" id="file-import" accept=".json" style="display:none;">
               <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
             </div>
           </div>
@@ -946,6 +999,41 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
         </div>
       </div>
+
+      <div id="import-modal" class="modal ${this._importModalOpen ? 'open' : ''}">
+        <div class="modal-content">
+            <h2>${this.localize('import_tasks_title')}</h2>
+            
+            ${this._importState === 'initial' || this._importState === 'ready' || this._importState === 'error' ? `
+              <input type="file" id="modal-file-import" accept=".json">
+              ${this._importState === 'error' ? `<div style="color: var(--error-color, red); margin-top: 8px;">${this.localize('import_error')}</div>` : ''}
+            ` : ''}
+            
+            ${this._importState === 'ready' && this._importData ? `
+              <div style="background: var(--secondary-background-color); padding: 16px; border-radius: 8px; margin-top: 16px;">
+                 <h4 style="margin: 0 0 8px 0;">${this.localize('metadata_title')}</h4>
+                 <div style="display: flex; justify-content: space-between;"><span>${this.localize('tasks_lbl')}:</span> <span>${this._importData.tasks ? Object.keys(this._importData.tasks).length : 0}</span></div>
+                 <div style="display: flex; justify-content: space-between;"><span>${this.localize('templates_lbl')}:</span> <span>${this._importData.templates ? Object.keys(this._importData.templates).length : 0}</span></div>
+                 <div style="display: flex; justify-content: space-between;"><span>${this.localize('history_lbl')}:</span> <span>${this._importData.history ? this._importData.history.length : 0}</span></div>
+                 <div style="display: flex; justify-content: space-between;"><span>${this.localize('settings_included')}:</span> <span>${this._importData.settings ? this.localize('yes') : this.localize('no')}</span></div>
+              </div>
+            ` : ''}
+            
+            ${this._importState === 'importing' || this._importState === 'done' ? `
+               <div style="width: 100%; background: var(--divider-color); border-radius: 4px; height: 16px; overflow: hidden; margin: 16px 0;">
+                  <div style="width: ${this._importProgress}%; height: 100%; background: var(--primary-color, #2196F3); transition: width 0.3s;"></div>
+               </div>
+               <div style="text-align: center; font-size: 14px; color: var(--secondary-text-color);">${this._importProgress}%</div>
+               ${this._importState === 'done' ? `<div style="text-align: center; color: var(--success-color, green); font-weight: bold; margin-top: 8px;">${this.localize('import_success')}</div>` : ''}
+            ` : ''}
+            
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+              ${this._importState !== 'done' ? `<ha-button appearance="plain" variant="brand" id="btn-import-cancel">${this.localize('cancel')}</ha-button>` : ''}
+              ${this._importState === 'ready' ? `<ha-button raised id="btn-import-start">${this.localize('start_import')}</ha-button>` : ''}
+              ${this._importState === 'done' ? `<ha-button raised id="btn-import-reload">${this.localize('confirm_reload')}</ha-button>` : ''}
+            </div>
+        </div>
+      </div>
     `;
     
     this.shadowRoot.innerHTML = html;
@@ -953,9 +1041,13 @@ class TaskOrganizerSettings extends HTMLElement {
     // Bind click events
     this.shadowRoot.querySelector('ha-card').addEventListener('click', (ev) => this._handleClick(ev));
     this.shadowRoot.querySelector('#template-modal').addEventListener('click', (ev) => this._handleClick(ev));
+    this.shadowRoot.querySelector('#import-modal').addEventListener('click', (ev) => this._handleClick(ev));
 
     // Bind File Import
-    this.shadowRoot.getElementById('file-import').addEventListener('change', (ev) => this._handleImport(ev));
+    const importFileInput = this.shadowRoot.getElementById('modal-file-import');
+    if (importFileInput) {
+      importFileInput.addEventListener('change', (ev) => this._handleImportFileChange(ev));
+    }
 
     // Bind slider events
     this.shadowRoot.querySelectorAll('.transparency-slider').forEach(el => {

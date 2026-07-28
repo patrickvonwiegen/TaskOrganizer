@@ -140,10 +140,8 @@ class TaskOrganizerStats extends HTMLElement {
     return { 
       type: "custom:task-organizer-stats", 
       title: this._localize(hass, 'title'),
-      items_per_page: 10,
       show_user_select: true,
-      report_type: "overview",
-      filter_by: "all" 
+      report_type: "overview"
     }; 
   }
 

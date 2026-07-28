@@ -131,20 +131,31 @@ type: custom:task-organizer-leaderboard
 show_history: true      # Displays the table of previous winners (default: true)
 ```
 
-### 3. Household Log (task-organizer-stats)
+### 3. Household Log (task-organizer-protocol)
 A list of recently completed tasks with the option to correct or delete entries.
 
 <img width="383" height="354" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
 
 **YAML Configuration:**
 ```yaml
-type: custom:task-organizer-stats
+type: custom:task-organizer-protocol
 title: "Who did what?"
-show_user_select: true # Allows selecting a specific user to see their monthly point chart and progress.
 filter_by: all      # Options: all (Default all)
 items_per_page: 10  # Number of displayed items
 ```
-### 4. Settings (task-organizer-settings)
+
+### 4. Reports (task-organizer-stats)
+Provides advanced reporting with different views like "Completed Tasks" and "Goal Setting", including monthly point charts and progress tracking.
+
+**YAML Configuration:**
+```yaml
+type: custom:task-organizer-stats
+title: "Reports"
+report_type: overview  # Options: overview, burndown
+show_user_select: true # Allows selecting a specific user
+```
+
+### 5. Settings (task-organizer-settings)
 Allows customization of colors, data export, and factory resets.
 
 <img width="385" height="713" alt="image" src="https://github.com/user-attachments/assets/e1c4ce88-da95-4ff5-a71c-e4e01ae7df13" />
