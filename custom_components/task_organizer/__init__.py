@@ -7,8 +7,10 @@ from datetime import timedelta
 from datetime import datetime
 import voluptuous as vol
 
+import os
+from aiohttp import web
 from homeassistant.components import websocket_api
-from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.http import StaticPathConfig, HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -26,6 +28,8 @@ from .const import (
     EVENT_RESET,
     STORAGE_KEY,
     STORAGE_VERSION,
+    STORAGE_KEY_AUDIT_LOG,
+    WS_TYPE_GET_TASK_AUDIT_LOG,
     WS_TYPE_ADD_TASK,
     WS_TYPE_COMPLETE_TASK,
     WS_TYPE_DELETE_HISTORY_ITEM,
@@ -41,6 +45,7 @@ from .const import (
     WS_TYPE_ADD_TEMPLATE,
     WS_TYPE_EDIT_TEMPLATE,
     WS_TYPE_DELETE_TEMPLATE,
+    WS_TYPE_CLEAR_AUDIT_LOG,
     SERVICE_ADD_TASK,
     SERVICE_COMPLETE_TASK_BY_NAME,
     SERVICE_RESET_MONTHLY_POINTS,
@@ -60,6 +65,89 @@ _LOGGER = logging.getLogger(__name__)
 # Supported platforms
 PLATFORMS = ["sensor", "button"]
 
+class TaskOrganizerImageUploadView(HomeAssistantView):
+    """View to handle image uploads for tasks."""
+    url = "/api/task_organizer/upload"
+    name = "api:task_organizer:upload"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the view."""
+        self.hass = hass
+
+    async def post(self, request):
+        """Handle image upload."""
+        try:
+            reader = await request.multipart()
+            field = await reader.next()
+            if field.name != "image":
+                return self.json_message("Missing image field", status_code=400)
+            
+            filename = field.filename
+            if not filename:
+                return self.json_message("No filename provided", status_code=400)
+                
+            # Generate a unique filename
+            ext = os.path.splitext(filename)[1]
+            unique_filename = f"{uuid.uuid4()}{ext}"
+            
+            # Read all data asynchronously first
+            data = await field.read()
+            
+            media_dir = self.hass.config.path("www", "task_organizer_media")
+            filepath = os.path.join(media_dir, unique_filename)
+            
+            # Perform blocking I/O in an executor
+            def _save_file(m_dir, f_path, file_data):
+                if not os.path.exists(m_dir):
+                    os.makedirs(m_dir, exist_ok=True)
+                with open(f_path, "wb") as f:
+                    f.write(file_data)
+                    
+            await self.hass.async_add_executor_job(_save_file, media_dir, filepath, data)
+            
+            url = f"/local/task_organizer_media/{unique_filename}"
+            return self.json({"success": True, "url": url, "name": filename})
+            
+        except Exception as err:
+            _LOGGER.error("Error uploading image: %s", err)
+            return self.json_message(f"Error uploading image: {err}", status_code=500)
+
+
+
+async def _log_audit_event(hass: HomeAssistant, task_id: str, action: str, user_id: str = None, details: dict = None):
+    """Log an event to the task's audit log."""
+    if "audit_data" not in hass.data.get(DOMAIN, {}):
+        return
+        
+    audit_data = hass.data[DOMAIN]["audit_data"]
+    audit_store = hass.data[DOMAIN]["audit_store"]
+    
+    if task_id not in audit_data:
+        audit_data[task_id] = []
+        
+    event = {
+        "id": str(uuid.uuid4()),
+        "action": action,
+        "timestamp": dt_util.utcnow().isoformat(),
+        "user_id": user_id,
+        "details": details or {}
+    }
+    
+    audit_data[task_id].insert(0, event)
+    await audit_store.async_save(audit_data)
+
+async def _cleanup_audit_events(hass: HomeAssistant, task_id: str):
+    """Remove all audit log events for a task."""
+    if "audit_data" not in hass.data.get(DOMAIN, {}):
+        return
+        
+    audit_data = hass.data[DOMAIN]["audit_data"]
+    audit_store = hass.data[DOMAIN]["audit_store"]
+    
+    if task_id in audit_data:
+        del audit_data[task_id]
+        await audit_store.async_save(audit_data)
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Called when options are changed via the UI gear icon."""
@@ -151,6 +239,7 @@ async def ws_get_data(hass: HomeAssistant, connection: websocket_api.ActiveConne
     # Create a copy to avoid accidentally modifying the original dictionary
     response_data = dict(data)
     response_data["settings"] = dict(entry.options)
+    response_data["audit_log"] = hass.data.get(DOMAIN, {}).get("audit_data", {}).get("audit_log", [])
     
     connection.send_result(msg["id"], response_data)
 
@@ -198,6 +287,10 @@ async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, compl
         data["history"].insert(0, history_entry)
     
     interval = task.get("interval", 7)
+    
+    if interval > 0:
+        await _log_audit_event(hass, task_id, "completed", user_id=completed_by[0] if completed_by else None, details={"points": total_points, "users_with_points": users_with_points})
+        
     # If recurring, update due date. If one-time, it will be deleted.
     if interval > 0:
         task["due_date"] = (dt_util.utcnow() + timedelta(days=interval)).isoformat()
@@ -210,7 +303,19 @@ async def _async_complete_task_internal(hass: HomeAssistant, task_id: str, compl
 
     # Now, if it was a one-time task, delete it from the main dictionary
     if interval == 0:
+        if "images" in task:
+            for image in task["images"]:
+                image_url = image["url"] if isinstance(image, dict) else image
+                if image_url.startswith("/local/task_organizer_media/"):
+                    filename = image_url.split("/")[-1]
+                    filepath = hass.config.path("www", "task_organizer_media", filename)
+                    if await hass.async_add_executor_job(os.path.exists, filepath):
+                        try:
+                            await hass.async_add_executor_job(os.remove, filepath)
+                        except Exception as e:
+                            _LOGGER.warning("Failed to delete image %s: %s", filepath, e)
         del data["tasks"][task_id]
+        await _cleanup_audit_events(hass, task_id)
 
     # Trigger events
     _fire_leaderboard_event_if_changed(hass, old_points, data["points"])
@@ -267,6 +372,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Optional("paused_until"): vol.Any(str, None),
     vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
     vol.Optional("subtasks"): cv.ensure_list,
+    vol.Optional("images"): cv.ensure_list,
 })
 @websocket_api.async_response
 async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -298,11 +404,13 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
         "due_date": due_date, 
         "paused_until": msg.get("paused_until"),
         "override_overdue_days": msg.get("override_overdue_days"),
-        "subtasks": msg.get("subtasks", [])
+        "subtasks": msg.get("subtasks", []),
+        "images": msg.get("images", [])
     }
     
     data["tasks"][task_id] = new_task
     hass.bus.async_fire(EVENT_TASK_CREATED, new_task)
+    await _log_audit_event(hass, task_id, "created", user_id=connection.user.id)
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
     connection.send_result(msg["id"], {"success": True, "task_id": task_id})
@@ -323,6 +431,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Optional("paused_until"): vol.Any(str, None),
     vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
     vol.Optional("subtasks"): cv.ensure_list,
+    vol.Optional("images"): cv.ensure_list,
 })
 @websocket_api.async_response
 async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -341,10 +450,30 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         return
         
     task_ref = data["tasks"][task_id]
-    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon", "subtasks"]
+    original_task = dict(task_ref)
+    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon", "subtasks", "images"]
     
     for key in keys_to_update:
         if key in msg: 
+            if key == "images":
+                old_images = task_ref.get("images", [])
+                new_images = msg["images"]
+                
+                def get_url(img): return img["url"] if isinstance(img, dict) else img
+                old_urls = {get_url(img) for img in old_images}
+                new_urls = {get_url(img) for img in new_images}
+                
+                removed_urls = old_urls - new_urls
+                for r_url in removed_urls:
+                    if r_url.startswith("/local/task_organizer_media/"):
+                        filename = r_url.split("/")[-1]
+                        filepath = hass.config.path("www", "task_organizer_media", filename)
+                        if await hass.async_add_executor_job(os.path.exists, filepath):
+                            try:
+                                await hass.async_add_executor_job(os.remove, filepath)
+                            except Exception as e:
+                                _LOGGER.warning("Failed to delete removed image %s: %s", filepath, e)
+                                
             task_ref[key] = msg[key]
 
     if msg.get("custom_due_date"):
@@ -355,6 +484,35 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
 
     if "override_overdue_days" in msg:
         task_ref["override_overdue_days"] = msg["override_overdue_days"]
+        
+    changed_keys = {}
+    
+    def _is_equal(old_val, new_val):
+        if old_val == new_val:
+            return True
+        # Treat None, empty string, and empty list as equivalent for change detection
+        if old_val in (None, "", []) and new_val in (None, "", []):
+            return True
+        
+        # Normalize images for comparison (string vs dict)
+        if isinstance(old_val, list) and isinstance(new_val, list):
+            def _normalize_img(img):
+                return img["url"] if isinstance(img, dict) else img
+            if all(isinstance(i, (str, dict)) for i in old_val) and all(isinstance(i, (str, dict)) for i in new_val):
+                old_urls = [_normalize_img(i) for i in old_val]
+                new_urls = [_normalize_img(i) for i in new_val]
+                if old_urls == new_urls:
+                    return True
+                    
+        return False
+
+    for k, v in task_ref.items():
+        old_v = original_task.get(k)
+        if not _is_equal(old_v, v):
+            changed_keys[k] = {"old": old_v, "new": v}
+
+    if changed_keys:
+        await _log_audit_event(hass, task_id, "edited", user_id=connection.user.id, details={"changes": changed_keys})
         
     await hass.data[DOMAIN]["store"].async_save(data)
     hass.bus.async_fire(EVENT_TASK_UPDATED)
@@ -378,7 +536,20 @@ async def ws_delete_task(hass: HomeAssistant, connection: websocket_api.ActiveCo
     task_id = msg["task_id"]
     
     if task_id in data["tasks"]:
+        task = data["tasks"][task_id]
+        if "images" in task:
+            for image in task["images"]:
+                image_url = image["url"] if isinstance(image, dict) else image
+                if image_url.startswith("/local/task_organizer_media/"):
+                    filename = image_url.split("/")[-1]
+                    filepath = hass.config.path("www", "task_organizer_media", filename)
+                    if await hass.async_add_executor_job(os.path.exists, filepath):
+                        try:
+                            await hass.async_add_executor_job(os.remove, filepath)
+                        except Exception as e:
+                            _LOGGER.warning("Failed to delete image %s: %s", filepath, e)
         del data["tasks"][task_id]
+        await _cleanup_audit_events(hass, task_id)
         await hass.data[DOMAIN]["store"].async_save(data)
         hass.bus.async_fire(EVENT_TASK_UPDATED)
         connection.send_result(msg["id"], {"success": True})
@@ -545,6 +716,16 @@ async def ws_import_tasks(hass: HomeAssistant, connection: websocket_api.ActiveC
         data["current_period_start"] = msg["current_period_start"]
             
     await hass.data[DOMAIN]["store"].async_save(data)
+    
+    if "audit_log" in msg and "audit_data" in hass.data.get(DOMAIN, {}):
+        audit_data = hass.data[DOMAIN]["audit_data"]
+        existing_audit_ids = {h["id"] for h in audit_data.get("audit_log", [])}
+        for h_entry in msg["audit_log"]:
+            if h_entry.get("id") not in existing_audit_ids:
+                audit_data["audit_log"].append(h_entry)
+        audit_data["audit_log"].sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        await hass.data[DOMAIN]["audit_store"].async_save(audit_data)
+        
     hass.bus.async_fire(EVENT_TASK_UPDATED)
     connection.send_result(msg["id"], {"success": True})
 
@@ -720,6 +901,50 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # IMPORTANT: Ensure settings from config entry options are always reflected in data
     data["settings"] = dict(entry.options)
+
+    # Dangling file cleanup
+    dirty = False
+    referenced_filenames = set()
+    for task_id, task in data.get("tasks", {}).items():
+        if "images" in task:
+            valid_images = []
+            for image in task["images"]:
+                image_url = image["url"] if isinstance(image, dict) else image
+                if image_url.startswith("/local/task_organizer_media/"):
+                    filename = image_url.split("/")[-1]
+                    filepath = hass.config.path("www", "task_organizer_media", filename)
+                    # Check existence without blocking event loop
+                    if await hass.async_add_executor_job(os.path.exists, filepath):
+                        valid_images.append(image)
+                        referenced_filenames.add(filename)
+                    else:
+                        dirty = True
+                else:
+                    valid_images.append(image)
+            task["images"] = valid_images
+    if dirty:
+        await store.async_save(data)
+
+    # Delete unreferenced files in the media directory
+    media_dir = hass.config.path("www", "task_organizer_media")
+    if await hass.async_add_executor_job(os.path.exists, media_dir):
+        def _cleanup_unreferenced_files():
+            for filename in os.listdir(media_dir):
+                if filename not in referenced_filenames:
+                    filepath = os.path.join(media_dir, filename)
+                    try:
+                        os.remove(filepath)
+                        _LOGGER.info("Cleaned up unreferenced file: %s", filepath)
+                    except Exception as e:
+                        _LOGGER.warning("Failed to clean up unreferenced file %s: %s", filepath, e)
+        await hass.async_add_executor_job(_cleanup_unreferenced_files)
+
+    audit_store = Store(hass, STORAGE_VERSION, STORAGE_KEY_AUDIT_LOG)
+    audit_data = await audit_store.async_load()
+    if audit_data is None:
+        audit_data = {}
+    hass.data[DOMAIN]["audit_store"] = audit_store
+    hass.data[DOMAIN]["audit_data"] = audit_data
 
     hass.data[DOMAIN]["store"] = store
     hass.data[DOMAIN]["data"] = data
@@ -1066,7 +1291,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_REMOVE_TEMPLATE_BY_NAME, handle_remove_template_by_name)
     hass.services.async_register(DOMAIN, SERVICE_EDIT_TEMPLATE_BY_NAME, handle_edit_template_by_name)
     
-    # Register websocket API commands
     websocket_api.async_register_command(hass, ws_get_data)
     websocket_api.async_register_command(hass, ws_complete_task)
     websocket_api.async_register_command(hass, ws_add_task)
@@ -1081,11 +1305,43 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     websocket_api.async_register_command(hass, ws_edit_template)
     websocket_api.async_register_command(hass, ws_delete_template)
     
+    @websocket_api.websocket_command({
+        vol.Required("type"): WS_TYPE_CLEAR_AUDIT_LOG,
+    })
+    @websocket_api.async_response
+    async def ws_clear_audit_log(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+        if "audit_data" not in hass.data.get(DOMAIN, {}):
+            connection.send_result(msg["id"], {"success": False, "error": "Audit store not initialized"})
+            return
+            
+        audit_data = hass.data[DOMAIN]["audit_data"]
+        audit_data["audit_log"] = []
+        await hass.data[DOMAIN]["audit_store"].async_save(audit_data)
+        
+        connection.send_result(msg["id"], {"success": True})
+    
+    @websocket_api.websocket_command({
+        vol.Required("type"): WS_TYPE_GET_TASK_AUDIT_LOG,
+        vol.Required("task_id"): str,
+    })
+    @websocket_api.async_response
+    async def ws_get_task_audit_log(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
+        task_id = msg["task_id"]
+        audit_data = hass.data.get(DOMAIN, {}).get("audit_data", {})
+        history = audit_data.get(task_id, [])
+        connection.send_result(msg["id"], {"history": history})
+        
+    websocket_api.async_register_command(hass, ws_clear_audit_log)
+    websocket_api.async_register_command(hass, ws_get_task_audit_log)
+    
     # Register static path for frontend cards
     frontend_path = hass.config.path(f"custom_components/{DOMAIN}/www")
     await hass.http.async_register_static_paths([
         StaticPathConfig("/task_organizer_frontend", frontend_path, False)
     ])
+    
+    # Register image upload view
+    hass.http.register_view(TaskOrganizerImageUploadView(hass))
 
     async def register_lovelace_resources(event=None):
         """Register the custom cards in Lovelace resources."""

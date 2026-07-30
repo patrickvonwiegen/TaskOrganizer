@@ -1,7 +1,9 @@
 {
   "domain": "task_organizer",
   "name": "TaskOrganizer",
-  "codeowners": [ "@patrickvonwiegen" ],
+  "codeowners": [
+    "@patrickvonwiegen"
+  ],
   "config_flow": true,
   "dependencies": [
     "http"
@@ -10,5 +12,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/patrickvonwiegen/TaskOrganizer/issues",
   "requirements": [],
-  "version": "1.7.0"
+  "version": "2.0.0"
 }

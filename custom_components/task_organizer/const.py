@@ -9,6 +9,7 @@ CONF_NAME = "name"
 # Storage Constants
 STORAGE_KEY = f"{DOMAIN}.storage"
 STORAGE_VERSION = 1
+STORAGE_KEY_AUDIT_LOG = f"{DOMAIN}.audit_log"
 
 # Default colors for the frontend
 DEFAULT_COLOR_DONE = "#4CAF50"     # Green
@@ -39,6 +40,8 @@ WS_TYPE_IMPORT_TASKS = "task_organizer/import_tasks"
 WS_TYPE_ADD_TEMPLATE = "task_organizer/add_template"
 WS_TYPE_EDIT_TEMPLATE = "task_organizer/edit_template"
 WS_TYPE_DELETE_TEMPLATE = "task_organizer/delete_template"
+WS_TYPE_GET_TASK_AUDIT_LOG = "task_organizer/get_task_audit_log"
+WS_TYPE_CLEAR_AUDIT_LOG = "task_organizer/clear_audit_log"
 
 # Service Names
 SERVICE_RESET_MONTHLY_POINTS = "reset_monthly_points"

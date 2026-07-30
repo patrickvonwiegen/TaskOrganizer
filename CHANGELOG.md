@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.0]
+### 🚀 New Features
+- **Redesigned Task Modal:** The task creation and editing modal has been completely redesigned with a new tabbed interface for better organization.
+- **File Attachments:** Added support for file attachments and image uploads to tasks.
+- **Task-History:** Added a detailed audit log and the ability to clear it or include it in JSON exports and imports.
+
+### 🐛 Bug Fixes
+- **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
+
 ## [1.7.0]
 ### ⚠️ Breaking Changes
 - **Transparency Settings:** The transparency configuration scale has been inverted. 100% now represents full opacity (solid color), and 0% represents full transparency. The default value has been updated to 8% to match the previous highly transparent look.

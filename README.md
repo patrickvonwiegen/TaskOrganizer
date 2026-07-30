@@ -57,6 +57,10 @@ Suggestions for improvement or bug reports are welcome.
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3a5bbe6e-c67c-419a-886b-3fc4895a72ef" />
   <img width="10%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
 
+* **File Attachments**: Attach files and images directly to your tasks. 
+
+* **Audit Log per Task (History)**: Keep track of every change with a detailed audit log.
+
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/119748db-9521-4125-b44e-71b9f21afebb" />

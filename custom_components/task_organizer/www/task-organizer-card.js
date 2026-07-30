@@ -39,7 +39,8 @@ const I18N_CARD = {
     filter_by_lbl: "Filter By",
     filter_by_placeholder: "comma separated, e.g. !paused, due",
     search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear",
-    help_link: "Configuration Guide (README)"
+    help_link: "Configuration Guide (README)",
+    tab_general: "General", tab_time: "Time Settings", tab_subtasks: "Subtasks", tab_other: "Other", tab_history: "Audit Log", no_history: "No audit log available"
   },
   de: { 
     title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
@@ -54,7 +55,7 @@ const I18N_CARD = {
     recreate_task_prompt: "Möchtest du '{taskName}' aus einer Vorlage erstellen?",
     set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
     override_overdue_lbl: "Aufgabenspezifische Überfälligkeit", override_overdue_days_placeholder: "Tage",
-    time_settings: "Zeiteinstellungen", subtasks: "Unteraufgaben",
+    time_settings: "Zeit", subtasks: "Unteraufgaben",
     add_subtask: "Unteraufgabe hinzufügen", subtask_placeholder: "Titel der Unteraufgabe...",
     completed_percent: "{percent}%",
     confirm_task_complete: "Alle Unteraufgaben sind erledigt. Möchtest du die Hauptaufgabe jetzt abschließen?",
@@ -76,7 +77,8 @@ const I18N_CARD = {
     filter_by_lbl: "Filtern nach",
     filter_by_placeholder: "Kommagetrennt, z.B. !paused, due",
     search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren",
-    help_link: "Konfigurations-Handbuch (README)"
+    help_link: "Konfigurations-Handbuch (README)",
+    tab_general: "Allgemein", tab_time: "Zeit", tab_subtasks: "Unteraufgaben", tab_other: "Sonstiges", tab_history: "Protokoll", no_history: "Kein Protokoll vorhanden"
   }
 };
 
@@ -288,6 +290,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => {
       this.tasks = data.tasks || {};
       this.templates = data.templates || {};
+      this.history = data.history || [];
       if (data.settings) {
           this.settings = { ...this.settings, ...data.settings };
       }
@@ -365,6 +368,33 @@ class TaskOrganizerCard extends HTMLElement {
     else if (target.id === 'btn-add-subtask') this._addSubtask();
     else if (target.classList.contains('btn-del-subtask')) this._removeSubtask(target.dataset.index);
     else if (target.classList.contains('subtask-check')) this._toggleSubtaskStatus(target.dataset.index);
+    else if (target.id === 'scroll-left') {
+        const tabs = this.shadowRoot.getElementById('tabs-scroll');
+        if (tabs) tabs.scrollBy({ left: -100, behavior: 'smooth' });
+    }
+    else if (target.id === 'scroll-right') {
+        const tabs = this.shadowRoot.getElementById('tabs-scroll');
+        if (tabs) tabs.scrollBy({ left: 100, behavior: 'smooth' });
+    }
+  }
+
+  _updateTabScrollIndicators() {
+      const tabs = this.shadowRoot.getElementById('tabs-scroll');
+      const leftBtn = this.shadowRoot.getElementById('scroll-left');
+      const rightBtn = this.shadowRoot.getElementById('scroll-right');
+      if (!tabs || !leftBtn || !rightBtn) return;
+      
+      const isScrollable = tabs.scrollWidth > tabs.clientWidth;
+      const isAtStart = tabs.scrollLeft <= 0;
+      const isAtEnd = tabs.scrollLeft + tabs.clientWidth >= tabs.scrollWidth - 1;
+      
+      if (isScrollable) {
+          leftBtn.style.display = isAtStart ? 'none' : 'block';
+          rightBtn.style.display = isAtEnd ? 'none' : 'block';
+      } else {
+          leftBtn.style.display = 'none';
+          rightBtn.style.display = 'none';
+      }
   }
 
   /**
@@ -971,6 +1001,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._editingTaskId = taskId;
     const modal = this.shadowRoot.getElementById('task-modal');
     this._subtasks = [];
+    this._currentTaskImages = [];
     
     if (taskId && this.tasks[taskId]) {
         const t = this.tasks[taskId];
@@ -982,6 +1013,12 @@ class TaskOrganizerCard extends HTMLElement {
         }
         if (this.shadowRoot.getElementById('f-complexity')) this.shadowRoot.getElementById('f-complexity').value = t.complexity;
         this._subtasks = t.subtasks ? [...t.subtasks] : [];
+        this._currentTaskImages = t.images ? t.images.map(img => {
+            if (typeof img === 'string') {
+                return { url: img, name: img.split('/').pop() };
+            }
+            return img;
+        }) : [];
         this._currentIcon = t.icon || "mdi:broom";
         
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
@@ -1050,25 +1087,23 @@ class TaskOrganizerCard extends HTMLElement {
         }
     }
 
-    // Manage Section Visibility
-    let timeSettingsOpen = false;
-    if (taskId && this.tasks[taskId]) {
-        const t = this.tasks[taskId];
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const isPaused = t.paused_until && new Date(t.paused_until) >= now;
-        const hasOverride = t.override_overdue_days !== null && t.override_overdue_days !== undefined;
-        
-        if (isPaused || hasOverride) timeSettingsOpen = true;
-    }
-    this._setSectionState('time-settings-content', timeSettingsOpen);
-    this._setSectionState('subtasks-content', this._subtasks.length > 0);
+    // Reset active tab to General when opening
+    this.shadowRoot.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    this.shadowRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    const firstTab = this.shadowRoot.querySelector('.tab-btn[data-tab="tab-general"]');
+    const firstContent = this.shadowRoot.querySelector('#tab-general');
+    if (firstTab) firstTab.classList.add('active');
+    if (firstContent) firstContent.classList.add('active');
+
     this._renderModalSubtasks();
+    this._renderImageGallery();
+    this._loadTaskHistory(taskId);
 
     const picker = this.shadowRoot.getElementById('f-icon-picker');
     if (picker) picker.value = this._currentIcon; 
     
     modal.classList.add('open');
+    setTimeout(() => this._updateTabScrollIndicators(), 10);
   }
 
   /**
@@ -1126,10 +1161,298 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
+   * Fetches and renders the history timeline for the task editor modal.
+   * @param {string|null} taskId - The ID of the task.
+   */
+  _loadTaskHistory(taskId) {
+    const container = this.shadowRoot.getElementById('f-history-container');
+    if (!container) return;
+    
+    if (!taskId) {
+        container.innerHTML = `<div style="text-align: center; color: var(--secondary-text-color); padding: 16px;">${this.localize ? (this.localize('no_history') || 'Keine Historie vorhanden') : 'Keine Historie vorhanden'}</div>`;
+        return;
+    }
+    
+    // Set loading indicator
+    container.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; color: var(--secondary-text-color);">
+            <ha-circular-progress active size="medium"></ha-circular-progress>
+            <div style="margin-top: 8px; font-size: 14px;">Lade Historie...</div>
+        </div>
+    `;
+    
+    this._hass.callWS({
+        type: 'task_organizer/get_task_audit_log',
+        task_id: taskId
+    }).then(response => {
+        this._renderAuditLog(container, response.history || []);
+    }).catch(err => {
+        console.error("Error loading task history:", err);
+        container.innerHTML = `<div style="text-align: center; color: var(--error-color); padding: 16px;">Fehler beim Laden der Historie</div>`;
+    });
+  }
+
+  _renderAuditLog(container, taskHistory) {
+    if (taskHistory.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--secondary-text-color); padding: 16px;">${this.localize ? (this.localize('no_history') || 'Noch keine Historie für diese Aufgabe') : 'Noch keine Historie für diese Aufgabe'}</div>`;
+        return;
+    }
+    
+    let html = '<div class="history-timeline">';
+    taskHistory.forEach(entry => {
+        const dateStr = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'Unbekannt';
+        const userName = entry.user_id && this.users ? (this.users[entry.user_id] || entry.user_id) : 'Unbekannt';
+        
+        let title = '';
+        let detailsHtml = '';
+        let icon = '';
+        let color = '';
+        
+        if (entry.action === 'created') {
+            title = 'Aufgabe erstellt';
+            icon = 'mdi:plus-circle';
+            color = 'var(--info-color, #2196f3)';
+        } else if (entry.action === 'edited') {
+            title = 'Aufgabe bearbeitet';
+            icon = 'mdi:text-box-edit-outline';
+            color = 'var(--primary-color, #03a9f4)';
+            
+            const keyMap = {
+                'name': 'Name', 'description': 'Beschreibung', 'area': 'Bereich',
+                'interval': 'Intervall', 'assignees': 'Bearbeiter', 'complexity': 'Punkte',
+                'category': 'Kategorie', 'icon': 'Icon', 'subtasks': 'Unteraufgaben',
+                'images': 'Bilder', 'due_date': 'Fälligkeitsdatum', 'paused_until': 'Pausiert bis',
+                'override_overdue_days': 'Überfälligkeit (Tage)'
+            };
+            
+            const changes = entry.details?.changes;
+            if (changes && Object.keys(changes).length > 0) {
+                detailsHtml = '<div style="margin-top: 8px; font-size: 12px; background: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px;">';
+                for (const [key, diff] of Object.entries(changes)) {
+                    const translatedKey = keyMap[key] || key;
+                    if (key === 'subtasks') {
+                        const oldSubtasks = diff.old || [];
+                        const newSubtasks = diff.new || [];
+                        let completedSubtasks = [];
+                        let addedSubtasks = [];
+                        
+                        newSubtasks.forEach(st => {
+                            const oldSt = oldSubtasks.find(o => o.title === st.title);
+                            if (oldSt) {
+                                if (st.done && !oldSt.done) {
+                                    completedSubtasks.push(st.title);
+                                }
+                            } else {
+                                addedSubtasks.push(st.title);
+                            }
+                        });
+                        
+                        if (completedSubtasks.length > 0 || addedSubtasks.length > 0) {
+                            if (completedSubtasks.length > 0) {
+                                completedSubtasks.forEach(stTitle => {
+                                    detailsHtml += `<div style="margin-bottom: 2px; color: var(--success-color, #4caf50);">• <b>Unteraufgabe:</b> <s>${stTitle}</s> abgeschlossen <ha-icon icon="mdi:check-circle" style="--mdc-icon-size: 12px; margin-left: 2px;"></ha-icon></div>`;
+                                });
+                                // If ONLY subtasks were completed, change the main timeline event to reflect this
+                                if (Object.keys(changes).length === 1 && addedSubtasks.length === 0) {
+                                    title = userName !== 'Unbekannt' ? `${userName} hat Unteraufgaben abgeschlossen` : 'Unteraufgaben abgeschlossen';
+                                    icon = 'mdi:check-circle-outline';
+                                    color = 'var(--success-color, #4caf50)';
+                                }
+                            }
+                            if (addedSubtasks.length > 0) {
+                                addedSubtasks.forEach(stTitle => {
+                                    detailsHtml += `<div style="margin-bottom: 2px;">• <b>Unteraufgabe:</b> ${stTitle} hinzugefügt</div>`;
+                                });
+                            }
+                        } else {
+                            detailsHtml += `<div style="margin-bottom: 2px;">• <b>${translatedKey}</b> geändert</div>`;
+                        }
+                    } else if (key === 'images' || key === 'assignees') {
+                        detailsHtml += `<div style="margin-bottom: 2px;">• <b>${translatedKey}</b> geändert</div>`;
+                    } else {
+                        const oldVal = diff.old !== null ? String(diff.old) : 'leer';
+                        const newVal = diff.new !== null ? String(diff.new) : 'leer';
+                        detailsHtml += `<div style="margin-bottom: 2px;">• <b>${translatedKey}</b>: <s>${oldVal}</s> → ${newVal}</div>`;
+                    }
+                }
+                detailsHtml += '</div>';
+            }
+        } else if (entry.action === 'completed') {
+            const usersWithPoints = entry.details?.users_with_points;
+            
+            if (usersWithPoints && Object.keys(usersWithPoints).length > 1) {
+                title = 'Aufgabe gemeinsam abgeschlossen';
+                let usersListHtml = '';
+                for (const [uId, pts] of Object.entries(usersWithPoints)) {
+                    const uName = this.users && this.users[uId] ? this.users[uId] : uId;
+                    usersListHtml += `<div style="margin-bottom: 2px;">• <b>${uName}</b>: +${pts} Punkte</div>`;
+                }
+                detailsHtml = `<div style="margin-top: 8px; font-size: 12px; background: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px;">${usersListHtml}</div>`;
+            } else {
+                title = userName !== 'Unbekannt' ? `${userName} hat die Aufgabe abgeschlossen` : 'Aufgabe abgeschlossen';
+                if (entry.details?.points) {
+                    detailsHtml = `<div class="timeline-points" style="color: var(--success-color, #4caf50)">+${entry.details.points} Punkte</div>`;
+                }
+            }
+            icon = 'mdi:check-circle';
+            color = 'var(--success-color, #4caf50)';
+        } else {
+            title = 'Aktion: ' + entry.action;
+            icon = 'mdi:information';
+            color = 'var(--secondary-text-color)';
+        }
+        
+        html += `
+            <div class="timeline-item">
+                <div class="timeline-marker" style="background-color: ${color}; border-color: var(--card-background-color);">
+                    <ha-icon icon="${icon}" style="--mdc-icon-size: 16px; color: white; display: flex; align-items: center; justify-content: center;"></ha-icon>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-date">${dateStr}${userName !== 'Unbekannt' ? ' • ' + userName : ''}</div>
+                    <div class="timeline-title">${title}</div>
+                    ${detailsHtml}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  /**
    * Closes the task editor modal.
    */
   _closeModal() { 
       this.shadowRoot.getElementById('task-modal').classList.remove('open'); 
+  }
+
+  _renderImageGallery() {
+      const gallery = this.shadowRoot.getElementById('f-images-gallery');
+      const dropzoneText = this.shadowRoot.getElementById('f-image-dropzone-text');
+      if (!gallery) return;
+      if (!this._currentTaskImages || this._currentTaskImages.length === 0) {
+          gallery.innerHTML = '';
+          if (dropzoneText) dropzoneText.style.display = 'flex';
+          return;
+      }
+      if (dropzoneText) dropzoneText.style.display = 'none';
+      gallery.innerHTML = this._currentTaskImages.map((imgObj, index) => {
+          const url = typeof imgObj === 'string' ? imgObj : imgObj.url;
+          const name = typeof imgObj === 'string' ? url.split('/').pop() : (imgObj.name || url.split('/').pop());
+          const isImage = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i.test(url);
+          
+          if (isImage) {
+              return `
+                  <div class="image-preview" title="${name}">
+                      <img src="${url}" onclick="event.stopPropagation(); window.open('${url}', '_blank')">
+                      <button class="image-delete-btn" data-index="${index}" onclick="event.stopPropagation();"><ha-icon icon="mdi:close" style="--mdc-icon-size: 14px;"></ha-icon></button>
+                  </div>
+              `;
+          } else {
+              return `
+                  <div class="image-preview file-preview" title="${name}" onclick="event.stopPropagation(); window.open('${url}', '_blank')">
+                      <ha-icon icon="mdi:file-document-outline" style="--mdc-icon-size: 32px; color: var(--primary-color);"></ha-icon>
+                      <span style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-align: center; margin-top: 4px;">${name}</span>
+                      <button class="image-delete-btn" data-index="${index}" onclick="event.stopPropagation();"><ha-icon icon="mdi:close" style="--mdc-icon-size: 14px;"></ha-icon></button>
+                  </div>
+              `;
+          }
+      }).join('');
+      
+      gallery.querySelectorAll('.image-delete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const idx = e.currentTarget.dataset.index;
+              this._currentTaskImages.splice(idx, 1);
+              this._renderImageGallery();
+          });
+      });
+  }
+
+  async _handleImageSelection(e) {
+      const targetInput = e.target;
+      const files = Array.from(targetInput.files || []);
+      if (!files.length) return;
+      
+      for (const file of files) {
+          try {
+              let blob = file;
+              if (file.type.startsWith('image/')) {
+                  blob = await this._resizeImage(file, 500);
+              }
+              const response = await this._uploadImage(blob, file.name);
+              if (response && response.url) {
+                  if (!this._currentTaskImages) this._currentTaskImages = [];
+                  this._currentTaskImages.push({ url: response.url, name: response.name || file.name });
+              }
+          } catch (err) {
+              console.error("TaskOrganizer: Image upload error", err);
+              this._showToast("Fehler beim Hochladen: " + err.message);
+          }
+      }
+      
+      if (targetInput && targetInput.value !== undefined) {
+          targetInput.value = ''; 
+      }
+      this._renderImageGallery();
+  }
+
+  _resizeImage(file, maxSize) {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                  let width = img.width;
+                  let height = img.height;
+                  if (width > maxSize || height > maxSize) {
+                      if (width > height) {
+                          height = Math.round((height * maxSize) / width);
+                          width = maxSize;
+                      } else {
+                          width = Math.round((width * maxSize) / height);
+                          height = maxSize;
+                      }
+                  }
+                  const canvas = document.createElement('canvas');
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, width, height);
+                  canvas.toBlob((blob) => {
+                      resolve(blob);
+                  }, 'image/jpeg', 0.85);
+              };
+              img.onerror = () => reject(new Error("Failed to load image for resizing"));
+              img.src = e.target.result;
+          };
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+      });
+  }
+
+  async _uploadImage(blob, originalName) {
+      const formData = new FormData();
+      formData.append("image", blob, originalName || "upload.jpg");
+      
+      const response = await fetch("/api/task_organizer/upload", {
+          method: "POST",
+          headers: {
+              authorization: `Bearer ${this._hass.auth.accessToken}`
+          },
+          body: formData
+      });
+      
+      if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.success && data.url) {
+          return data;
+      } else {
+          throw new Error(data.message || "Unknown error from server");
+      }
   }
 
   /**
@@ -1185,7 +1508,8 @@ class TaskOrganizerCard extends HTMLElement {
       custom_due_date: customDueDate,
       paused_until: pausedUntil,
       override_overdue_days: overrideOverdueDays,
-      subtasks: this._subtasks
+      subtasks: this._subtasks,
+      images: this._currentTaskImages
     };
     
     const type = this._editingTaskId ? 'task_organizer/edit_task' : 'task_organizer/add_task';
@@ -1262,14 +1586,17 @@ class TaskOrganizerCard extends HTMLElement {
           
           .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
           
-          .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
+          .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 10vh; box-sizing: border-box; } 
           .modal.open { display: flex; } 
-          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); } 
+          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: var(--ha-dialog-border-radius, 28px); width: calc(100% - 32px); max-width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); margin: 0 16px; box-sizing: border-box; } 
           
           .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
-          .task-type-selector { display: flex; border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-          .type-btn { flex: 1; padding: 12px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 14px; font-weight: 500; transition: background-color 0.2s, color 0.2s; }
-          .type-btn.active { background: var(--primary-color); color: var(--text-primary-color, white); }
+          .task-type-selector { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--secondary-background-color); border-radius: 12px; border: 1px solid var(--divider-color); overflow: hidden; align-self: center; }
+          .type-slider { position: absolute; top: 0; bottom: 0; left: 0; width: 50%; background: var(--primary-color); transition: transform 0.3s ease; z-index: 0; }
+          .type-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 8px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 11px; font-weight: 500; transition: color 0.3s; z-index: 1; white-space: nowrap; }
+          .type-btn ha-icon { --mdc-icon-size: 16px; }
+          .type-btn.active { color: var(--text-primary-color, white); }
+          .task-type-selector[data-active="onetime"] .type-slider { transform: translateX(100%); }
           .form-row { display: flex; gap: 16px; }
           .form-col { flex: 1; }
           .template-suggestions { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
@@ -1280,6 +1607,39 @@ class TaskOrganizerCard extends HTMLElement {
           .collapsible-content { display: none; flex-direction: column; gap: 16px; padding: 8px 0 16px 0; }
           .subtask-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
           .subtask-list { display: flex; flex-direction: column; gap: 6px; }
+          
+          .tabs-container { position: relative; display: flex; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--divider-color); }
+          .tabs { display: flex; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; gap: 8px; flex: 1; scroll-behavior: smooth; }
+          .tabs::-webkit-scrollbar { display: none; }
+          .tab-btn { display: flex; align-items: center; justify-content: center; gap: 4px; flex: 0 0 auto; min-width: max-content; padding: 12px 6px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--secondary-text-color); font-size: 11px; font-weight: 500; transition: color 0.2s, border-color 0.2s; --mdc-icon-size: 16px; }
+          .scroll-indicator { background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-weight: bold; font-size: 16px; padding: 0 4px; z-index: 2; user-select: none; }
+          .scroll-indicator:hover { color: var(--primary-color); }
+          .tab-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .tab-btn:hover { color: var(--primary-text-color); }
+          .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+          .tab-content { display: none; flex-direction: column; gap: 16px; }
+          .tab-content.active { display: flex; }
+          .assignees-container { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; max-height: 200px; overflow-y: auto; }
+          .image-dropzone { border: 2px dashed var(--divider-color); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; color: var(--secondary-text-color); transition: all 0.3s; margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+          .image-dropzone:hover, .image-dropzone.dragover { border-color: var(--primary-color); color: var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05); }
+          .image-dropzone ha-icon { --mdc-icon-size: 32px; }
+          .image-gallery { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; width: 100%; }
+          .image-preview { position: relative; width: 60px; height: 60px; }
+          .image-preview.file-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(128,128,128,0.1); border-radius: 4px; border: 1px solid var(--divider-color); cursor: pointer; padding: 4px; box-sizing: border-box; }
+          .image-preview img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; border-radius: 4px; border: 1px solid var(--divider-color); }
+          .image-delete-btn { position: absolute; top: -6px; right: -6px; background: #f44336; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; transition: background 0.3s; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+          .image-delete-btn:hover { background: #d32f2f; }
+          .history-timeline { position: relative; padding-left: 36px; margin-top: 10px; display: flex; flex-direction: column; gap: 16px; }
+          .history-timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background-color: var(--divider-color); }
+          .timeline-item { position: relative; display: flex; flex-direction: column; }
+          .timeline-marker { position: absolute; left: -36px; top: 0px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--card-background-color); box-sizing: border-box; z-index: 1; display: flex; align-items: center; justify-content: center; }
+          .timeline-marker ha-icon { --mdc-icon-size: 16px; }
+          .timeline-content { background: rgba(128,128,128,0.05); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--divider-color); }
+          .timeline-date { font-size: 12px; color: var(--secondary-text-color); margin-bottom: 4px; }
+          .timeline-title { font-size: 14px; font-weight: 500; color: var(--primary-text-color); }
+          .timeline-points { font-size: 12px; color: var(--primary-color); font-weight: bold; margin-top: 4px; }
+          .task-images-preview { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+          .task-images-preview img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; border: 1px solid var(--divider-color); cursor: pointer; }
         </style>
       `;
   }
@@ -1343,19 +1703,54 @@ class TaskOrganizerCard extends HTMLElement {
         
         <div id="task-modal" class="modal">
             <div class="modal-content">
-                <h2 style="margin: 0 0 20px 0;">${this.localize('task')}</h2>
-                
-                <div class="task-type-selector">
-                    <button class="type-btn" id="btn-type-recurring">${this.localize('recurring')}</button>
-                    <button class="type-btn" id="btn-type-onetime">${this.localize('onetime')}</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">${this.localize('task')}</h2>
+                    <div class="task-type-selector" style="margin-bottom:0;" data-active="recurring">
+                        <div class="type-slider"></div>
+                        <button class="type-btn" id="btn-type-recurring">
+                            <ha-icon icon="mdi:calendar-sync"></ha-icon>
+                            <span>${this.localize('recurring')}</span>
+                        </button>
+                        <button class="type-btn" id="btn-type-onetime">
+                            <ha-icon icon="mdi:calendar-check"></ha-icon>
+                            <span>${this.localize('onetime')}</span>
+                        </button>
+                    </div>
                 </div>
+                
+                <div class="tabs-container">
+                    <button class="scroll-indicator" id="scroll-left" style="display: none;">&lt;</button>
+                    <div class="tabs" id="tabs-scroll">
+                        <button class="tab-btn active" data-tab="tab-general">
+                            <ha-icon icon="mdi:information-outline"></ha-icon>
+                            <span>${this.localize('tab_general')}</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tab-time">
+                            <ha-icon icon="mdi:clock-outline"></ha-icon>
+                            <span>${this.localize('tab_time')}</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tab-subtasks">
+                            <ha-icon icon="mdi:format-list-checks"></ha-icon>
+                            <span>${this.localize('tab_subtasks')}</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tab-other">
+                            <ha-icon icon="mdi:dots-grid"></ha-icon>
+                            <span>${this.localize('tab_other')}</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tab-history">
+                            <ha-icon icon="mdi:history"></ha-icon>
+                            <span>${this.localize('tab_history')}</span>
+                        </button>
+                    </div>
+                    <button class="scroll-indicator" id="scroll-right" style="display: none;">&gt;</button>
+                </div>
+                
+                <div class="tab-content active" id="tab-general">
 
-                <div style="display:flex; flex-direction:column; gap:16px;">
                     <div>
                         <ha-input id="f-name" label="${this.localize('name_lbl')}" style="width: 100%;"></ha-input>
                         <div id="template-suggestions"></div>
                     </div>
-                    <ha-input id="f-description" label="${this.localize('desc_lbl')}"></ha-input>
                     
                     <div class="form-row">
                         <ha-input id="f-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col"></ha-input>
@@ -1367,15 +1762,11 @@ class TaskOrganizerCard extends HTMLElement {
                             <label class="form-label">${this.localize('icon_lbl')}</label>
                             <ha-icon-picker id="f-icon-picker"></ha-icon-picker>
                         </div>
-                        <div class="form-col">
-                            <label class="form-label">${this.localize('area_lbl')}</label>
-                            <ha-area-picker id="f-area"></ha-area-picker>
-                        </div>
                     </div>
 
                     <div>
                         <label class="form-label">${this.localize('assignees_lbl')}</label>
-                        <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
+                        <div class="assignees-container">
                             ${Object.entries(this.users).map(([uid, name]) => `
                                 <ha-formfield label="${name}">
                                     <ha-checkbox class="assignee-cb" id="cb-${uid}" value="${uid}"></ha-checkbox>
@@ -1383,45 +1774,60 @@ class TaskOrganizerCard extends HTMLElement {
                             `).join('')}
                         </div>
                     </div>
-                    
-                    <div id="toggle-time-settings" class="collapsible-header">
-                        <span>${this.localize('time_settings')}</span>
-                        <ha-icon icon="mdi:chevron-down"></ha-icon>
-                    </div>
-                    <div id="time-settings-content" class="collapsible-content">
-                        <div style="display:flex; flex-direction:column; gap:16px;">
-                            <div style="display:flex; align-items:center; gap:16px;">
-                                <ha-formfield label="${this.localize('set_due_today')}">
-                                    <ha-switch id="f-set-due-date-cb"></ha-switch>
-                                </ha-formfield>
-                                <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:16px;">
-                                <ha-formfield label="${this.localize('override_overdue_lbl')}">
-                                    <ha-switch id="f-override-overdue-cb"></ha-switch>
-                                </ha-formfield>
-                                <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-input>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:16px;">
-                                <ha-formfield label="${this.localize('pause_until')}">
-                                    <ha-switch id="f-pause-cb"></ha-switch>
-                                </ha-formfield>
-                                <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
-                            </div>
+                </div>
+                
+                <div class="tab-content" id="tab-time">
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <ha-formfield label="${this.localize('set_due_today')}">
+                                <ha-switch id="f-set-due-date-cb"></ha-switch>
+                            </ha-formfield>
+                            <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <ha-formfield label="${this.localize('override_overdue_lbl')}">
+                                <ha-switch id="f-override-overdue-cb"></ha-switch>
+                            </ha-formfield>
+                            <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-input>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <ha-formfield label="${this.localize('pause_until')}">
+                                <ha-switch id="f-pause-cb"></ha-switch>
+                            </ha-formfield>
+                            <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
                         </div>
                     </div>
+                </div>
 
-                    <div id="toggle-subtasks" class="collapsible-header">
-                        <span>${this.localize('subtasks')}</span>
-                        <ha-icon icon="mdi:chevron-down"></ha-icon>
+                <div class="tab-content" id="tab-subtasks">
+                    <div class="subtask-input-row">
+                        <ha-input id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-input>
+                        <ha-button id="btn-add-subtask">${this.localize('confirm')}</ha-button>
                     </div>
-                    <div id="subtasks-content" class="collapsible-content">
-                        <div class="subtask-input-row">
-                            <ha-input id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-input>
-                            <ha-button id="btn-add-subtask">${this.localize('confirm')}</ha-button>
+                    <div id="subtask-list" class="subtask-list"></div>
+                </div>
+
+                <div class="tab-content" id="tab-other">
+                    <ha-input id="f-description" label="${this.localize('desc_lbl')}"></ha-input>
+                    <div>
+                        <label class="form-label">${this.localize('area_lbl')}</label>
+                        <ha-area-picker id="f-area"></ha-area-picker>
+                    </div>
+                    <div>
+                        <label class="form-label">Dateien</label>
+                        <div class="image-dropzone" id="f-image-dropzone">
+                            <div id="f-image-dropzone-text" style="display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;">
+                                <ha-icon icon="mdi:cloud-upload-outline"></ha-icon>
+                                <span>Dateien in den Rahmen ziehen oder hier klicken</span>
+                            </div>
+                            <div id="f-images-gallery" class="image-gallery"></div>
+                            <input type="file" id="f-images-upload" multiple accept="*/*" style="display: none;">
                         </div>
-                        <div id="subtask-list" class="subtask-list"></div>
                     </div>
+                </div>
+                
+                <div class="tab-content" id="tab-history">
+                    <div id="f-history-container"></div>
                 </div>
                 
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
@@ -1490,6 +1896,52 @@ class TaskOrganizerCard extends HTMLElement {
             }
         });
     }
+
+    // Tab switching logic
+    this.shadowRoot.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            this.shadowRoot.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.shadowRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const currentBtn = e.currentTarget;
+            const tabId = currentBtn.getAttribute('data-tab');
+            currentBtn.classList.add('active');
+            this.shadowRoot.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    const tabsScroll = this.shadowRoot.getElementById('tabs-scroll');
+    if (tabsScroll) {
+        tabsScroll.addEventListener('scroll', () => this._updateTabScrollIndicators());
+        window.addEventListener('resize', () => this._updateTabScrollIndicators());
+    }
+
+    // Image upload logic
+    const dropzone = this.shadowRoot.getElementById('f-image-dropzone');
+    const fileInput = this.shadowRoot.getElementById('f-images-upload');
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', (e) => {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+        fileInput.addEventListener('change', (e) => this._handleImageSelection(e));
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                this._handleImageSelection({ target: { files: e.dataTransfer.files } });
+            }
+        });
+    }
   }
 
   /**
@@ -1500,17 +1952,20 @@ class TaskOrganizerCard extends HTMLElement {
     const intervalField = this.shadowRoot.getElementById('f-interval');
     const btnOnetime = this.shadowRoot.getElementById('btn-type-onetime');
     const btnRecurring = this.shadowRoot.getElementById('btn-type-recurring');
+    const selector = this.shadowRoot.querySelector('.task-type-selector');
 
     if (isOnetime) {
         intervalField.disabled = true;
         intervalField.value = 0;
         btnOnetime.classList.add('active');
         btnRecurring.classList.remove('active');
+        if (selector) selector.setAttribute('data-active', 'onetime');
     } else {
         intervalField.disabled = false;
         if (intervalField.value == 0) intervalField.value = 7;
         btnOnetime.classList.remove('active');
         btnRecurring.classList.add('active');
+        if (selector) selector.setAttribute('data-active', 'recurring');
     }
   }
 
@@ -1558,7 +2013,6 @@ class TaskOrganizerCard extends HTMLElement {
         
         this._subtasks = t.subtasks ? JSON.parse(JSON.stringify(t.subtasks)) : [];
         this._renderModalSubtasks();
-        this._setSectionState('subtasks-content', this._subtasks.length > 0);
 
         const isOnetimeSelected = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
         if (isOnetimeSelected) {
@@ -1798,6 +2252,7 @@ class TaskOrganizerCard extends HTMLElement {
                         <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${task.name}</span>
                         ${task.subtasks?.length > 0 ? `<ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${subtaskTooltip}"></ha-icon>` : ''}
                         ${task.interval === 0 ? `<ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${this.localize('onetime')}"></ha-icon>` : ''}
+                        ${task.images?.length > 0 ? `<ha-icon icon="mdi:paperclip" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="Task beinhaltet ${task.images.length} Datei${task.images.length !== 1 ? 'en' : ''}"></ha-icon>` : ''}
                     </div>
                     <div class="task-meta">${areaName ? areaName + ' • ' : ''}${timeText} • ${task.complexity} ${this.localize('points')}${progressText}</div>
                     <div class="assignees-icons">${assigneeHtml}</div>

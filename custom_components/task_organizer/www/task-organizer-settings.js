@@ -8,6 +8,7 @@ const I18N_SETTINGS = {
     title: "Settings", colors: "Colors (Done, Due, Overdue)", c_done: "Done", c_due: "Due", c_overdue: "Overdue", 
     days_overdue: "Overdue after (Days)", save: "Save Settings", advanced: "ADVANCED SETTINGS", cancel: "Cancel",
     archive_btn: "Archive and reset monthly points now", factory_btn: "🔥 Factory reset (Delete everything)", 
+    clear_history_btn: "Clear Audit Log", confirm_clear_history: "Do you really want to clear the entire task audit log?",
     success: "Settings saved!", confirm_reset: "Do you really want to reset all points? Data will be archived.", 
     confirm_factory: "WARNING: This permanently deletes ALL tasks, points, and history!",
     import_export: "Import & Export", export_btn: "Export Tasks", import_btn: "Import Tasks", 
@@ -30,7 +31,8 @@ const I18N_SETTINGS = {
     desc_lbl: "Description (optional)", area_lbl: "Area", points_lbl: "Points (1-10)", icon_lbl: "Icon",
     interval_lbl: "Days (Interval)", assignees_lbl: "Assignees",
     cancel: "Cancel", save: "Save",
-    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points", export_settings_cb: "Settings",
+    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "Protocol (Points)", export_settings_cb: "Settings",
+    export_audit_log_cb: "History",
     no_desc: "No description", onetime: "One-time",
     show_advanced_lbl: "Show Advanced Settings",
     height_lbl: "Height",
@@ -40,13 +42,15 @@ const I18N_SETTINGS = {
     transparency_lbl: "Transparency", color_adjustments: "Color Adjustments",
     set_default: "Set Default",
     import_tasks_title: "Import Tasks", metadata_title: "Import Overview", tasks_lbl: "Tasks", 
-    templates_lbl: "Templates", history_lbl: "History Entries", settings_included: "Settings", 
-    yes: "Yes", no: "No", start_import: "Start Import", confirm_reload: "Confirm & Reload"
+    templates_lbl: "Templates", audit_log_lbl: "History Entries", history_lbl: "Protocol Entries", settings_included: "Settings", 
+    yes: "Yes", no: "No", start_import: "Start Import", confirm_reload: "Confirm & Reload",
+    export_images_lbl: "Files / Images", export_images_info: "Note: Attached files and images are not included in the JSON export. They are automatically backed up via the regular, full Home Assistant backup!"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
     days_overdue: "Überfällig nach (Tagen)", save: "Einstellungen speichern", advanced: "ERWEITERTE EINSTELLUNGEN", cancel: "Abbrechen",
     archive_btn: "Monats-Punkte archivieren und zurücksetzen", factory_btn: "🔥 Werkseinstellungen setzen (Alles löschen)", 
+    clear_history_btn: "Historie bereinigen", confirm_clear_history: "Möchtest du das gesamte Aufgaben-Protokoll löschen?",
     success: "Einstellungen erfolgreich gespeichert!", confirm_reset: "Möchtest du alle monatlichen Punkte wirklich auf 0 setzen? Die Daten werden archiviert.", 
     confirm_factory: "ACHTUNG: Dies löscht unwiderruflich ALLE Aufgaben, Punkte und die Historie!", 
     import_export: "Import & Export", export_btn: "Aufgaben exportieren", import_btn: "Aufgaben importieren", 
@@ -69,7 +73,8 @@ const I18N_SETTINGS = {
     desc_lbl: "Beschreibung (optional)", area_lbl: "Bereich", points_lbl: "Punkte (1-10)", icon_lbl: "Icon",
     interval_lbl: "Tage (Intervall)", assignees_lbl: "Bearbeiter",
     cancel: "Abbrechen", save: "Speichern",
-    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie", export_settings_cb: "Einstellungen",
+    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll (Punkte)", export_settings_cb: "Einstellungen",
+    export_audit_log_cb: "Historie",
     no_desc: "Keine Beschreibung", onetime: "Einmalig",
     show_advanced_lbl: "Erweiterte Einstellungen anzeigen",
     height_lbl: "Höhe",
@@ -78,9 +83,10 @@ const I18N_SETTINGS = {
     color_done_lbl: "Farbe Erledigt", color_due_lbl: "Farbe Fällig", color_overdue_lbl: "Farbe Überfällig",
     transparency_lbl: "Transparenz", color_adjustments: "Farbanpassungen",
     set_default: "Standard setzen",
-    import_tasks_title: "Aufgaben importieren", metadata_title: "Import Übersicht", tasks_lbl: "Aufgaben", 
-    templates_lbl: "Vorlagen", history_lbl: "Historien-Einträge", settings_included: "Einstellungen", 
-    yes: "Ja", no: "Nein", start_import: "Import starten", confirm_reload: "Bestätigen & Neuladen"
+    import_tasks_title: "Aufgaben importieren", metadata_title: "Import-Übersicht", tasks_lbl: "Aufgaben", 
+    templates_lbl: "Vorlagen", audit_log_lbl: "Historie-Einträge", history_lbl: "Protokoll-Einträge", settings_included: "Einstellungen", 
+    yes: "Ja", no: "Nein", start_import: "Import starten", confirm_reload: "Bestätigen & Neuladen",
+    export_images_lbl: "Dateien / Bilder", export_images_info: "Hinweis: Hinterlegte Dateien und Bilder sind im JSON-Export nicht enthalten. Diese werden automatisch über das reguläre, vollständige Home Assistant Backup mitgesichert!"
   }
 };
 
@@ -121,6 +127,7 @@ class TaskOrganizerSettings extends HTMLElement {
     this._templatesOpen = false;
     this._templateModalOpen = false;
     this._importModalOpen = false;
+    this._exportModalOpen = false;
     this._importState = 'initial';
     this._importData = null;
     this._importProgress = 0;
@@ -254,6 +261,7 @@ class TaskOrganizerSettings extends HTMLElement {
       this.tasks = data.tasks || {};
       this.templates = data.templates || {};
       this.history = data.history || [];
+      this.audit_log = data.audit_log || [];
       this.points = data.points || {};
       this.monthly_history = data.monthly_history || {};
       this.current_month = data.current_month;
@@ -301,6 +309,18 @@ class TaskOrganizerSettings extends HTMLElement {
         this._fetchData(); 
       }); 
     } 
+  }
+
+  /**
+   * Clears the audit log / task protocol history.
+   */
+  _clearHistory() {
+    if (confirm(this.localize('confirm_clear_history'))) {
+      this._hass.callWS({ type: 'task_organizer/clear_audit_log' }).then(() => {
+        this._showToast(this.localize('success'));
+        this._fetchData();
+      });
+    }
   }
 
   /**
@@ -357,7 +377,9 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (id === 'templates-toggle') { this._templatesOpen = !this._templatesOpen; this._render(); }
     else if (id === 'adv-toggle') { this._advancedOpen = !this._advancedOpen; this._render(); }
     else if (id === 'goals-toggle') { this._goalsOpen = !this._goalsOpen; this._render(); }
-    else if (id === 'btn-export') this._exportTasks();
+    else if (id === 'btn-export-trigger') { this._exportModalOpen = true; this._render(); }
+    else if (id === 'btn-export-cancel') { this._exportModalOpen = false; this._render(); }
+    else if (id === 'btn-export-start') { this._exportTasks(); this._exportModalOpen = false; this._render(); }
     else if (id === 'btn-import-trigger') this._openImportModal();
     else if (id === 'btn-import-cancel') this._closeImportModal();
     else if (id === 'btn-import-start') this._startImport();
@@ -366,6 +388,7 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (target.classList.contains('btn-edit-template')) this._openTemplateModal(target.dataset.id);
     else if (target.classList.contains('btn-delete-template')) this._deleteTemplate(target.dataset.id);
     else if (id === 'btn-reset') this._triggerReset();
+    else if (id === 'btn-clear-history') this._clearHistory();
     else if (id === 'btn-factory') this._factoryReset();
     // Modal Handlers
     else if (id === 'btn-modal-cancel') this._closeTemplateModal();
@@ -583,11 +606,13 @@ class TaskOrganizerSettings extends HTMLElement {
     const exportTasks = this.shadowRoot.getElementById('cb-export-tasks').checked;
     const exportTemplates = this.shadowRoot.getElementById('cb-export-templates').checked;
     const exportHistory = this.shadowRoot.getElementById('cb-export-history').checked;
+    const exportAuditLog = this.shadowRoot.getElementById('cb-export-audit-log').checked;
     const exportSettings = this.shadowRoot.getElementById('cb-export-settings').checked;
     
     let dataToExport = {};
     if (exportTasks) dataToExport.tasks = this.tasks;
     if (exportTemplates) dataToExport.templates = this.templates;
+    if (exportAuditLog) dataToExport.audit_log = this.audit_log;
     if (exportHistory) {
       dataToExport.history = this.history;
       dataToExport.points = this.points;
@@ -634,10 +659,11 @@ class TaskOrganizerSettings extends HTMLElement {
         
         let payload = { type: 'task_organizer/import_tasks' };
         
-        if (importedData.tasks || importedData.templates || importedData.history || importedData.settings) {
+        if (importedData.tasks || importedData.templates || importedData.history || importedData.settings || importedData.audit_log) {
             if (importedData.tasks) payload.tasks = importedData.tasks;
             if (importedData.templates) payload.templates = importedData.templates;
             if (importedData.settings) payload.settings = importedData.settings;
+            if (importedData.audit_log) payload.audit_log = importedData.audit_log;
             if (importedData.history) {
                 payload.history = importedData.history;
                 if (importedData.points) payload.points = importedData.points;
@@ -837,22 +863,8 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
           </div>
           <div class="section-content ${this._ieOpen ? 'open' : ''}">
-            <div style="display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap;">
-              <ha-formfield label="${this.localize('export_tasks_cb')}">
-                <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_templates_cb')}">
-                <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_history_cb')}">
-                <ha-checkbox id="cb-export-history"></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_settings_cb')}">
-                <ha-checkbox id="cb-export-settings" checked></ha-checkbox>
-              </ha-formfield>
-            </div>
             <div style="display: flex; gap: 10px; width: 100%;">
-              <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
+              <button class="btn btn-export" id="btn-export-trigger" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
               <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
             </div>
           </div>
@@ -935,6 +947,7 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
             <div class="section-content ${this._advancedOpen ? 'open' : ''}">
               <button class="btn btn-reset" id="btn-reset" title="${this.localize('confirm_reset')}">${this.localize('archive_btn')}</button>
+              <button class="btn btn-clear-history" id="btn-clear-history" title="${this.localize('confirm_clear_history')}" style="background-color: var(--warning-color, #ff9800); color: white;">${this.localize('clear_history_btn')}</button>
               <button class="btn btn-factory" id="btn-factory" title="${this.localize('confirm_factory')}">${this.localize('factory_btn')}</button>
             </div>
           </div>
@@ -1000,6 +1013,41 @@ class TaskOrganizerSettings extends HTMLElement {
         </div>
       </div>
 
+      <div id="export-modal" class="modal ${this._exportModalOpen ? 'open' : ''}">
+        <div class="modal-content">
+            <h2>${this.localize('export_btn')}</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+              <ha-formfield label="${this.localize('export_tasks_cb')}">
+                <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
+              </ha-formfield>
+              <ha-formfield label="${this.localize('export_templates_cb')}">
+                <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
+              </ha-formfield>
+              <ha-formfield label="${this.localize('export_audit_log_cb')}">
+                <ha-checkbox id="cb-export-audit-log" checked></ha-checkbox>
+              </ha-formfield>
+              <ha-formfield label="${this.localize('export_history_cb')}">
+                <ha-checkbox id="cb-export-history" checked></ha-checkbox>
+              </ha-formfield>
+              <ha-formfield label="${this.localize('export_settings_cb')}">
+                <ha-checkbox id="cb-export-settings" checked></ha-checkbox>
+              </ha-formfield>
+              
+              <div title="${this.localize('export_images_info')}" style="cursor: help; width: max-content;">
+                <ha-formfield label="${this.localize('export_images_lbl')}">
+                  <ha-checkbox id="cb-export-images" disabled style="opacity: 0.5;"></ha-checkbox>
+                </ha-formfield>
+              </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <ha-button appearance="plain" variant="brand" id="btn-export-cancel">${this.localize('cancel')}</ha-button>
+              <ha-button raised id="btn-export-start">${this.localize('export_btn')}</ha-button>
+            </div>
+        </div>
+      </div>
+
       <div id="import-modal" class="modal ${this._importModalOpen ? 'open' : ''}">
         <div class="modal-content">
             <h2>${this.localize('import_tasks_title')}</h2>
@@ -1014,6 +1062,7 @@ class TaskOrganizerSettings extends HTMLElement {
                  <h4 style="margin: 0 0 8px 0;">${this.localize('metadata_title')}</h4>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('tasks_lbl')}:</span> <span>${this._importData.tasks ? Object.keys(this._importData.tasks).length : 0}</span></div>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('templates_lbl')}:</span> <span>${this._importData.templates ? Object.keys(this._importData.templates).length : 0}</span></div>
+                 <div style="display: flex; justify-content: space-between;"><span>${this.localize('audit_log_lbl')}:</span> <span>${this._importData.audit_log ? this._importData.audit_log.length : 0}</span></div>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('history_lbl')}:</span> <span>${this._importData.history ? this._importData.history.length : 0}</span></div>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('settings_included')}:</span> <span>${this._importData.settings ? this.localize('yes') : this.localize('no')}</span></div>
               </div>
@@ -1041,6 +1090,7 @@ class TaskOrganizerSettings extends HTMLElement {
     // Bind click events
     this.shadowRoot.querySelector('ha-card').addEventListener('click', (ev) => this._handleClick(ev));
     this.shadowRoot.querySelector('#template-modal').addEventListener('click', (ev) => this._handleClick(ev));
+    this.shadowRoot.querySelector('#export-modal').addEventListener('click', (ev) => this._handleClick(ev));
     this.shadowRoot.querySelector('#import-modal').addEventListener('click', (ev) => this._handleClick(ev));
 
     // Bind File Import
