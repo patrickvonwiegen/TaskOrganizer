@@ -89,7 +89,13 @@ add_task:
       description: A list of subtasks (objects with 'title' and 'done' keys).
       required: false
       selector:
-        object:
+        object: {}
+    active_months:
+      name: Active Months (Optional)
+      description: List of months (1-12) the task is active in.
+      required: false
+      selector:
+        object: {}
 
 set_task_due_by_name:
   name: Set task due
@@ -203,7 +209,13 @@ edit_task_by_name:
       description: A list of subtasks.
       required: false
       selector:
-        object:
+        object: {}
+    active_months:
+      name: Active Months (Optional)
+      description: List of months (1-12) the task is active in.
+      required: false
+      selector:
+        object: {}
 
 add_template:
   name: Add template
@@ -260,7 +272,7 @@ add_template:
       description: A list of subtasks for this template.
       required: false
       selector:
-        object:
+        object: {}
 
 remove_template_by_name:
   name: Remove template
@@ -296,7 +308,7 @@ edit_template_by_name:
       description: The new list of subtasks.
       required: false
       selector:
-        object:
+        object: {}
     description:
       name: Description (Optional)
       description: Additional info.

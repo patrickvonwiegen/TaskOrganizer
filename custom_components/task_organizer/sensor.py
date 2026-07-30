@@ -108,6 +108,10 @@ class TaskOrganizerDueTasksSensor(TaskOrganizerBaseSensor):
                     paused_date = dt_util.parse_datetime(paused_until_str).date()
                     if now <= paused_date:
                         is_paused = True
+                
+                active_months = task.get("active_months")
+                if active_months and (now.month not in active_months):
+                    is_paused = True
 
                 due_date = dt_util.parse_datetime(task["due_date"]).date()
                 task_overdue_days = task.get("override_overdue_days")
@@ -158,6 +162,10 @@ class TaskOrganizerOverdueTasksSensor(TaskOrganizerBaseSensor):
                     paused_date = dt_util.parse_datetime(paused_until_str).date()
                     if now <= paused_date:
                         is_paused = True
+                
+                active_months = task.get("active_months")
+                if active_months and (now.month not in active_months):
+                    is_paused = True
 
                 due_date = dt_util.parse_datetime(task["due_date"]).date()
                 task_overdue_days = task.get("override_overdue_days")
@@ -204,6 +212,10 @@ class TaskOrganizerDueAndOverdueTasksSensor(TaskOrganizerBaseSensor):
                     paused_date = dt_util.parse_datetime(paused_until_str).date()
                     if now <= paused_date:
                         is_paused = True
+                
+                active_months = task.get("active_months")
+                if active_months and (now.month not in active_months):
+                    is_paused = True
 
                 due_date = dt_util.parse_datetime(task["due_date"]).date()
                 if not is_paused and due_date <= now:

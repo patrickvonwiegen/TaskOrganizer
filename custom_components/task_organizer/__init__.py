@@ -371,6 +371,7 @@ async def ws_complete_task(hass: HomeAssistant, connection: websocket_api.Active
     vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
     vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
+    vol.Optional("active_months"): vol.Any([int], None),
     vol.Optional("subtasks"): cv.ensure_list,
     vol.Optional("images"): cv.ensure_list,
 })
@@ -404,6 +405,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
         "due_date": due_date, 
         "paused_until": msg.get("paused_until"),
         "override_overdue_days": msg.get("override_overdue_days"),
+        "active_months": msg.get("active_months"),
         "subtasks": msg.get("subtasks", []),
         "images": msg.get("images", [])
     }
@@ -430,6 +432,7 @@ async def ws_add_task(hass: HomeAssistant, connection: websocket_api.ActiveConne
     vol.Optional("custom_due_date"): vol.Any(str, None),
     vol.Optional("paused_until"): vol.Any(str, None),
     vol.Optional("override_overdue_days"): vol.Any(vol.All(int, vol.Range(min=0, max=9999)), None),
+    vol.Optional("active_months"): vol.Any([int], None),
     vol.Optional("subtasks"): cv.ensure_list,
     vol.Optional("images"): cv.ensure_list,
 })
@@ -451,7 +454,7 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         
     task_ref = data["tasks"][task_id]
     original_task = dict(task_ref)
-    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon", "subtasks", "images"]
+    keys_to_update = ["name", "description", "area", "interval", "assignees", "complexity", "category", "icon", "subtasks", "images", "active_months"]
     
     for key in keys_to_update:
         if key in msg: 
@@ -1101,6 +1104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "due_date": dt_util.utcnow().isoformat(), 
             "paused_until": None,
             "override_overdue_days": call.data.get("override_overdue_days"),
+            "active_months": call.data.get("active_months"),
             "subtasks": call.data.get("subtasks") or (template.get("subtasks", []) if template else [])
         }
         data["tasks"][task_id] = new_task_data
@@ -1187,7 +1191,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if "new_name" in call.data:
             task_ref["name"] = call.data["new_name"]
         
-        keys_to_update = ["description", "area", "interval", "complexity", "category", "icon", "subtasks"]
+        keys_to_update = ["description", "area", "interval", "complexity", "category", "icon", "subtasks", "active_months"]
         for key in keys_to_update:
             if key in call.data: 
                 task_ref[key] = call.data[key]

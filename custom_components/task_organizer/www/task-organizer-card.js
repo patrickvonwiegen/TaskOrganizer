@@ -15,9 +15,9 @@ const I18N_CARD = {
     assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
     task_type: "Task Type", onetime: "One-time", recurring: "Recurring",
     recreate_task_prompt: "Create '{taskName}' from a template?",
-    set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
+    set_due_today: "Set due date", pause_until: "Pause until", restrict_months_lbl: "Restrict to months", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
     override_overdue_lbl: "Task specific overdue", override_overdue_days_placeholder: "Days",
-    time_settings: "Time Settings", subtasks: "Subtasks", 
+    time_settings: "Time Settings", subtasks: "Subtasks", seasonal_pause: "Seasonal Pause",
     add_subtask: "Add Subtask", subtask_placeholder: "Subtask title...",
     completed_percent: "{percent}%",
     confirm_task_complete: "All subtasks are done. Do you want to complete the main task now?",
@@ -53,9 +53,9 @@ const I18N_CARD = {
     assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
     task_type: "Aufgabentyp", onetime: "Einmalig", recurring: "Wiederkehrend",
     recreate_task_prompt: "Möchtest du '{taskName}' aus einer Vorlage erstellen?",
-    set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
+    set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", restrict_months_lbl: "Auf Monate beschränken", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
     override_overdue_lbl: "Aufgabenspezifische Überfälligkeit", override_overdue_days_placeholder: "Tage",
-    time_settings: "Zeit", subtasks: "Unteraufgaben",
+    time_settings: "Zeit", subtasks: "Unteraufgaben", seasonal_pause: "Saisonale Pause",
     add_subtask: "Unteraufgabe hinzufügen", subtask_placeholder: "Titel der Unteraufgabe...",
     completed_percent: "{percent}%",
     confirm_task_complete: "Alle Unteraufgaben sind erledigt. Möchtest du die Hauptaufgabe jetzt abschließen?",
@@ -1035,11 +1035,35 @@ class TaskOrganizerCard extends HTMLElement {
         if (t.paused_until && new Date(t.paused_until) >= now) {
             this.shadowRoot.getElementById('f-pause-cb').checked = true;
             this.shadowRoot.getElementById('f-pause-date').value = t.paused_until;
-            this.shadowRoot.getElementById('f-pause-date').disabled = false;
+            this.shadowRoot.getElementById('f-pause-date').style.display = '';
         } else {
             this.shadowRoot.getElementById('f-pause-cb').checked = false;
             this.shadowRoot.getElementById('f-pause-date').value = "";
-            this.shadowRoot.getElementById('f-pause-date').disabled = true;
+            this.shadowRoot.getElementById('f-pause-date').style.display = 'none';
+        }
+
+        if (t.active_months && t.active_months.length > 0) {
+            this.shadowRoot.getElementById('f-restrict-months-cb').checked = true;
+            this.shadowRoot.getElementById('f-months-band').style.display = 'flex';
+            this.shadowRoot.querySelectorAll('#f-months-band .month-pill').forEach(p => {
+                if (t.active_months.includes(parseInt(p.dataset.month))) {
+                    p.classList.add('selected');
+                    p.style.background = 'var(--primary-color)';
+                    p.style.color = 'var(--text-primary-color)';
+                } else {
+                    p.classList.remove('selected');
+                    p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                    p.style.color = 'var(--primary-text-color)';
+                }
+            });
+        } else {
+            this.shadowRoot.getElementById('f-restrict-months-cb').checked = false;
+            this.shadowRoot.getElementById('f-months-band').style.display = 'none';
+            this.shadowRoot.querySelectorAll('#f-months-band .month-pill').forEach(p => {
+                p.classList.remove('selected');
+                p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                p.style.color = 'var(--primary-text-color)';
+            });
         }
     } else {
         this.shadowRoot.getElementById('f-name').value = ""; 
@@ -1057,11 +1081,19 @@ class TaskOrganizerCard extends HTMLElement {
 
         this.shadowRoot.getElementById('f-pause-cb').checked = false;
         this.shadowRoot.getElementById('f-pause-date').value = "";
-        this.shadowRoot.getElementById('f-pause-date').disabled = true;
+        this.shadowRoot.getElementById('f-pause-date').style.display = 'none';
+
+        this.shadowRoot.getElementById('f-restrict-months-cb').checked = false;
+        this.shadowRoot.getElementById('f-months-band').style.display = 'none';
+        this.shadowRoot.querySelectorAll('#f-months-band .month-pill').forEach(p => {
+            p.classList.remove('selected');
+            p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+            p.style.color = 'var(--primary-text-color)';
+        });
 
         this.shadowRoot.getElementById('f-override-overdue-cb').checked = false;
         this.shadowRoot.getElementById('f-override-overdue-days').value = "";
-        this.shadowRoot.getElementById('f-override-overdue-days').disabled = true;
+        this.shadowRoot.getElementById('f-override-overdue-days').style.display = 'none';
 
     }
     
@@ -1070,7 +1102,7 @@ class TaskOrganizerCard extends HTMLElement {
     if (setDueDateCb && customDueDateInput) {
         setDueDateCb.checked = false;
         customDueDateInput.value = "";
-        customDueDateInput.disabled = true;
+        customDueDateInput.style.display = 'none';
     }
 
     const overrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb');
@@ -1080,10 +1112,10 @@ class TaskOrganizerCard extends HTMLElement {
         if (t.override_overdue_days !== null && t.override_overdue_days !== undefined) {
             overrideOverdueCb.checked = true;
             overrideOverdueDays.value = t.override_overdue_days;
-            overrideOverdueDays.disabled = false;
+            overrideOverdueDays.style.display = '';
         } else {
             overrideOverdueCb.checked = false;
-            overrideOverdueDays.disabled = true;
+            overrideOverdueDays.style.display = 'none';
         }
     }
 
@@ -1492,6 +1524,16 @@ class TaskOrganizerCard extends HTMLElement {
     const pauseDateVal = this.shadowRoot.getElementById('f-pause-date')?.value;
     const pausedUntil = (isPausedCb && pauseDateVal) ? pauseDateVal : null;
 
+    const isRestrictMonthsCb = this.shadowRoot.getElementById('f-restrict-months-cb')?.checked || false;
+    let activeMonths = null;
+    if (isRestrictMonthsCb) {
+        activeMonths = [];
+        this.shadowRoot.querySelectorAll('#f-months-band .month-pill.selected').forEach(p => {
+            activeMonths.push(parseInt(p.dataset.month));
+        });
+        if (activeMonths.length === 0) activeMonths = null;
+    }
+
     const isOverrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb')?.checked || false;
     const overrideOverdueDaysVal = this.shadowRoot.getElementById('f-override-overdue-days')?.value;
     const overrideOverdueDays = (isOverrideOverdueCb && overrideOverdueDaysVal) ? (parseInt(overrideOverdueDaysVal) || null) : null;
@@ -1507,6 +1549,7 @@ class TaskOrganizerCard extends HTMLElement {
       assignees: assignees,
       custom_due_date: customDueDate,
       paused_until: pausedUntil,
+      active_months: activeMonths,
       override_overdue_days: overrideOverdueDays,
       subtasks: this._subtasks,
       images: this._currentTaskImages
@@ -1778,23 +1821,34 @@ class TaskOrganizerCard extends HTMLElement {
                 
                 <div class="tab-content" id="tab-time">
                     <div style="display:flex; flex-direction:column; gap:16px;">
-                        <div style="display:flex; align-items:center; gap:16px;">
+                        <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
                             <ha-formfield label="${this.localize('set_due_today')}">
                                 <ha-switch id="f-set-due-date-cb"></ha-switch>
                             </ha-formfield>
-                            <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
+                            <input type="date" id="f-custom-due-date" style="width:100%; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit; display: none;">
                         </div>
-                        <div style="display:flex; align-items:center; gap:16px;">
+                        <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
                             <ha-formfield label="${this.localize('override_overdue_lbl')}">
                                 <ha-switch id="f-override-overdue-cb"></ha-switch>
                             </ha-formfield>
-                            <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-input>
+                            <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="width:100%; display: none;" placeholder="${this.localize('override_overdue_days_placeholder')}"></ha-input>
                         </div>
-                        <div style="display:flex; align-items:center; gap:16px;">
+                        <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
                             <ha-formfield label="${this.localize('pause_until')}">
                                 <ha-switch id="f-pause-cb"></ha-switch>
                             </ha-formfield>
-                            <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
+                            <input type="date" id="f-pause-date" style="width:100%; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit; display: none;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <ha-formfield label="${this.localize('restrict_months_lbl')}">
+                                <ha-switch id="f-restrict-months-cb"></ha-switch>
+                            </ha-formfield>
+                            <div id="f-months-band" style="display:none; flex-wrap:wrap; gap:8px; margin-top:8px;">
+                                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
+                                    const mName = new Date(2000, m-1, 1).toLocaleString(this._hass?.language || 'de', { month: 'short' });
+                                    return `<div class="month-pill" data-month="${m}" style="padding: 8px 12px; border-radius: 16px; background: var(--secondary-background-color, #e0e0e0); color: var(--primary-text-color); border: 1px solid var(--divider-color); cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s;">${mName}</div>`;
+                                }).join('')}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1865,7 +1919,7 @@ class TaskOrganizerCard extends HTMLElement {
     const pauseDate = this.shadowRoot.getElementById('f-pause-date');
     if (pauseCb && pauseDate) {
         pauseCb.addEventListener('change', (e) => {
-            pauseDate.disabled = !e.target.checked;
+            pauseDate.style.display = e.target.checked ? '' : 'none';
             if (e.target.checked && !pauseDate.value) {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1874,11 +1928,39 @@ class TaskOrganizerCard extends HTMLElement {
         });
     }
 
+    const restrictMonthsCb = this.shadowRoot.getElementById('f-restrict-months-cb');
+    const monthsBand = this.shadowRoot.getElementById('f-months-band');
+    if (restrictMonthsCb && monthsBand) {
+        restrictMonthsCb.addEventListener('change', (e) => {
+            monthsBand.style.display = e.target.checked ? 'flex' : 'none';
+            if (!e.target.checked) {
+                monthsBand.querySelectorAll('.month-pill').forEach(p => {
+                    p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                    p.style.color = 'var(--primary-text-color)';
+                    p.classList.remove('selected');
+                });
+            }
+        });
+        monthsBand.querySelectorAll('.month-pill').forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                const p = e.target;
+                p.classList.toggle('selected');
+                if (p.classList.contains('selected')) {
+                    p.style.background = 'var(--primary-color)';
+                    p.style.color = 'var(--text-primary-color)';
+                } else {
+                    p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                    p.style.color = 'var(--primary-text-color)';
+                }
+            });
+        });
+    }
+
     const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
     const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
     if (setDueDateCb && customDueDateInput) {
         setDueDateCb.addEventListener('change', (e) => {
-            customDueDateInput.disabled = !e.target.checked;
+            customDueDateInput.style.display = e.target.checked ? '' : 'none';
             if (e.target.checked && !customDueDateInput.value) {
                 const today = new Date();
                 customDueDateInput.value = today.toISOString().split('T')[0];
@@ -1890,7 +1972,7 @@ class TaskOrganizerCard extends HTMLElement {
     const overrideOverdueDays = this.shadowRoot.getElementById('f-override-overdue-days');
     if (overrideOverdueCb && overrideOverdueDays) {
         overrideOverdueCb.addEventListener('change', (e) => {
-            overrideOverdueDays.disabled = !e.target.checked;
+            overrideOverdueDays.style.display = e.target.checked ? '' : 'none';
             if (!e.target.checked) {
                 overrideOverdueDays.value = "";
             }
@@ -2086,7 +2168,13 @@ class TaskOrganizerCard extends HTMLElement {
         d.setHours(0,0,0,0);
         
         const diff = Math.round((d - nowForSort) / (1000 * 60 * 60 * 24));
-        const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+        let isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+        if (task.active_months && task.active_months.length > 0) {
+            const currentMonth = nowForSort.getMonth() + 1;
+            if (!task.active_months.includes(currentMonth)) {
+                isPaused = true;
+            }
+        }
         const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined)
             ? task.override_overdue_days : this.settings.overdue_days;
         const overdueDiff = -overdueThreshold;
@@ -2180,7 +2268,13 @@ class TaskOrganizerCard extends HTMLElement {
       now.setHours(0,0,0,0);
       
       const diff = Math.round((d - now) / (1000 * 60 * 60 * 24));
-      const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+      let isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+      if (task.active_months && task.active_months.length > 0) {
+          const currentMonth = nowForSort.getMonth() + 1;
+          if (!task.active_months.includes(currentMonth)) {
+              isPaused = true;
+          }
+      }
       const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined)
         ? task.override_overdue_days
         : this.settings.overdue_days;
@@ -2202,7 +2296,12 @@ class TaskOrganizerCard extends HTMLElement {
       
       if (isPaused) {
         borderColor = 'var(--disabled-text-color, #9e9e9e)'; 
-        timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
+        let isPausedByDate = task.paused_until && new Date(task.paused_until) > nowForSort;
+        if (isPausedByDate) {
+            timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
+        } else {
+            timeText = this.localize('seasonal_pause');
+        }
       } else {
         if (diff <= 0) { borderColor = configColorDue; transparency = transpDue; }
         if (diff <= -overdueThreshold) { borderColor = configColorOverdue; transparency = transpOverdue; }

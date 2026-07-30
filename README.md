@@ -34,7 +34,7 @@ Suggestions for improvement or bug reports are welcome.
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/4d5fa9ba-0a0c-4702-9797-f9da9f8363da" />
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/389f566d-ab40-4d2e-ada4-7e07b5e11011" />
 
-* **Interval Management**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date. Override the global overdue setting for individual tasks.
+* **Interval Management**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date. You can also restrict tasks to specific active months (seasonal tasks) and override the global overdue setting for individual tasks.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/41a75d46-6855-4be5-9bd4-65dec23bec90" />
 

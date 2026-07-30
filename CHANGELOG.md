@@ -5,6 +5,7 @@
 - **Redesigned Task Modal:** The task creation and editing modal has been completely redesigned with a new tabbed interface for better organization.
 - **File Attachments:** Added support for file attachments and image uploads to tasks.
 - **Task-History:** Added a detailed audit log and the ability to clear it or include it in JSON exports and imports.
+- **Seasonal Tasks:** Added the ability to restrict tasks to specific months (e.g., mowing the lawn only from April to October). Tasks will automatically be treated as paused during inactive months.
 
 ### 🐛 Bug Fixes
 - **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
