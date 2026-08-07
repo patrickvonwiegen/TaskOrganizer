@@ -163,7 +163,7 @@ show_user_select: true # Allows selecting a specific user
 ```
 
 ### 5. Settings (task-organizer-settings)
-Allows customization of colors, data export, and factory resets.
+Allows customization of colors, task behavior (overdue thresholds, points distribution), data export, and factory resets.
 
 <img width="385" height="713" alt="image" src="https://github.com/user-attachments/assets/119748db-9521-4125-b44e-71b9f21afebb" />
 

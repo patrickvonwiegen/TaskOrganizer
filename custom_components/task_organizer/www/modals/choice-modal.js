@@ -8,6 +8,7 @@ export class TaskOrganizerChoiceModal extends HTMLElement {
     this._task = null;
     this._users = {};
     this._hass = null;
+    this._settings = {};
     this._distribution = {};
     this._activeUids = [];
   }
@@ -16,11 +17,12 @@ export class TaskOrganizerChoiceModal extends HTMLElement {
     return localize(this._hass, key, replace);
   }
 
-  open(taskId, task, users, hass) {
+  open(taskId, task, users, hass, settings = {}) {
     this._taskId = taskId;
     this._task = task;
     this._users = users;
     this._hass = hass;
+    this._settings = settings;
     
     const currentUserId = this._hass.user?.id;
     const taskAssignees = Array.isArray(task.assignees) ? task.assignees : [];
@@ -85,6 +87,7 @@ export class TaskOrganizerChoiceModal extends HTMLElement {
     const totalComplexity = this._task.complexity || 5;
     let currentPointSum = 0;
     const ptsMap = {};
+    const forceFullDistribution = this._settings.full_points_distribution === true;
 
     this._activeUids.forEach(uid => {
         let pts = (this._distribution[uid] / 100) * totalComplexity;
@@ -94,7 +97,7 @@ export class TaskOrganizerChoiceModal extends HTMLElement {
     });
 
     let diff = totalComplexity - currentPointSum;
-    if (diff !== 0) {
+    if (diff !== 0 && (diff < 0 || forceFullDistribution)) {
         const eligibleUids = this._activeUids.filter(uid => uid !== excludeUid);
         const targetUids = eligibleUids.length > 0 ? eligibleUids : this._activeUids;
         const adjustUid = targetUids.sort((a, b) => ptsMap[b] - ptsMap[a])[0];

@@ -44,7 +44,8 @@ const I18N_SETTINGS = {
     import_tasks_title: "Import Tasks", metadata_title: "Import Overview", tasks_lbl: "Tasks", 
     templates_lbl: "Templates", audit_log_lbl: "History Entries", history_lbl: "Protocol Entries", settings_included: "Settings", 
     yes: "Yes", no: "No", start_import: "Start Import", confirm_reload: "Confirm & Reload",
-    export_images_lbl: "Files / Images", export_images_info: "Note: Attached files and images are not included in the JSON export. They are automatically backed up via the regular, full Home Assistant backup!"
+    export_images_lbl: "Files / Images", export_images_info: "Note: Attached files and images are not included in the JSON export. They are automatically backed up via the regular, full Home Assistant backup!",
+    task_behavior: "Task Behavior", full_points_distribution: "Complete points distribution"
   },
   de: { 
     title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
@@ -86,7 +87,8 @@ const I18N_SETTINGS = {
     import_tasks_title: "Aufgaben importieren", metadata_title: "Import-Übersicht", tasks_lbl: "Aufgaben", 
     templates_lbl: "Vorlagen", audit_log_lbl: "Historie-Einträge", history_lbl: "Protokoll-Einträge", settings_included: "Einstellungen", 
     yes: "Ja", no: "Nein", start_import: "Import starten", confirm_reload: "Bestätigen & Neuladen",
-    export_images_lbl: "Dateien / Bilder", export_images_info: "Hinweis: Hinterlegte Dateien und Bilder sind im JSON-Export nicht enthalten. Diese werden automatisch über das reguläre, vollständige Home Assistant Backup mitgesichert!"
+    export_images_lbl: "Dateien / Bilder", export_images_info: "Hinweis: Hinterlegte Dateien und Bilder sind im JSON-Export nicht enthalten. Diese werden automatisch über das reguläre, vollständige Home Assistant Backup mitgesichert!",
+    task_behavior: "Aufgabenverhalten", full_points_distribution: "Vollständige Punkteverteilung"
   }
 };
 
@@ -111,7 +113,7 @@ class TaskOrganizerSettings extends HTMLElement {
     this._themeView = 'light';
     
     // Global properties
-    this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', overdue_days: 5 };
+    this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', overdue_days: 5, full_points_distribution: false };
     this.tasks = {};
     this.users = {};
     this.templates = {};
@@ -124,6 +126,7 @@ class TaskOrganizerSettings extends HTMLElement {
     this._dataLoaded = false; 
     this._advancedOpen = false; 
     this._ieOpen = false; 
+    this._behaviorOpen = false;
     this._templatesOpen = false;
     this._templateModalOpen = false;
     this._importModalOpen = false;
@@ -291,6 +294,7 @@ class TaskOrganizerSettings extends HTMLElement {
     const newSettings = { 
       ...this.settings,
       overdue_days: parseInt(this.shadowRoot.getElementById('num-overdue').value),
+      full_points_distribution: this.shadowRoot.getElementById('full-points-toggle') ? this.shadowRoot.getElementById('full-points-toggle').checked : false,
       point_goals: pointGoals
     }; 
     
@@ -373,6 +377,7 @@ class TaskOrganizerSettings extends HTMLElement {
     }
     else if (id === 'color-toggle') { this._colorOpen = !this._colorOpen; this._render(); }
     else if (id === 'overdue-toggle') { this._overdueOpen = !this._overdueOpen; this._render(); }
+    else if (id === 'behavior-toggle') { this._behaviorOpen = !this._behaviorOpen; this._render(); }
     else if (id === 'ie-toggle') { this._ieOpen = !this._ieOpen; this._render(); }
     else if (id === 'templates-toggle') { this._templatesOpen = !this._templatesOpen; this._render(); }
     else if (id === 'adv-toggle') { this._advancedOpen = !this._advancedOpen; this._render(); }
@@ -850,9 +855,25 @@ class TaskOrganizerSettings extends HTMLElement {
           </div>
         </div>
         
-        <div class="section-card" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: 500; font-size: 14px; color: var(--primary-text-color);">${this.localize('days_overdue')}</span>
-          <input type="number" id="num-overdue" min="1" value="${this.settings.overdue_days}">
+        <div class="section-card">
+          <div class="section-header" id="behavior-toggle">
+            <div class="section-title">
+              <ha-icon icon="${this._behaviorOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+              <span>${this.localize('task_behavior')}</span>
+            </div>
+          </div>
+          <div class="section-content ${this._behaviorOpen ? 'open' : ''}">
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14px; color: var(--primary-text-color);">${this.localize('days_overdue')}</span>
+                <input type="number" id="num-overdue" min="1" value="${this.settings.overdue_days}">
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14px; color: var(--primary-text-color);">${this.localize('full_points_distribution')}</span>
+                <ha-switch id="full-points-toggle" ${this.settings.full_points_distribution === true ? 'checked' : ''}></ha-switch>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div class="section-card">

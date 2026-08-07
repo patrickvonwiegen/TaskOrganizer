@@ -6,6 +6,7 @@
 - **File Attachments:** Added support for file attachments and image uploads to tasks.
 - **Task-History:** Added a detailed audit log and the ability to clear it or include it in JSON exports and imports.
 - **Seasonal Tasks:** Added the ability to restrict tasks to specific months (e.g., mowing the lawn only from April to October). Tasks will automatically be treated as paused during inactive months.
+- **Task Behavior Settings:** Added a new "Complete points distribution" option which, when disabled, allows assigning fewer total points in the "Who did it?" modal without adjusting other users' sliders.
 
 ### 🐛 Bug Fixes
 - **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.

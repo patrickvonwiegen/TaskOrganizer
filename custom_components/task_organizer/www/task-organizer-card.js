@@ -517,7 +517,7 @@ class TaskOrganizerCard extends HTMLElement {
     if (isOnlyMe) {
       this._completeTask(taskId, [currentUserId], { [currentUserId]: 100 });
     } else {
-      this.shadowRoot.getElementById('modal-choice').open(taskId, this.tasks[taskId], this.users, this._hass);
+      this.shadowRoot.getElementById('modal-choice').open(taskId, this.tasks[taskId], this.users, this._hass, this.settings);
     }
   }
 
