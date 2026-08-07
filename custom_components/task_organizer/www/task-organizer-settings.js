@@ -1210,5 +1210,5 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-settings-editor', TaskOrganizerSettingsEditor);
-customElements.define('task-organizer-settings', TaskOrganizerSettings);
+try { customElements.define('task-organizer-settings-editor', TaskOrganizerSettingsEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-settings', TaskOrganizerSettings); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }

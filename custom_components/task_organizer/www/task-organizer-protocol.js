@@ -1,28 +1,5 @@
-/**
- * Configuration for translations.
- */
-const I18N_PROTOCOL = { 
-  en: {
-    title: "Household Protocol", empty: "No entries.", unknown: "Unknown",
-    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points",
-    user: "Assignee", cancel: "Cancel", save: "Save",
-    prev: "Previous", next: "Next", page: "Page",
-    edit_hover: "Edit entry", delete_hover: "Delete entry",
-    entry_saved: "Entry saved!", entry_deleted: "Entry deleted!",
-    height_lbl: "Height", width_lbl: "Width", title_lbl: "Title",
-    items_per_page_lbl: "Items per Page", filter_by_lbl: "Filter By"
-  },
-  de: { 
-    title: "Haushaltsprotokoll", empty: "Keine Einträge.", unknown: "Unbekannt", 
-    confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
-    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern",
-    prev: "Zurück", next: "Weiter", page: "Seite",
-    edit_hover: "Eintrag bearbeiten", delete_hover: "Eintrag löschen",
-    entry_saved: "Eintrag gespeichert!", entry_deleted: "Eintrag gelöscht!",
-    height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel",
-    items_per_page_lbl: "Einträge pro Seite", filter_by_lbl: "Filtern nach"
-  }
-};
+import { localize } from './utils/i18n.js';
+import './modals/history-modal.js';
 
 /**
  * Register card in the Home Assistant Card Picker.
@@ -49,11 +26,11 @@ class TaskOrganizerProtocol extends HTMLElement {
     this.dataLoaded = false;
     this.currentPage = 1;
     this.addEventListener('click', (ev) => this._handleClick(ev));
+    this.addEventListener('history-saved', (e) => this._onHistorySaved(e));
   }
 
   static _localize(hass, key) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    return (I18N_PROTOCOL[lang] || I18N_PROTOCOL['en'])[key] || key;
+    return localize(hass, key, null, false);
   }
 
   localize(key) { return TaskOrganizerProtocol._localize(this._hass, key); }
@@ -117,32 +94,35 @@ class TaskOrganizerProtocol extends HTMLElement {
     const target = path.find(el => el.classList?.contains('action-btn') || ['btn-edit-save', 'btn-edit-cancel', 'btn-prev-page', 'btn-next-page'].includes(el.id));
     if (!target) return;
     
-    const entryId = target.dataset.id;
-    if (target.classList.contains('btn-edit')) this._openEditModal(entryId);
-    if (target.classList.contains('btn-delete')) this._deleteEntry(entryId);
-    if (target.id === 'btn-edit-cancel') this._closeModal();
-    if (target.id === 'btn-edit-save') this._saveEdit();
-    if (target.id === 'btn-prev-page') { this.currentPage = Math.max(1, this.currentPage - 1); this.render(); }
-    if (target.id === 'btn-next-page') { this.currentPage++; this.render(); }
+    const id = target.dataset.id;
+    if (target.classList?.contains('btn-edit')) {
+      const item = this.history.find(h => h.id == id);
+      if (item) this.shadowRoot.getElementById('modal-history').open(item.id, item, this.users, this._hass);
+    } else if (target.classList?.contains('btn-delete')) {
+      this._deleteEntry(target.dataset.id);
+    } else if (target.id === 'btn-prev-page') {
+      this.currentPage = Math.max(1, this.currentPage - 1);
+      this.render();
+    } else if (target.id === 'btn-next-page') {
+      this.currentPage++;
+      this.render();
+    }
   }
 
-  _openEditModal(entryId) { 
-    const entry = this.history.find(h => h.id === entryId); 
-    if (!entry) return;
-    this.editingEntryId = entryId; 
-    this.shadowRoot.getElementById('edit-points').value = entry.points; 
-    const userSelect = this.shadowRoot.getElementById('edit-user-select');
-    if (userSelect) userSelect.value = entry.user_id;
-    this.shadowRoot.getElementById('edit-modal').classList.add('open'); 
-  }
-
-  _closeModal() { this.shadowRoot.getElementById('edit-modal').classList.remove('open'); this.editingEntryId = null; }
-
-  _saveEdit() { 
-    const points = parseFloat(this.shadowRoot.getElementById('edit-points').value); 
-    const userSelect = this.shadowRoot.getElementById('edit-user-select');
-    const userId = userSelect ? userSelect.value : null;
-    this._hass.callWS({ type: 'task_organizer/edit_history_item', entry_id: this.editingEntryId, points: points, user_id: userId }).then(() => { this._closeModal(); this._fetchData(); }); 
+  _onHistorySaved(e) {
+    const { entryId, points, userId } = e.detail;
+    this._hass.callWS({
+        type: 'task_organizer/edit_history_item',
+        entry_id: entryId,
+        points: points,
+        user_id: userId
+    }).then(() => {
+        this._fetchData();
+        this._showToast(this.localize('entry_saved'));
+    }).catch(err => {
+        console.error("TaskOrganizer: Fehler beim Aktualisieren des Protokolls", err);
+        this._showToast("Fehler: " + err.message);
+    });
   }
 
   _deleteEntry(entryId) { 
@@ -203,25 +183,10 @@ class TaskOrganizerProtocol extends HTMLElement {
           <span>${this.currentPage} / ${totalPages}</span>
           <ha-button id="btn-next-page" ${this.currentPage >= totalPages ? 'disabled' : ''}>${this.localize('next')}</ha-button>
         </div>
-        <div id="edit-modal" class="modal">
-          <div class="modal-content">
-            <h2>${this.localize('edit')}</h2>
-            <ha-input id="edit-points" type="number" label="${this.localize('points')}" step="0.1"></ha-input>
-            <div>
-              <label class="form-label">${this.localize('user')}</label>
-              <select id="edit-user-select">
-                ${Object.entries(this.users).map(([uid, name]) => `
-                  <option value="${uid}">${name}</option>
-                `).join('')}
-              </select>
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:8px;">
-              <ha-button id="btn-edit-cancel">${this.localize('cancel')}</ha-button>
-              <ha-button raised id="btn-edit-save">${this.localize('save')}</ha-button>
-            </div>
-          </div>
-        </div>
-      </ha-card>`;
+        
+        <task-organizer-history-modal id="modal-history"></task-organizer-history-modal>
+      </ha-card>
+    `;
   }
 }
 
@@ -260,5 +225,5 @@ class TaskOrganizerProtocolEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-protocol-editor', TaskOrganizerProtocolEditor);
-customElements.define('task-organizer-protocol', TaskOrganizerProtocol);
+try { customElements.define('task-organizer-protocol-editor', TaskOrganizerProtocolEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-protocol', TaskOrganizerProtocol); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }

@@ -811,5 +811,5 @@ class TaskOrganizerStatsEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-stats-editor', TaskOrganizerStatsEditor);
-customElements.define('task-organizer-stats', TaskOrganizerStats);
+try { customElements.define('task-organizer-stats-editor', TaskOrganizerStatsEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-stats', TaskOrganizerStats); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }

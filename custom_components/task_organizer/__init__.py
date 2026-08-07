@@ -490,7 +490,7 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
         
     changed_keys = {}
     
-    def _is_equal(old_val, new_val):
+    def _is_equal(k_name, old_val, new_val):
         if old_val == new_val:
             return True
         # Treat None, empty string, and empty list as equivalent for change detection
@@ -498,9 +498,9 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
             return True
         
         # Normalize images for comparison (string vs dict)
-        if isinstance(old_val, list) and isinstance(new_val, list):
+        if k_name == "images" and isinstance(old_val, list) and isinstance(new_val, list):
             def _normalize_img(img):
-                return img["url"] if isinstance(img, dict) else img
+                return img.get("url") if isinstance(img, dict) else img
             if all(isinstance(i, (str, dict)) for i in old_val) and all(isinstance(i, (str, dict)) for i in new_val):
                 old_urls = [_normalize_img(i) for i in old_val]
                 new_urls = [_normalize_img(i) for i in new_val]
@@ -511,7 +511,11 @@ async def ws_edit_task(hass: HomeAssistant, connection: websocket_api.ActiveConn
 
     for k, v in task_ref.items():
         old_v = original_task.get(k)
-        if not _is_equal(old_v, v):
+        if not _is_equal(k, old_v, v):
+            if k == "paused_until" and old_v and v in (None, ""):
+                today_str = dt_util.now().strftime("%Y-%m-%d")
+                if isinstance(old_v, str) and old_v[:10] < today_str:
+                    continue
             changed_keys[k] = {"old": old_v, "new": v}
 
     if changed_keys:

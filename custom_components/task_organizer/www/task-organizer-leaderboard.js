@@ -489,5 +489,5 @@ class TaskOrganizerLeaderboardEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-leaderboard-editor', TaskOrganizerLeaderboardEditor);
-customElements.define('task-organizer-leaderboard', TaskOrganizerLeaderboard);
+try { customElements.define('task-organizer-leaderboard-editor', TaskOrganizerLeaderboardEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-leaderboard', TaskOrganizerLeaderboard); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
