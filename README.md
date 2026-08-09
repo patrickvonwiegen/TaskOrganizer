@@ -46,7 +46,7 @@ Suggestions for improvement or bug reports are welcome.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
 
-* **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis and a "Goal Setting" burndown chart to track your monthly point targets.
+* **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis, a "Goal Setting" burndown chart to track your monthly point targets, and a "Heatmap" view to track activity over time.
   <br>
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3f28e234-6ed6-406c-8577-9fd4e22de873" />
   <img width="24%" alt="image" src="https://github.com/user-attachments/assets/c98534b9-3283-482e-a356-b35185c9c521" />
@@ -158,7 +158,7 @@ Provides advanced reporting with different views like "Completed Tasks" and "Goa
 ```yaml
 type: custom:task-organizer-stats
 title: "Reports"
-report_type: overview  # Options: overview, burndown
+report_type: overview  # Options: overview, burndown, heatmap
 show_user_select: true # Allows selecting a specific user
 ```
 
