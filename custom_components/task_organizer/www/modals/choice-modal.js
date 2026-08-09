@@ -1,4 +1,5 @@
-import { localize } from '../utils/i18n.js';
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`../utils/i18n.js?v=${_v}`);
 
 export class TaskOrganizerChoiceModal extends HTMLElement {
   constructor() {

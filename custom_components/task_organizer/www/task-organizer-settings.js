@@ -751,8 +751,8 @@ class TaskOrganizerSettings extends HTMLElement {
         .modal.open { display: flex; } 
         .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; }
         .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
-        .form-row { display: flex; gap: 16px; }
-        .form-col { flex: 1; }
+        .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
+        .form-col { flex: 1; min-width: 0; width: 100%; }
         .templates-header { display: flex; justify-content: space-between; align-items: center; }
         .template-card { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); }
         .template-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }

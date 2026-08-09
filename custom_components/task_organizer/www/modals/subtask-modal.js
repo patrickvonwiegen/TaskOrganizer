@@ -1,4 +1,5 @@
-import { localize } from '../utils/i18n.js';
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`../utils/i18n.js?v=${_v}`);
 
 export class TaskOrganizerSubtaskModal extends HTMLElement {
   constructor() {
@@ -59,9 +60,10 @@ export class TaskOrganizerSubtaskModal extends HTMLElement {
     });
 
     if (allDone) {
+        const taskIdToComplete = this._taskId;
         if (confirm(this.localize('confirm_task_complete'))) {
             this._close();
-            this.dispatchEvent(new CustomEvent('proceed-to-assignee', { detail: { taskId: this._taskId }, bubbles: true, composed: true }));
+            this.dispatchEvent(new CustomEvent('proceed-to-assignee', { detail: { taskId: taskIdToComplete }, bubbles: true, composed: true }));
         } else {
             this._close();
             this.dispatchEvent(new CustomEvent('subtasks-saved', { bubbles: true, composed: true }));
@@ -75,6 +77,7 @@ export class TaskOrganizerSubtaskModal extends HTMLElement {
   async _completeAll() {
     if (!this._task) return;
     
+    const taskIdToComplete = this._taskId;
     const updatedSubtasks = this._completionSubtasks.map(st => ({ ...st, done: true }));
 
     await this._hass.callWS({
@@ -84,7 +87,7 @@ export class TaskOrganizerSubtaskModal extends HTMLElement {
     });
 
     this._close();
-    this.dispatchEvent(new CustomEvent('proceed-to-assignee', { detail: { taskId: this._taskId }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('proceed-to-assignee', { detail: { taskId: taskIdToComplete }, bubbles: true, composed: true }));
   }
 
   _render() {

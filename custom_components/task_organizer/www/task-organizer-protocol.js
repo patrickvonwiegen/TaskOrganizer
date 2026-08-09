@@ -1,5 +1,6 @@
-import { localize } from './utils/i18n.js';
-import './modals/history-modal.js';
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+await import(`./modals/history-modal.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.

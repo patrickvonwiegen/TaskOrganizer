@@ -1,7 +1,8 @@
-import { localize } from './utils/i18n.js';
-import './modals/choice-modal.js';
-import './modals/subtask-modal.js';
-import './modals/task-modal.js';
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+await import(`./modals/choice-modal.js?v=${_v}`);
+await import(`./modals/subtask-modal.js?v=${_v}`);
+await import(`./modals/task-modal.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
@@ -1580,8 +1581,8 @@ class TaskOrganizerCard extends HTMLElement {
           .type-btn ha-icon { --mdc-icon-size: 16px; }
           .type-btn.active { color: var(--text-primary-color, white); }
           .task-type-selector[data-active="onetime"] .type-slider { transform: translateX(100%); }
-          .form-row { display: flex; gap: 16px; }
-          .form-col { flex: 1; }
+          .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
+          .form-col { flex: 1; min-width: 0; width: 100%; }
           .template-suggestions { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
           .suggestion-item { background: transparent; border: none; color: var(--primary-color); cursor: pointer; text-align: left; padding: 4px 0; font-size: 14px; }
           .suggestion-item:hover { text-decoration: underline; }

@@ -1,4 +1,5 @@
-import { localize } from '../utils/i18n.js';
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`../utils/i18n.js?v=${_v}`);
 
 export class TaskOrganizerTaskModal extends HTMLElement {
   constructor() {
@@ -682,8 +683,8 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         .tab-content { display: none; flex-direction: column; gap: 16px; animation: fadeIn 0.3s; }
         .tab-content.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .form-row { display: flex; gap: 16px; }
-        .form-col { flex: 1; }
+        .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
+        .form-col { flex: 1; min-width: 0; width: 100%; }
         .form-label { font-size: 12px; color: var(--secondary-text-color); margin-bottom: 4px; display: block; }
         .assignees-container { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 8px; background: var(--secondary-background-color); border-radius: 4px; }
         #template-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
