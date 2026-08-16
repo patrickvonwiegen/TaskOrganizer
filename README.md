@@ -58,6 +58,8 @@ Suggestions for improvement or bug reports are welcome.
   <img width="10%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
 
 * **File Attachments**: Attach files and images directly to your tasks. 
+  
+* **Calendar View**: A Home Assistant calendar entity (`calendar.task_organizer_calendar`) that displays upcoming, overdue, and completed tasks as full-day events.
 
 * **Audit Log per Task (History)**: Keep track of every change with a detailed audit log.
 
@@ -194,11 +196,12 @@ zoom: 1.0                # Scales the size of the Kanban board (Default 1.0)
 You can control exactly which columns are displayed and their display order from left to right by providing a comma-separated list to the `visible_columns` parameter. 
 Available options: `due_and_overdue`, `overdue`, `due`, `in_progress`, `paused`, `completed`.
 
-## Sensors
-The integration provides the following sensors:
+## Sensors & Entities
+The integration provides the following sensors and entities:
 
-| Sensor | Description |
+| Sensor / Entity | Description |
 | :--- | :--- |
+| `calendar.task_organizer_calendar` | Displays upcoming, overdue, and completed tasks as full-day events. |
 | `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list (including subtasks) is available as JSON in the attributes. |
 | `sensor.task_organizer_due_tasks` | Displays the number of tasks that are due but not yet overdue. |
 | `sensor.task_organizer_overdue_tasks` | Displays the number of overdue tasks. |

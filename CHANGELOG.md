@@ -10,6 +10,7 @@
 - **Seasonal Tasks:** Added the ability to restrict tasks to specific months (e.g., mowing the lawn only from April to October). Tasks will automatically be treated as paused during inactive months.
 - **Task Behavior Settings:** Added a new "Complete points distribution" option which, when disabled, allows assigning fewer total points in the "Who did it?" modal without adjusting other users' sliders.
 - **Reports:** Added a new Heatmap chart to track user activity over time.
+- **Calendar View:** Added a Home Assistant calendar entity (`calendar.task_organizer_calendar`) to display upcoming, overdue, and completed tasks as full-day events.
 - **Extended configurable colors:** Added configuration options for the colors of the "Paused" and "In Progress" statuses across card and kanban card.
 
 ### 🐛 Bug Fixes

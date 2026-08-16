@@ -63,7 +63,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 # Supported platforms
-PLATFORMS = ["sensor", "button"]
+PLATFORMS = ["sensor", "button", "calendar"]
 
 class TaskOrganizerImageUploadView(HomeAssistantView):
     """View to handle image uploads for tasks."""
