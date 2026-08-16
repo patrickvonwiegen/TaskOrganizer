@@ -96,10 +96,12 @@ export const en = {
     no_history: "No history found.",
     no_points: "No points this month.",
     podium_hover: "{place}. Place: {name} ({points} pts)",
+    pts: "Pts",
     this_month: "This Month",
     title: "Household Leaderboard",
     title_lbl: "Title",
     width_lbl: "Width",
+    winner: "Winner",
     year: "Year"
   },
   protocol: {

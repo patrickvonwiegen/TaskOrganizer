@@ -96,10 +96,12 @@ export const de = {
     no_history: "Keine Historie vorhanden",
     no_points: "Keine Punkte diesen Monat.",
     podium_hover: "{place}. Platz: {name} ({points} Pkt)",
+    pts: "Punkte",
     this_month: "Dieser Monat",
     title: "Haushalts-Bestenliste",
     title_lbl: "Titel",
     width_lbl: "Breite",
+    winner: "Gewinner",
     year: "Jahr"
   },
   protocol: {

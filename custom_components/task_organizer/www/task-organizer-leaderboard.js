@@ -208,8 +208,9 @@ class TaskOrganizerLeaderboard extends HTMLElement {
         .place-3 .step { background: linear-gradient(to top, #CD7F32, #D2B48C); }
         .history-section { margin-top: 30px; border-top: 1px solid var(--divider-color); padding-top: 15px; text-align: left; }
         .history-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; }
+        .history-table-container { max-height: 180px; overflow-y: auto; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
-        .history-table th { border-bottom: 2px solid var(--divider-color); padding: 8px 4px; color: var(--secondary-text-color); }
+        .history-table th { position: sticky; top: 0; background: var(--card-background-color, var(--ha-card-background, var(--primary-background-color, #fff))); border-bottom: 2px solid var(--divider-color); padding: 8px 4px; color: var(--secondary-text-color); z-index: 1; }
         .history-table td { border-bottom: 1px solid var(--divider-color); padding: 8px 4px; }
       </style>
     `;
@@ -306,7 +307,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
     if (showHistory && Object.keys(this.monthlyHistory).length > 0) {
         // Render the history table
         html += `<div class="history-section"><div class="history-title">${this.localize('history')}</div>`;
-        html += `<table class="history-table"><thead><tr><th>${this.localize('month')}</th><th>${this.localize('year')}</th><th>${this.localize('winner')}</th><th>${this.localize('pts')}</th></tr></thead><tbody>`;
+        html += `<div class="history-table-container"><table class="history-table"><thead><tr><th>${this.localize('month')}</th><th>${this.localize('year')}</th><th>${this.localize('winner')}</th><th>${this.localize('pts')}</th></tr></thead><tbody>`;
         
         const sortedMonths = Object.keys(this.monthlyHistory).sort((a, b) => b.localeCompare(a));
         const lang = (this._hass && this._hass.language) || 'de';
@@ -336,7 +337,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
                 html += `<tr title="${hoverText}"><td>${monthName}</td><td>${y}</td><td>${winnerName}</td><td>${maxPts}</td></tr>`;
             }
         });
-        html += `</tbody></table></div>`;
+        html += `</tbody></table></div></div>`;
     }
 
     html += `</ha-card>`;

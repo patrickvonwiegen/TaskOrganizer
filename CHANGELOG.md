@@ -13,6 +13,7 @@
 ### 🐛 Bug Fixes
 - **Architecture & Translations:** The modals have been outsourced into separate components and the translations have been centralized to improve maintainability.
 - **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
+- **Scrollable History:** The history in the leaderboard card now features a scrollbar if you have more entries.
 
 ## [1.7.0]
 ### ⚠️ Breaking Changes
