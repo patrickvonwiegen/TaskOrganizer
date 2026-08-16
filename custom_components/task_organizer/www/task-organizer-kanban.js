@@ -503,6 +503,24 @@ class TaskOrganizerKanban extends HTMLElement {
     const board = this.shadowRoot.getElementById('kanban-board');
     if (!board) return;
 
+    const isDarkMode = this._hass && this._hass.themes && this._hass.themes.darkMode;
+    const themeSuffix = isDarkMode ? 'dark' : 'light';
+    
+    const configColorDone = this.settings[`color_done_${themeSuffix}`] || this.settings.color_done || 'var(--success-color, #4CAF50)';
+    const configColorDue = this.settings[`color_due_${themeSuffix}`] || this.settings.color_due || 'var(--warning-color, #FFC107)';
+    const configColorOverdue = this.settings[`color_overdue_${themeSuffix}`] || this.settings.color_overdue || 'var(--error-color, #F44336)';
+    const configColorPaused = this.settings[`color_paused_${themeSuffix}`] || this.settings.color_paused || 'var(--disabled-text-color, #9e9e9e)';
+    const configColorInProgress = this.settings[`color_in_progress_${themeSuffix}`] || this.settings.color_in_progress || 'var(--info-color, #2196f3)';
+
+    const colColors = {
+        'due_and_overdue': configColorOverdue,
+        'overdue': configColorOverdue,
+        'due': configColorDue,
+        'in_progress': configColorInProgress,
+        'paused': configColorPaused,
+        'completed': configColorDone
+    };
+
     let filters = [];
     if (Array.isArray(this._config.filter_by)) {
         filters = this._config.filter_by;
@@ -650,7 +668,7 @@ class TaskOrganizerKanban extends HTMLElement {
 
     board.innerHTML = Object.values(columns).map(col => `
         <div class="kanban-column ${col.id}" data-column="${col.id}">
-            <div class="kanban-column-header">
+            <div class="kanban-column-header" style="border-bottom-color: ${colColors[col.id] || 'var(--primary-color)'};">
                 <span>${col.label}</span>
                 <span class="kanban-column-count">${col.tasks.length}</span>
             </div>
@@ -671,10 +689,14 @@ class TaskOrganizerKanban extends HTMLElement {
     const configColorDone = this.settings[`color_done_${themeSuffix}`] || this.settings.color_done || 'var(--success-color, #4CAF50)';
     const configColorDue = this.settings[`color_due_${themeSuffix}`] || this.settings.color_due || 'var(--warning-color, #FFC107)';
     const configColorOverdue = this.settings[`color_overdue_${themeSuffix}`] || this.settings.color_overdue || 'var(--error-color, #F44336)';
+    const configColorPaused = this.settings[`color_paused_${themeSuffix}`] || this.settings.color_paused || 'var(--disabled-text-color, #9e9e9e)';
+    const configColorInProgress = this.settings[`color_in_progress_${themeSuffix}`] || this.settings.color_in_progress || 'var(--info-color, #2196f3)';
     
     const transpDone = this.settings[`transparency_done_${themeSuffix}`] !== undefined ? this.settings[`transparency_done_${themeSuffix}`] : 8;
     const transpDue = this.settings[`transparency_due_${themeSuffix}`] !== undefined ? this.settings[`transparency_due_${themeSuffix}`] : 8;
     const transpOverdue = this.settings[`transparency_overdue_${themeSuffix}`] !== undefined ? this.settings[`transparency_overdue_${themeSuffix}`] : 8;
+    const transpPaused = this.settings[`transparency_paused_${themeSuffix}`] !== undefined ? this.settings[`transparency_paused_${themeSuffix}`] : 8;
+    const transpInProgress = this.settings[`transparency_in_progress_${themeSuffix}`] !== undefined ? this.settings[`transparency_in_progress_${themeSuffix}`] : 8;
 
     let borderColor = configColorDone;
     let transparency = transpDone;
@@ -690,7 +712,8 @@ class TaskOrganizerKanban extends HTMLElement {
     const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined) ? task.override_overdue_days : this.settings.overdue_days;
 
     if (isPaused) {
-      borderColor = 'var(--disabled-text-color, #9e9e9e)';
+      borderColor = configColorPaused;
+      transparency = transpPaused;
       let isPausedByDate = task.paused_until && new Date(task.paused_until) > now;
       if (isPausedByDate) {
           timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
@@ -704,7 +727,7 @@ class TaskOrganizerKanban extends HTMLElement {
       else if (diff < 0) timeText = this.localize('ago_days', {days: Math.abs(diff)});
     }
     
-    if (state === 'in_progress') { borderColor = 'var(--info-color, #2196f3)'; }
+    if (state === 'in_progress') { borderColor = configColorInProgress; transparency = transpInProgress; }
     if (state === 'completed') { borderColor = configColorDone; transparency = transpDone; }
 
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;

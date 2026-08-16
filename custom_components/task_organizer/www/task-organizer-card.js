@@ -2067,17 +2067,22 @@ class TaskOrganizerCard extends HTMLElement {
       const configColorDone = this.settings[`color_done_${themeSuffix}`] || this.settings.color_done || 'var(--success-color, #4CAF50)';
       const configColorDue = this.settings[`color_due_${themeSuffix}`] || this.settings.color_due || 'var(--warning-color, #FFC107)';
       const configColorOverdue = this.settings[`color_overdue_${themeSuffix}`] || this.settings.color_overdue || 'var(--error-color, #F44336)';
+      const configColorPaused = this.settings[`color_paused_${themeSuffix}`] || this.settings.color_paused || 'var(--disabled-text-color, #9e9e9e)';
+      const configColorInProgress = this.settings[`color_in_progress_${themeSuffix}`] || this.settings.color_in_progress || 'var(--info-color, #2196f3)';
       
       const transpDone = this.settings[`transparency_done_${themeSuffix}`] !== undefined ? this.settings[`transparency_done_${themeSuffix}`] : 8;
       const transpDue = this.settings[`transparency_due_${themeSuffix}`] !== undefined ? this.settings[`transparency_due_${themeSuffix}`] : 8;
       const transpOverdue = this.settings[`transparency_overdue_${themeSuffix}`] !== undefined ? this.settings[`transparency_overdue_${themeSuffix}`] : 8;
+      const transpPaused = this.settings[`transparency_paused_${themeSuffix}`] !== undefined ? this.settings[`transparency_paused_${themeSuffix}`] : 8;
+      const transpInProgress = this.settings[`transparency_in_progress_${themeSuffix}`] !== undefined ? this.settings[`transparency_in_progress_${themeSuffix}`] : 8;
 
       let borderColor = configColorDone;
       let transparency = transpDone;
       let timeText = this.localize('today');
       
       if (isPaused) {
-        borderColor = 'var(--disabled-text-color, #9e9e9e)'; 
+        borderColor = configColorPaused; 
+        transparency = transpPaused;
         let isPausedByDate = task.paused_until && new Date(task.paused_until) > nowForSort;
         if (isPausedByDate) {
             timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
@@ -2087,6 +2092,19 @@ class TaskOrganizerCard extends HTMLElement {
       } else {
         if (diff <= 0) { borderColor = configColorDue; transparency = transpDue; }
         if (diff <= -overdueThreshold) { borderColor = configColorOverdue; transparency = transpOverdue; }
+        
+        let someSubtasksDone = false;
+        let allSubtasksDone = false;
+        if (task.subtasks && task.subtasks.length > 0) {
+            const total = task.subtasks.length;
+            const completed = task.subtasks.filter(st => st.done).length;
+            if (completed === total) allSubtasksDone = true;
+            else if (completed > 0) someSubtasksDone = true;
+        }
+        if (someSubtasksDone && !allSubtasksDone) {
+            borderColor = configColorInProgress; 
+            transparency = transpInProgress;
+        }
         
         if (diff > 0) timeText = this.localize('in_days', {days: diff});
         else if (diff < 0) timeText = this.localize('ago_days', {days: Math.abs(diff)});

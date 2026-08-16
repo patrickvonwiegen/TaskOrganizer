@@ -24,7 +24,7 @@ class TaskOrganizerSettings extends HTMLElement {
     this._themeView = 'light';
     
     // Global properties
-    this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', overdue_days: 5, full_points_distribution: false };
+    this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', color_in_progress: '#2196F3', color_paused: '#9E9E9E', overdue_days: 5, full_points_distribution: false };
     this.tasks = {};
     this.users = {};
     this.templates = {};
@@ -220,7 +220,7 @@ class TaskOrganizerSettings extends HTMLElement {
     });
 
     // We merge the currently visible values into this.settings first
-    ['done', 'due', 'overdue'].forEach(status => {
+    ['done', 'due', 'overdue', 'in_progress', 'paused'].forEach(status => {
       const cInput = this.shadowRoot.getElementById(`c-${status}`);
       if (cInput) this.settings[`color_${status}_${this._themeView}`] = cInput.value;
       const tInput = this.shadowRoot.getElementById(`t-${status}`);
@@ -302,7 +302,7 @@ class TaskOrganizerSettings extends HTMLElement {
       this._render();
     }
     else if (id === 'btn-default-colors') {
-      ['done', 'due', 'overdue'].forEach(status => {
+      ['done', 'due', 'overdue', 'in_progress', 'paused'].forEach(status => {
         delete this.settings[`color_${status}_light`];
         delete this.settings[`transparency_${status}_light`];
         delete this.settings[`color_${status}_dark`];
@@ -791,11 +791,11 @@ class TaskOrganizerSettings extends HTMLElement {
           
           <div class="section-content ${this._colorOpen ? 'open' : ''}">
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-              ${['done', 'due', 'overdue'].map(status => {
+              ${['done', 'due', 'overdue', 'in_progress', 'paused'].map(status => {
                 const colorKey = `color_${status}_${this._themeView}`;
                 const transpKey = `transparency_${status}_${this._themeView}`;
                 
-                const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status==='done'?'#4CAF50':status==='due'?'#FFC107':'#F44336');
+                const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status==='done'?'#4CAF50':status==='due'?'#FFC107':status==='overdue'?'#F44336':status==='in_progress'?'#2196F3':'#9E9E9E');
                 const transpVal = this.settings[transpKey] !== undefined ? this.settings[transpKey] : 8;
                 
                 return `
