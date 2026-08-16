@@ -11,7 +11,7 @@
 - **Reports:** Added a new Heatmap chart to track user activity over time.
 
 ### 🐛 Bug Fixes
-- **Architecture & Translations:** The modals have been outsourced into separate components and the translations have been centralized to improve maintainability and fix missing localization keys (e.g. in the Settings card).
+- **Architecture & Translations:** The modals have been outsourced into separate components and the translations have been centralized to improve maintainability.
 - **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
 
 ## [1.7.0]

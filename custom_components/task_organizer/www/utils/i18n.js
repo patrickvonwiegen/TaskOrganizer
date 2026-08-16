@@ -14,21 +14,21 @@ const TRANSLATIONS = { en, de };
  */
 export function localize(hass, key, replace = null, dictType = 'card') {
   const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-  
+
   let dictKey = dictType === true ? 'protocol' : (dictType === false ? 'card' : dictType);
-  
+
   const dictObj = TRANSLATIONS[lang] || TRANSLATIONS['en'];
   const dict = dictObj[dictKey] || {};
-  
+
   const defaultDictObj = TRANSLATIONS['en'];
   const defaultDict = defaultDictObj[dictKey] || {};
-  
+
   let text = dict[key] || defaultDict[key] || key;
-  
-  if (replace) { 
-    for (const [k, v] of Object.entries(replace)) { 
-      text = text.replace(`{${k}}`, v); 
-    } 
+
+  if (replace) {
+    for (const [k, v] of Object.entries(replace)) {
+      text = text.replace(`{${k}}`, v);
+    }
   }
   return text;
 }
