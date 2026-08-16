@@ -1,107 +1,18 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_SETTINGS = {
-  en: { 
-    title: "Settings", colors: "Colors (Done, Due, Overdue)", c_done: "Done", c_due: "Due", c_overdue: "Overdue", 
-    days_overdue: "Overdue after (Days)", save: "Save Settings", advanced: "ADVANCED SETTINGS", cancel: "Cancel",
-    archive_btn: "Archive and reset monthly points now", factory_btn: "🔥 Factory reset (Delete everything)", 
-    clear_history_btn: "Clear Audit Log", confirm_clear_history: "Do you really want to clear the entire task audit log?",
-    success: "Settings saved!", confirm_reset: "Do you really want to reset all points? Data will be archived.", 
-    confirm_factory: "WARNING: This permanently deletes ALL tasks, points, and history!",
-    import_export: "Import & Export", export_btn: "Export Tasks", import_btn: "Import Tasks", 
-    import_success: "Tasks successfully imported!", import_error: "Error reading file. Is it valid JSON?",
-    templates: "Templates", templates_desc: "Manage templates for tasks here for quick reuse.", 
-    add_template: "Add Template", edit_template: "Edit Template", template_name: "Template Name",
-    confirm_delete_template: "Do you really want to delete this template? It cannot be recovered.",
-    template_saved: "Template saved!", template_deleted: "Template deleted!", no_templates: "No templates found. Create a new one!",
-    point_goals: "Monthly Point Goals",
-    goal_lbl: "Goal for {user}",
-    template_name_placeholder: "e.g. Take out trash",
-    subtasks: "Subtasks", 
-    add_subtask: "Add Subtask", 
-    confirm: "Add", 
-    subtask_placeholder: "Subtask title...",
-    edit_template_hover: "Edit template", delete_template_hover: "Delete template",
-    save_hover: "Saves the current color and day settings.",
-    export_hover: "Downloads all current tasks as a JSON file.",
-    import_hover: "Opens a dialog to select a JSON file for importing tasks.", 
-    desc_lbl: "Description (optional)", area_lbl: "Area", points_lbl: "Points (1-10)", icon_lbl: "Icon",
-    interval_lbl: "Days (Interval)", assignees_lbl: "Assignees",
-    cancel: "Cancel", save: "Save",
-    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "Protocol (Points)", export_settings_cb: "Settings",
-    export_audit_log_cb: "History",
-    no_desc: "No description", onetime: "One-time",
-    show_advanced_lbl: "Show Advanced Settings",
-    height_lbl: "Height",
-    width_lbl: "Width",
-    title_lbl: "Title",
-    color_done_lbl: "Color Done", color_due_lbl: "Color Due", color_overdue_lbl: "Color Overdue",
-    transparency_lbl: "Transparency", color_adjustments: "Color Adjustments",
-    set_default: "Set Default",
-    import_tasks_title: "Import Tasks", metadata_title: "Import Overview", tasks_lbl: "Tasks", 
-    templates_lbl: "Templates", audit_log_lbl: "History Entries", history_lbl: "Protocol Entries", settings_included: "Settings", 
-    yes: "Yes", no: "No", start_import: "Start Import", confirm_reload: "Confirm & Reload",
-    export_images_lbl: "Files / Images", export_images_info: "Note: Attached files and images are not included in the JSON export. They are automatically backed up via the regular, full Home Assistant backup!",
-    task_behavior: "Task Behavior", full_points_distribution: "Complete points distribution"
-  },
-  de: { 
-    title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
-    days_overdue: "Überfällig nach (Tagen)", save: "Einstellungen speichern", advanced: "ERWEITERTE EINSTELLUNGEN", cancel: "Abbrechen",
-    archive_btn: "Monats-Punkte archivieren und zurücksetzen", factory_btn: "🔥 Werkseinstellungen setzen (Alles löschen)", 
-    clear_history_btn: "Historie bereinigen", confirm_clear_history: "Möchtest du das gesamte Aufgaben-Protokoll löschen?",
-    success: "Einstellungen erfolgreich gespeichert!", confirm_reset: "Möchtest du alle monatlichen Punkte wirklich auf 0 setzen? Die Daten werden archiviert.", 
-    confirm_factory: "ACHTUNG: Dies löscht unwiderruflich ALLE Aufgaben, Punkte und die Historie!", 
-    import_export: "Import & Export", export_btn: "Aufgaben exportieren", import_btn: "Aufgaben importieren", 
-    import_success: "Aufgaben erfolgreich importiert!", import_error: "Fehler beim Lesen der Datei. Ist es valides JSON?",
-    templates: "Vorlagen", templates_desc: "Verwalte hier Vorlagen für Aufgaben, um sie schnell wiederverwenden zu können.", 
-    add_template: "Vorlage hinzufügen", edit_template: "Vorlage bearbeiten", template_name: "Name der Vorlage",
-    confirm_delete_template: "Möchtest du diese Vorlage wirklich löschen? Sie kann nicht wiederhergestellt werden.",
-    template_saved: "Vorlage gespeichert!", template_deleted: "Vorlage gelöscht!", no_templates: "Keine Vorlagen vorhanden. Erstelle eine neue!",
-    point_goals: "Monatliche Punktziele",
-    goal_lbl: "Ziel für {user}",
-    template_name_placeholder: "z.B. Müll rausbringen",
-    subtasks: "Unteraufgaben", 
-    add_subtask: "Unteraufgabe hinzufügen", 
-    confirm: "Hinzufügen", 
-    subtask_placeholder: "Titel der Unteraufgabe...",
-    edit_template_hover: "Vorlage bearbeiten", delete_template_hover: "Vorlage löschen",
-    save_hover: "Speichert die aktuellen Farb- und Tageseinstellungen.",
-    export_hover: "Lädt alle aktuellen Aufgaben als JSON-Datei herunter.",
-    import_hover: "Öffnet einen Dialog zur Auswahl einer JSON-Datei für den Import von Aufgaben.", 
-    desc_lbl: "Beschreibung (optional)", area_lbl: "Bereich", points_lbl: "Punkte (1-10)", icon_lbl: "Icon",
-    interval_lbl: "Tage (Intervall)", assignees_lbl: "Bearbeiter",
-    cancel: "Abbrechen", save: "Speichern",
-    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll (Punkte)", export_settings_cb: "Einstellungen",
-    export_audit_log_cb: "Historie",
-    no_desc: "Keine Beschreibung", onetime: "Einmalig",
-    show_advanced_lbl: "Erweiterte Einstellungen anzeigen",
-    height_lbl: "Höhe",
-    width_lbl: "Breite",
-    title_lbl: "Titel",
-    color_done_lbl: "Farbe Erledigt", color_due_lbl: "Farbe Fällig", color_overdue_lbl: "Farbe Überfällig",
-    transparency_lbl: "Transparenz", color_adjustments: "Farbanpassungen",
-    set_default: "Standard setzen",
-    import_tasks_title: "Aufgaben importieren", metadata_title: "Import-Übersicht", tasks_lbl: "Aufgaben", 
-    templates_lbl: "Vorlagen", audit_log_lbl: "Historie-Einträge", history_lbl: "Protokoll-Einträge", settings_included: "Einstellungen", 
-    yes: "Ja", no: "Nein", start_import: "Import starten", confirm_reload: "Bestätigen & Neuladen",
-    export_images_lbl: "Dateien / Bilder", export_images_info: "Hinweis: Hinterlegte Dateien und Bilder sind im JSON-Export nicht enthalten. Diese werden automatisch über das reguläre, vollständige Home Assistant Backup mitgesichert!",
-    task_behavior: "Aufgabenverhalten", full_points_distribution: "Vollständige Punkteverteilung"
-  }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-settings",
-  name: "Task Organizer: Settings",
-  description: "Displays and manages integration settings, colors, and imports/exports.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-settings")) {
+  window.customCards.push({
+    type: "task-organizer-settings",
+    name: "Task Organizer: Settings",
+    description: "A custom card to manage settings, templates, and backups.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerSettings extends HTMLElement {
   /**
@@ -146,9 +57,7 @@ class TaskOrganizerSettings extends HTMLElement {
    * @returns {string} - The translated text.
    */
   static _localize(hass, key) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_SETTINGS[lang] || I18N_SETTINGS['en'];
-    return dict[key] || key;
+    return localize(hass, key, null, 'settings');
   }
 
   /**

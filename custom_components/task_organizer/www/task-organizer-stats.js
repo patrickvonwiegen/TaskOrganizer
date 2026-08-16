@@ -1,81 +1,18 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_STATS = { 
-  en: {
-    title: "Household Reports", empty: "No entries.", unknown: "Unknown",
-    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points",
-    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All",
-    prev: "Previous", next: "Next", page: "Page",
-    edit_hover: "Edit entry",
-    delete_hover: "Delete entry",
-    entry_saved: "Entry saved!", 
-    height_lbl: "Height", width_lbl: "Width",
-    title_lbl: "Title",
-    items_per_page_lbl: "Items per Page",
-    filter_by_lbl: "Filter By",
-    filter_by_placeholder: "all, mine",
-    user_filter_lbl: "User",
-    show_user_select_lbl: "Show User Selection",
-    points_per_day: "Points per day",
-    goal_progress: "Goal progress",
-    goal_reached_congrats: "Goal achieved! 🎉",
-    all_users: "All Users",
-    report_type: "Report Type",
-    report_overview: "Completed Tasks",
-    report_burndown: "Goal Setting",
-    report_heatmap: "Heatmap",
-    heatmap_tooltip: "{date}: {points} Points",
-    remaining_points: "Remaining Points",
-    pending: "pending",
-    today_target_tooltip: "Today's target: {target} pts, Current: {current} pts",
-    today_points_tooltip: "Current points: {current} pts, Avg last 3 days: {average} pts",
-    above_goal: "above goal"
-  },
-  de: { 
-    title: "Haushaltsberichte", empty: "Keine Einträge.", unknown: "Unbekannt", 
-    confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
-    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle",
-    prev: "Zurück", next: "Weiter", page: "Seite",
-    edit_hover: "Eintrag bearbeiten",
-    delete_hover: "Eintrag löschen",
-    entry_saved: "Eintrag gespeichert!", 
-    height_lbl: "Höhe", width_lbl: "Breite",
-    title_lbl: "Titel",
-    items_per_page_lbl: "Einträge pro Seite",
-    filter_by_lbl: "Filtern nach",
-    filter_by_placeholder: "all, mine",
-    user_filter_lbl: "Benutzer",
-    show_user_select_lbl: "Benutzerauswahl anzeigen",
-    points_per_day: "Punkte pro Tag",
-    goal_progress: "Ziel-Fortschritt",
-    goal_reached_congrats: "Ziel erreicht! 🎉",
-    all_users: "Alle Benutzer",
-    report_type: "Berichtsart",
-    report_overview: "Abgeschlossene Aufgaben",
-    report_burndown: "Zielsetzung",
-    report_heatmap: "Heatmap",
-    heatmap_tooltip: "{date}: {points} Punkte",
-    remaining_points: "Verbleibende Punkte",
-    pending: "ausstehend",
-    today_target_tooltip: "Heutiges Soll: {target} Pkt, Aktuell: {current} Pkt",
-    today_points_tooltip: "Aktuelle Punkte: {current} Pkt, Ø letzte 3 Tage: {average} Pkt",
-    above_goal: "über dem Ziel"
-  }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-stats",
-  name: "Task Organizer: Reports",
-  description: "Displays graphical reports and point progress charts.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-stats")) {
+  window.customCards.push({
+    type: "task-organizer-stats",
+    name: "Task Organizer: Reports",
+    description: "Displays graphical reports and point progress charts.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerStats extends HTMLElement {
   /**
@@ -110,15 +47,7 @@ class TaskOrganizerStats extends HTMLElement {
    * @returns {string} - The translated text.
    */
   static _localize(hass, key, replace = null) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_STATS[lang] || I18N_STATS['en'];
-    let text = dict[key] || I18N_STATS['en'][key] || key;
-    if (replace) {
-      for (const [k, v] of Object.entries(replace)) {
-        text = text.replace(`{${k}}`, v);
-      }
-    }
-    return text;
+    return localize(hass, key, replace, 'stats');
   }
 
   /**

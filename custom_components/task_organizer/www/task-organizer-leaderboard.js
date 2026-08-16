@@ -1,23 +1,18 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_BOARD = {
-  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points", height_lbl: "Height", width_lbl: "Width", title_lbl: "Title", show_history_lbl: "Show History", goal_reached: "Goal reached!" },
-  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten", height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel", show_history_lbl: "Verlauf anzeigen", goal_reached: "Ziel erreicht!" }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-leaderboard",
-  name: "Task Organizer: Leaderboard",
-  description: "Displays the roommate of the month and the history of previous winners.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-leaderboard")) {
+  window.customCards.push({
+    type: "task-organizer-leaderboard",
+    name: "Task Organizer: Roommate of the Month",
+    description: "A custom card to display the winner's podium.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerLeaderboard extends HTMLElement {
   /**
@@ -46,16 +41,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
    * @returns {string} - The translated text.
    */
   static _localize(hass, key, replace = null) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_BOARD[lang] || I18N_BOARD['en'];
-    let text = dict[key] || I18N_BOARD['en'][key] || key;
-    
-    if (replace) { 
-      for (const [k, v] of Object.entries(replace)) { 
-        text = text.replace(`{${k}}`, v); 
-      } 
-    }
-    return text;
+    return localize(hass, key, replace, 'leaderboard');
   }
 
   /**

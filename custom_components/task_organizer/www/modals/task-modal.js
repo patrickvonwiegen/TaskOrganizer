@@ -127,9 +127,15 @@ export class TaskOrganizerTaskModal extends HTMLElement {
     const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
     const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
     if (setDueDateCb && customDueDateInput) {
-        setDueDateCb.checked = false;
-        customDueDateInput.value = "";
-        customDueDateInput.style.display = 'none';
+        if (taskId && this._task && this._task.due_date) {
+            setDueDateCb.checked = true;
+            customDueDateInput.value = this._task.due_date.split('T')[0];
+            customDueDateInput.style.display = '';
+        } else {
+            setDueDateCb.checked = false;
+            customDueDateInput.value = "";
+            customDueDateInput.style.display = 'none';
+        }
     }
 
     const overrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb');

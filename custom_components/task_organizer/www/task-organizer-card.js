@@ -1998,8 +1998,20 @@ class TaskOrganizerCard extends HTMLElement {
     });
     
     taskArray.sort((a, b) => {
-      const aPaused = a.paused_until && new Date(a.paused_until) > nowForSort;
-      const bPaused = b.paused_until && new Date(b.paused_until) > nowForSort;
+      let aPaused = a.paused_until && new Date(a.paused_until) > nowForSort;
+      if (!aPaused && a.active_months && a.active_months.length > 0) {
+          aPaused = !a.active_months.includes(nowForSort.getMonth() + 1);
+      }
+      let bPaused = b.paused_until && new Date(b.paused_until) > nowForSort;
+      if (!bPaused && b.active_months && b.active_months.length > 0) {
+          bPaused = !b.active_months.includes(nowForSort.getMonth() + 1);
+      }
+
+      const isAPaused = !!aPaused;
+      const isBPaused = !!bPaused;
+      if (isAPaused !== isBPaused) {
+          return isAPaused ? 1 : -1;
+      }
 
       let cmp = 0;
       if (sortBy === 'points') cmp = a.complexity - b.complexity;
@@ -2010,14 +2022,12 @@ class TaskOrganizerCard extends HTMLElement {
       } 
       else if (sortBy === 'alphabet') cmp = a.name.localeCompare(b.name);
       else { 
-          if (aPaused && !bPaused) cmp = 1;
-          else if (!aPaused && bPaused) cmp = -1;
-          else cmp = new Date(a.due_date) - new Date(b.due_date);
+          cmp = new Date(a.due_date) - new Date(b.due_date);
       }
 
       if (sortOrder === 'desc') return -cmp;
       if (sortOrder === 'asc') return cmp;
-      return cmp; 
+      return cmp;
     });
 
     let paginatedTasks = taskArray;

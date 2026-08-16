@@ -631,6 +631,7 @@ async def ws_delete_history_item(hass: HomeAssistant, connection: websocket_api.
     vol.Required("entry_id"): str,
     vol.Required("points"): vol.Coerce(float),
     vol.Required("user_id"): str,
+    vol.Optional("timestamp"): str,
 })
 @websocket_api.async_response
 async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict):
@@ -657,6 +658,8 @@ async def ws_edit_history_item(hass: HomeAssistant, connection: websocket_api.Ac
         
         entry["user_id"] = new_user_id
         entry["points"] = new_points
+        if "timestamp" in msg:
+            entry["timestamp"] = msg["timestamp"]
         
         _fire_leaderboard_event_if_changed(hass, old_all_points, data["points"])
         
@@ -1371,7 +1374,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"{base_path}/task-organizer-leaderboard.js", 
             f"{base_path}/task-organizer-stats.js", 
             f"{base_path}/task-organizer-settings.js",
-            f"{base_path}/task-organizer-protocol.js"
+            f"{base_path}/task-organizer-protocol.js",
+            f"{base_path}/task-organizer-kanban.js"
         ]
         
         current_resources = {

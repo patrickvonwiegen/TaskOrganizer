@@ -27,6 +27,11 @@ export class TaskOrganizerHistoryModal extends HTMLElement {
         this.shadowRoot.getElementById('edit-points').value = this._entry.points; 
         const userSelect = this.shadowRoot.getElementById('edit-user-select');
         if (userSelect) userSelect.value = this._entry.user_id;
+        const dateInput = this.shadowRoot.getElementById('edit-date');
+        if (dateInput && this._entry.timestamp) {
+            const d = new Date(this._entry.timestamp);
+            dateInput.value = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        }
     }
 
     this.shadowRoot.getElementById('edit-modal').classList.add('open');
@@ -41,9 +46,16 @@ export class TaskOrganizerHistoryModal extends HTMLElement {
     const points = parseFloat(this.shadowRoot.getElementById('edit-points').value); 
     const userSelect = this.shadowRoot.getElementById('edit-user-select');
     const userId = userSelect ? userSelect.value : null;
+    const dateVal = this.shadowRoot.getElementById('edit-date').value;
+    let timestamp = null;
+    if (dateVal) {
+        timestamp = new Date(dateVal).toISOString();
+    } else if (this._entry) {
+        timestamp = this._entry.timestamp;
+    }
 
     this.dispatchEvent(new CustomEvent('history-saved', { 
-        detail: { entryId: this._entryId, points: points, userId: userId }, 
+        detail: { entryId: this._entryId, points: points, userId: userId, timestamp: timestamp }, 
         bubbles: true, 
         composed: true 
     }));
@@ -71,6 +83,10 @@ export class TaskOrganizerHistoryModal extends HTMLElement {
                   <option value="${uid}">${name}</option>
                 `).join('')}
               </select>
+            </div>
+            <div>
+              <label class="form-label">${this.localize('date') || 'Datum'}</label>
+              <input type="datetime-local" id="edit-date" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-family: inherit; font-size: 14px; box-sizing: border-box;">
             </div>
             <div style="display:flex; justify-content:flex-end; gap:8px;">
               <ha-button appearance="plain" variant="brand" id="btn-edit-cancel">${this.localize('cancel')}</ha-button>

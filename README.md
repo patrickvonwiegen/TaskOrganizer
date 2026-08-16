@@ -80,7 +80,7 @@ Suggestions for improvement or bug reports are welcome.
 - Restart Home Assistant.
   
 ## Dashboard Cards
-The integration includes four specialized cards for the Lovelace dashboard.
+The integration includes specialized cards for the Lovelace dashboard.
 
 ### 1. Household Tasks (`task-organizer-card`)
 The main card for viewing and completing tasks.
@@ -172,6 +172,27 @@ Allows customization of colors, task behavior (overdue thresholds, points distri
 type: custom:task-organizer-settings
 show_advanced: false    # Unlocks the reset and factory reset area (Default: false)
 ```
+
+### 6. Kanban Board (task-organizer-kanban)
+Displays tasks in a drag & drop Kanban board with columns.
+
+**YAML Configuration:**
+```yaml
+type: custom:task-organizer-kanban
+title: "Kanban Board"    # Custom title for the card (Default: Kanban Board)
+sort_by: due_date        # Options: due_date, points, assignee, alphabet (default due_date)
+sort_order: desc         # Options: default, asc, desc (default default)
+filter_by: none          # Options: see filter options above
+visible_columns: "due_and_overdue, in_progress, completed" # See below for options
+show_edit: true          # Shows the task edit symbol (Default true)
+show_delete: true        # Shows the task delete symbol (Default true)
+show_add: true           # Shows the add task button (Default true)
+zoom: 1.0                # Scales the size of the Kanban board (Default 1.0)
+```
+
+#### Visible Columns
+You can control exactly which columns are displayed and their display order from left to right by providing a comma-separated list to the `visible_columns` parameter. 
+Available options: `due_and_overdue`, `overdue`, `due`, `in_progress`, `paused`, `completed`.
 
 ## Sensors
 The integration provides the following sensors:

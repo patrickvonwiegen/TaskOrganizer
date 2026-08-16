@@ -2,6 +2,7 @@
 
 ## [2.0.0]
 ### 🚀 New Features
+- **Kanban Board:** Added a new card (`task-organizer-kanban`) to display and manage tasks in a Kanban board style layout.
 - **Redesigned Task Modal:** The task creation and editing modal has been completely redesigned with a new tabbed interface for better organization.
 - **File Attachments:** Added support for file attachments and image uploads to tasks.
 - **Task-History:** Added a detailed audit log and the ability to clear it or include it in JSON exports and imports.
@@ -10,6 +11,7 @@
 - **Reports:** Added a new Heatmap chart to track user activity over time.
 
 ### 🐛 Bug Fixes
+- **Architecture & Translations:** The modals have been outsourced into separate components and the translations have been centralized to improve maintainability and fix missing localization keys (e.g. in the Settings card).
 - **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
 
 ## [1.7.0]

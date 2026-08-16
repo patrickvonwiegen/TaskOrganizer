@@ -6,12 +6,14 @@ await import(`./modals/history-modal.js?v=${_v}`);
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-protocol",
-  name: "Task Organizer: Protocol",
-  description: "A dedicated log for managing and editing completed tasks.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-protocol")) {
+  window.customCards.push({
+    type: "task-organizer-protocol",
+    name: "Task Organizer: Protocol",
+    description: "Displays a protocol of recently completed tasks.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerProtocol extends HTMLElement {
   /**
@@ -111,12 +113,13 @@ class TaskOrganizerProtocol extends HTMLElement {
   }
 
   _onHistorySaved(e) {
-    const { entryId, points, userId } = e.detail;
+    const { entryId, points, userId, timestamp } = e.detail;
     this._hass.callWS({
         type: 'task_organizer/edit_history_item',
         entry_id: entryId,
         points: points,
-        user_id: userId
+        user_id: userId,
+        timestamp: timestamp
     }).then(() => {
         this._fetchData();
         this._showToast(this.localize('entry_saved'));
