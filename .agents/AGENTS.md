@@ -65,6 +65,7 @@ Translations are centralized in `www/utils/i18n.js`. This file exports a shared 
 - Both Cards and Modals use this single source of truth for translations to avoid duplicating translation dictionaries across multiple files.
 - For text within Lovelace cards (e.g., labels, buttons, tooltips), update the `I18N_...` object inside `i18n.js` for both English (`en`) and German (`de`).
 - For backend-generated names (sensors, services), update both `en.json` and `de.json` in the `custom_components/task_organizer/translations/` directory.
+- **Alphabetical Sorting:** Always ensure that new translation entries in `de.js` and `en.js` (and other localization files) are sorted alphanumerically within their respective dictionaries to maintain readability.
 
 ## Rules for Code Changes
 

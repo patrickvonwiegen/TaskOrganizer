@@ -56,17 +56,18 @@ class TaskOrganizerSettings extends HTMLElement {
    * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
-  static _localize(hass, key) {
-    return localize(hass, key, null, 'settings');
+  static _localize(hass, key, replace = null) {
+    return localize(hass, key, replace, 'settings');
   }
 
   /**
    * Translates a given key based on the Home Assistant language.
    * * @param {string} key - The translation key.
+   * @param {object} replace - Object with parameters to replace.
    * @returns {string} - The translated text.
    */
-  localize(key) { 
-    return TaskOrganizerSettings._localize(this._hass, key);
+  localize(key, replace = null) { 
+    return TaskOrganizerSettings._localize(this._hass, key, replace);
   }
 
   /**
@@ -183,6 +184,32 @@ class TaskOrganizerSettings extends HTMLElement {
   }
   
   /**
+   * Distributes the required points evenly across all users.
+   */
+  _distributeGoals() {
+    let requiredPoints = 0;
+    if (this.tasks) {
+      Object.values(this.tasks).forEach(t => {
+        if (t.interval > 0) {
+          requiredPoints += (t.complexity || 0) / t.interval;
+        }
+      });
+    }
+    
+    const userKeys = Object.keys(this.users);
+    if (userKeys.length === 0 || requiredPoints === 0) return;
+    
+    const pointsPerUser = Math.ceil(requiredPoints / userKeys.length);
+    
+    if (!this.settings.point_goals) this.settings.point_goals = {};
+    userKeys.forEach(uid => {
+      this.settings.point_goals[uid] = pointsPerUser;
+    });
+    
+    this._render();
+  }
+
+  /**
    * Gathers modified settings from the UI and saves them via websocket.
    */
   _saveSettings() { 
@@ -291,6 +318,7 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (id === 'templates-toggle') { this._templatesOpen = !this._templatesOpen; this._render(); }
     else if (id === 'adv-toggle') { this._advancedOpen = !this._advancedOpen; this._render(); }
     else if (id === 'goals-toggle') { this._goalsOpen = !this._goalsOpen; this._render(); }
+    else if (id === 'btn-distribute-goals') this._distributeGoals();
     else if (id === 'btn-export-trigger') { this._exportModalOpen = true; this._render(); }
     else if (id === 'btn-export-cancel') { this._exportModalOpen = false; this._render(); }
     else if (id === 'btn-export-start') { this._exportTasks(); this._exportModalOpen = false; this._render(); }
@@ -701,6 +729,9 @@ class TaskOrganizerSettings extends HTMLElement {
         .btn-factory { background: #F44336; color: white; } 
         .btn-export { background: #2196F3; color: white; }
         .btn-import { background: #2196F3; color: white; }
+        .goal-indicator-wrapper { display: flex; align-items: center; width: 100px; height: 10px; background: linear-gradient(to right, #cc0000, red, orange 50%, green, #007300); border-radius: 5px; position: relative; margin-left: 10px; cursor: pointer; }
+        .goal-indicator-ideal { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background-color: var(--primary-text-color); transform: translateX(-50%); z-index: 1; }
+        .goal-indicator-current { position: absolute; top: 50%; width: 8px; height: 8px; background-color: white; border: 1px solid var(--primary-text-color); border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
       </style>
     `;
   }
@@ -717,6 +748,26 @@ class TaskOrganizerSettings extends HTMLElement {
     const displayTitle = this._config.title || this.localize('title');
     const showAdvanced = this._config.show_advanced === true;
     const template = this._editingTemplateId ? this.templates[this._editingTemplateId] : null;
+
+    let requiredPoints = 0;
+    if (this.tasks) {
+      Object.values(this.tasks).forEach(t => {
+        if (t.interval > 0) {
+          requiredPoints += (t.complexity || 0) / t.interval;
+        }
+      });
+    }
+
+    let currentGoals = 0;
+    if (this.settings?.point_goals) {
+      Object.values(this.settings.point_goals).forEach(g => currentGoals += (parseInt(g) || 0));
+    }
+
+    let indicatorPercent = 50; 
+    if (requiredPoints > 0) {
+      indicatorPercent = (currentGoals / requiredPoints) * 50;
+      indicatorPercent = Math.max(0, Math.min(100, indicatorPercent));
+    }
 
     let html = this._getStyles();
     
@@ -854,6 +905,12 @@ class TaskOrganizerSettings extends HTMLElement {
             <div class="section-title">
               <ha-icon icon="${this._goalsOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
               <span>${this.localize('point_goals')}</span>
+            </div>
+            <div style="display: ${this._goalsOpen ? 'flex' : 'none'}; align-items: center;" @click="ev => ev.stopPropagation()">
+              <div id="btn-distribute-goals" class="goal-indicator-wrapper" title="${this.localize('goal_indicator_tooltip', { ideal: requiredPoints.toFixed(1), current: currentGoals })}">
+                <div class="goal-indicator-ideal"></div>
+                <div class="goal-indicator-current" style="left: ${indicatorPercent}%;"></div>
+              </div>
             </div>
           </div>
           <div class="section-content ${this._goalsOpen ? 'open' : ''}" id="goals-content">

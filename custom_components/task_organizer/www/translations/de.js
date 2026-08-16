@@ -163,6 +163,7 @@ export const de = {
     export_templates_cb: "Vorlagen exportieren",
     factory_btn: "Werkseinstellungen",
     full_points_distribution: "Vollständige Punkteverteilung",
+    goal_indicator_tooltip: "Ideal: {ideal} / Aktuell: {current}\n(Klicken zum gleichmäßigen Aufteilen)",
     height_lbl: "Höhe",
     history_lbl: "Historie",
     icon_lbl: "Icon",

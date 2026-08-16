@@ -2,6 +2,7 @@
 
 ## [2.0.0]
 ### 🚀 New Features
+- **Point Goals Indicator:** Added a visual indicator to the settings card that helps evaluate if the configured point goals are sufficient to cover the recurring tasks.
 - **Kanban Board:** Added a new card (`task-organizer-kanban`) to display and manage tasks in a Kanban board style layout.
 - **Redesigned Task Modal:** The task creation and editing modal has been completely redesigned with a new tabbed interface for better organization.
 - **File Attachments:** Added support for file attachments and image uploads to tasks.

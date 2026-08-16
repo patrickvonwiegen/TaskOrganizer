@@ -163,6 +163,7 @@ export const en = {
     export_templates_cb: "Export Templates",
     factory_btn: "Factory Reset",
     full_points_distribution: "Full points distribution",
+    goal_indicator_tooltip: "Ideal: {ideal} / Current: {current}\n(Click to distribute evenly)",
     height_lbl: "Height",
     history_lbl: "History",
     icon_lbl: "Icon",
