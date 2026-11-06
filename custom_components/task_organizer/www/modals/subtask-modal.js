@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`../utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox } = await import(`../utils/i18n.js?v=${_v}`);
 
 export class TaskOrganizerSubtaskModal extends HTMLElement {
   constructor() {
@@ -33,11 +33,9 @@ export class TaskOrganizerSubtaskModal extends HTMLElement {
   _renderSubtaskList() {
     const container = this.shadowRoot.getElementById('sub-completion-list');
     if (!container) return;
-    container.innerHTML = this._completionSubtasks.map((st, index) => `
-        <ha-formfield label="${st.title}">
-            <ha-checkbox class="sub-complete-check" data-index="${index}" ${st.done ? 'checked' : ''}></ha-checkbox>
-        </ha-formfield>
-    `).join('');
+    container.innerHTML = this._completionSubtasks.map((st, index) => 
+        renderCheckbox({ label: st.title, className: 'sub-complete-check', data: { index }, checked: st.done })
+    ).join('');
   }
 
   async _save() {

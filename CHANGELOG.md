@@ -14,6 +14,8 @@
 - **Extended configurable colors:** Added configuration options for the colors of the "Paused" and "In Progress" statuses across card and kanban card.
 
 ### 🐛 Bug Fixes
+- **HA Component Compatibility:** Fixed missing labels on checkboxes and toggle switches across dialogs and card editors (such as Export modal, Task edit assignees, and Time settings toggles) caused by the removal of `ha-formfield` in Home Assistant 2026.11.
+- **Task Modal Tab Navigation:** Fixed tab scroll indicators and navigation scrolling in the Task edit modal, adding click event handlers for the left and right scroll buttons and horizontal mouse wheel support.
 - **Architecture & Translations:** The modals have been outsourced into separate components and the translations have been centralized to improve maintainability.
 - **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
 - **Scrollable History:** The history in the leaderboard card now features a scrollbar if you have more entries.

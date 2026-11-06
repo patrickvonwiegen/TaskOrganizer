@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
 await import(`./modals/choice-modal.js?v=${_v}`);
 await import(`./modals/subtask-modal.js?v=${_v}`);
 await import(`./modals/task-modal.js?v=${_v}`);
@@ -928,18 +928,10 @@ class TaskOrganizerKanbanEditor extends HTMLElement {
       <div class="card-config">
         <ha-input label="Title" value="${this._config.title || this.localize('title')}" configValue="title"></ha-input>
         <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px;">
-          <ha-formfield label="Show Add Button">
-            <ha-checkbox ${this._config.show_add !== false ? 'checked' : ''} configValue="show_add"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="Show Edit Button">
-            <ha-checkbox ${this._config.show_edit !== false ? 'checked' : ''} configValue="show_edit"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="Show Delete Button">
-            <ha-checkbox ${this._config.show_delete !== false ? 'checked' : ''} configValue="show_delete"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="Show Search Button">
-            <ha-checkbox ${this._config.show_search !== false ? 'checked' : ''} configValue="show_search"></ha-checkbox>
-          </ha-formfield>
+          ${renderCheckbox({ label: 'Show Add Button', checked: this._config.show_add !== false, configValue: 'show_add' })}
+          ${renderCheckbox({ label: 'Show Edit Button', checked: this._config.show_edit !== false, configValue: 'show_edit' })}
+          ${renderCheckbox({ label: 'Show Delete Button', checked: this._config.show_delete !== false, configValue: 'show_delete' })}
+          ${renderCheckbox({ label: 'Show Search Button', checked: this._config.show_search !== false, configValue: 'show_search' })}
         </div>
         <ha-input label="Visible Columns (e.g. due_and_overdue, overdue, due, in_progress, paused, completed)" value="${this._config.visible_columns || 'due_and_overdue, in_progress, completed'}" configValue="visible_columns" style="width: 100%; margin-top: 16px;"></ha-input>
         <ha-input label="Sort By (e.g. due_date, points, assignee, alphabet)" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-input>
@@ -957,7 +949,7 @@ class TaskOrganizerKanbanEditor extends HTMLElement {
           display: block;
           margin-bottom: 8px;
         }
-        ha-formfield {
+        ha-formfield, ha-checkbox {
           display: flex;
           align-items: center;
         }

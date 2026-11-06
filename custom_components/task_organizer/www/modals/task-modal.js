@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`../utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox, renderSwitch } = await import(`../utils/i18n.js?v=${_v}`);
 
 export class TaskOrganizerTaskModal extends HTMLElement {
   constructor() {
@@ -170,7 +170,11 @@ export class TaskOrganizerTaskModal extends HTMLElement {
     }
     
     modal.classList.add('open');
-    setTimeout(() => this._updateTabScrollIndicators(), 10);
+    const tabsScroll = this.shadowRoot.getElementById('tabs-scroll');
+    if (tabsScroll) tabsScroll.scrollLeft = 0;
+    requestAnimationFrame(() => this._updateTabScrollIndicators());
+    setTimeout(() => this._updateTabScrollIndicators(), 50);
+    setTimeout(() => this._updateTabScrollIndicators(), 200);
   }
 
   _close() {
@@ -305,13 +309,13 @@ export class TaskOrganizerTaskModal extends HTMLElement {
       const rightBtn = this.shadowRoot.getElementById('scroll-right');
       if (!tabs || !leftBtn || !rightBtn) return;
       
-      const isScrollable = tabs.scrollWidth > tabs.clientWidth;
-      const isAtStart = tabs.scrollLeft <= 0;
-      const isAtEnd = tabs.scrollLeft + tabs.clientWidth >= tabs.scrollWidth - 1;
+      const isScrollable = tabs.scrollWidth > tabs.clientWidth + 1;
+      const isAtStart = tabs.scrollLeft <= 1;
+      const isAtEnd = Math.ceil(tabs.scrollLeft + tabs.clientWidth) >= tabs.scrollWidth - 1;
       
       if (isScrollable) {
-          leftBtn.style.display = isAtStart ? 'none' : 'block';
-          rightBtn.style.display = isAtEnd ? 'none' : 'block';
+          leftBtn.style.display = isAtStart ? 'none' : 'flex';
+          rightBtn.style.display = isAtEnd ? 'none' : 'flex';
       } else {
           leftBtn.style.display = 'none';
           rightBtn.style.display = 'none';
@@ -683,7 +687,7 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         .tab-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tab-btn:hover { color: var(--primary-text-color); }
         .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
-        .scroll-indicator { background: var(--card-background-color); border: none; color: var(--primary-text-color); font-size: 16px; cursor: pointer; padding: 0 8px; z-index: 2; box-shadow: 0 0 4px rgba(0,0,0,0.1); height: 100%; position: absolute; }
+        .scroll-indicator { background: var(--card-background-color, #fff); border: none; color: var(--primary-text-color); font-size: 16px; cursor: pointer; padding: 0 8px; z-index: 2; box-shadow: 0 0 4px rgba(0,0,0,0.1); height: 100%; position: absolute; top: 0; display: none; align-items: center; justify-content: center; }
         #scroll-left { left: 0; }
         #scroll-right { right: 0; }
         .tab-content { display: none; flex-direction: column; gap: 16px; animation: fadeIn 0.3s; }
@@ -692,7 +696,7 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
         .form-col { flex: 1; min-width: 0; width: 100%; }
         .form-label { font-size: 12px; color: var(--secondary-text-color); margin-bottom: 4px; display: block; }
-        .assignees-container { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 8px; background: var(--secondary-background-color); border-radius: 4px; }
+        .assignees-container { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding-top: 8px; }
         #template-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .suggestion-item { background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 16px; padding: 6px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 4px; }
         .suggestion-item:hover { background: var(--primary-color); color: var(--text-primary-color); }
@@ -778,11 +782,9 @@ export class TaskOrganizerTaskModal extends HTMLElement {
                   <div>
                       <label class="form-label">${this.localize('assignees_lbl')}</label>
                       <div class="assignees-container">
-                          ${Object.entries(this._users).map(([uid, name]) => `
-                              <ha-formfield label="${name}">
-                                  <ha-checkbox class="assignee-cb" id="cb-${uid}" value="${uid}"></ha-checkbox>
-                              </ha-formfield>
-                          `).join('')}
+                          ${Object.entries(this._users).map(([uid, name]) => 
+                              renderCheckbox({ className: 'assignee-cb', id: `cb-${uid}`, value: uid, label: name })
+                          ).join('')}
                       </div>
                   </div>
               </div>
@@ -790,27 +792,19 @@ export class TaskOrganizerTaskModal extends HTMLElement {
               <div class="tab-content" id="tab-time">
                   <div style="display:flex; flex-direction:column; gap:16px;">
                       <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
-                          <ha-formfield label="${this.localize('set_due_today')}">
-                              <ha-switch id="f-set-due-date-cb"></ha-switch>
-                          </ha-formfield>
+                          ${renderSwitch({ id: 'f-set-due-date-cb', label: this.localize('set_due_today') })}
                           <input type="date" id="f-custom-due-date" style="width:100%; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit; display: none;">
                       </div>
                       <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
-                          <ha-formfield label="${this.localize('override_overdue_lbl')}">
-                              <ha-switch id="f-override-overdue-cb"></ha-switch>
-                          </ha-formfield>
+                          ${renderSwitch({ id: 'f-override-overdue-cb', label: this.localize('override_overdue_lbl') })}
                           <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="width:100%; display: none;" placeholder="${this.localize('override_overdue_days_placeholder')}"></ha-input>
                       </div>
                       <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
-                          <ha-formfield label="${this.localize('pause_until')}">
-                              <ha-switch id="f-pause-cb"></ha-switch>
-                          </ha-formfield>
+                          ${renderSwitch({ id: 'f-pause-cb', label: this.localize('pause_until') })}
                           <input type="date" id="f-pause-date" style="width:100%; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit; display: none;">
                       </div>
                       <div style="display:flex; flex-direction:column; gap:8px;">
-                          <ha-formfield label="${this.localize('restrict_months_lbl')}">
-                              <ha-switch id="f-restrict-months-cb"></ha-switch>
-                          </ha-formfield>
+                          ${renderSwitch({ id: 'f-restrict-months-cb', label: this.localize('restrict_months_lbl') })}
                           <div id="f-months-band" style="display:none; flex-wrap:wrap; gap:8px; margin-top:8px;">
                               ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
                                   const mName = new Date(2000, m-1, 1).toLocaleString(this._hass?.language || 'de', { month: 'short' });
@@ -934,14 +928,43 @@ export class TaskOrganizerTaskModal extends HTMLElement {
             const currentBtn = e.currentTarget;
             const tabId = currentBtn.getAttribute('data-tab');
             currentBtn.classList.add('active');
-            this.shadowRoot.getElementById(tabId).classList.add('active');
+            const targetContent = this.shadowRoot.getElementById(tabId);
+            if (targetContent) targetContent.classList.add('active');
+            currentBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            this._updateTabScrollIndicators();
         });
     });
 
     const tabsScroll = this.shadowRoot.getElementById('tabs-scroll');
+    const scrollLeftBtn = this.shadowRoot.getElementById('scroll-left');
+    const scrollRightBtn = this.shadowRoot.getElementById('scroll-right');
+
+    if (scrollLeftBtn && tabsScroll) {
+        scrollLeftBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tabsScroll.scrollBy({ left: -100, behavior: 'smooth' });
+        });
+    }
+
+    if (scrollRightBtn && tabsScroll) {
+        scrollRightBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tabsScroll.scrollBy({ left: 100, behavior: 'smooth' });
+        });
+    }
+
     if (tabsScroll) {
         tabsScroll.addEventListener('scroll', () => this._updateTabScrollIndicators());
+        tabsScroll.addEventListener('wheel', (e) => {
+            if (e.deltaY !== 0 && tabsScroll.scrollWidth > tabsScroll.clientWidth) {
+                e.preventDefault();
+                tabsScroll.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
         window.addEventListener('resize', () => this._updateTabScrollIndicators());
+        if (window.ResizeObserver) {
+            new ResizeObserver(() => this._updateTabScrollIndicators()).observe(tabsScroll);
+        }
     }
 
     const dropzone = this.shadowRoot.getElementById('f-image-dropzone');

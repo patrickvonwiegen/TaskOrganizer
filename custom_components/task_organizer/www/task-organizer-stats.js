@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
@@ -797,9 +797,7 @@ class TaskOrganizerStatsEditor extends HTMLElement {
            <option value="heatmap" ${this._config.report_type === 'heatmap' ? 'selected' : ''}>${this.localize('report_heatmap')}</option>
         </select>
         
-        <ha-formfield label="${this.localize('show_user_select_lbl')}">
-          <ha-checkbox ${this._config.show_user_select !== false ? 'checked' : ''} configValue="show_user_select"></ha-checkbox>
-        </ha-formfield>
+        ${renderCheckbox({ label: this.localize('show_user_select_lbl'), checked: this._config.show_user_select !== false, configValue: 'show_user_select' })}
 
       </div>
       <style>

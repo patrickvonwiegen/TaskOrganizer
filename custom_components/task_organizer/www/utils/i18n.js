@@ -32,3 +32,6 @@ export function localize(hass, key, replace = null, dictType = 'card') {
   }
   return text;
 }
+
+export { renderCheckbox, renderSwitch } from './formfield.js';
+

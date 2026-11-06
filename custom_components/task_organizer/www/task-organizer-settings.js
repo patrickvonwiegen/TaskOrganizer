@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox, renderSwitch } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
@@ -972,11 +972,7 @@ class TaskOrganizerSettings extends HTMLElement {
                   <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
                       ${Object.entries(this.users).map(([uid, name]) => {
                           const isChecked = template?.assignees?.includes(uid) || false;
-                          return `
-                              <ha-formfield label="${name}">
-                                  <ha-checkbox class="tmpl-assignee-cb" value="${uid}" ${isChecked ? 'checked' : ''}></ha-checkbox>
-                              </ha-formfield>
-                          `;
+                          return renderCheckbox({ label: name, className: 'tmpl-assignee-cb', value: uid, checked: isChecked });
                       }).join('')}
                   </div>
               </div>
@@ -1005,26 +1001,14 @@ class TaskOrganizerSettings extends HTMLElement {
             <h2>${this.localize('export_btn')}</h2>
             
             <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
-              <ha-formfield label="${this.localize('export_tasks_cb')}">
-                <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_templates_cb')}">
-                <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_audit_log_cb')}">
-                <ha-checkbox id="cb-export-audit-log" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_history_cb')}">
-                <ha-checkbox id="cb-export-history" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_settings_cb')}">
-                <ha-checkbox id="cb-export-settings" checked></ha-checkbox>
-              </ha-formfield>
+              ${renderCheckbox({ id: 'cb-export-tasks', label: this.localize('export_tasks_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-templates', label: this.localize('export_templates_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-audit-log', label: this.localize('export_audit_log_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-history', label: this.localize('export_history_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-settings', label: this.localize('export_settings_cb'), checked: true })}
               
               <div title="${this.localize('export_images_info')}" style="cursor: help; width: max-content;">
-                <ha-formfield label="${this.localize('export_images_lbl')}">
-                  <ha-checkbox id="cb-export-images" disabled style="opacity: 0.5;"></ha-checkbox>
-                </ha-formfield>
+                ${renderCheckbox({ id: 'cb-export-images', label: this.localize('export_images_lbl'), disabled: true, style: 'opacity: 0.5;' })}
               </div>
             </div>
             
@@ -1147,9 +1131,7 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
           <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
           <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-formfield label="${this.localize('show_advanced_lbl')}">
-          <ha-checkbox ${this._config.show_advanced === true ? 'checked' : ''} configValue="show_advanced"></ha-checkbox>
-        </ha-formfield>
+        ${renderCheckbox({ label: this.localize('show_advanced_lbl'), checked: this._config.show_advanced === true, configValue: 'show_advanced' })}
       </div>
       <style>
         .card-config ha-input { display: block; margin-bottom: 8px; }

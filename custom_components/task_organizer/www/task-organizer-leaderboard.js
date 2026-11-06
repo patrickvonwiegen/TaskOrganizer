@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
@@ -426,9 +426,7 @@ class TaskOrganizerLeaderboardEditor extends HTMLElement {
           <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
           <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-formfield label="${this.localize('show_history_lbl')}">
-          <ha-checkbox ${this._config.show_history !== false ? 'checked' : ''} configValue="show_history"></ha-checkbox>
-        </ha-formfield>
+        ${renderCheckbox({ label: this.localize('show_history_lbl'), checked: this._config.show_history !== false, configValue: 'show_history' })}
       </div>
       <style>
         .card-config ha-input { display: block; margin-bottom: 8px; }

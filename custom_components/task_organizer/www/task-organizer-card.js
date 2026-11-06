@@ -1,5 +1,5 @@
 const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
-const { localize } = await import(`./utils/i18n.js?v=${_v}`);
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
 await import(`./modals/choice-modal.js?v=${_v}`);
 await import(`./modals/subtask-modal.js?v=${_v}`);
 await import(`./modals/task-modal.js?v=${_v}`);
@@ -418,11 +418,9 @@ class TaskOrganizerCard extends HTMLElement {
   _renderSubtaskCompletionList() {
     const container = this.shadowRoot.getElementById('sub-completion-list');
     if (!container) return;
-    container.innerHTML = this._completionSubtasks.map((st, index) => `
-        <ha-formfield label="${st.title}">
-            <ha-checkbox class="sub-complete-check" data-index="${index}" ${st.done ? 'checked' : ''}></ha-checkbox>
-        </ha-formfield>
-    `).join('');
+    container.innerHTML = this._completionSubtasks.map((st, index) => 
+        renderCheckbox({ label: st.title, className: 'sub-complete-check', data: { index }, checked: st.done })
+    ).join('');
   }
 
   /**
@@ -2227,18 +2225,10 @@ class TaskOrganizerCardEditor extends HTMLElement {
         <ha-input label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-input>
         
         <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px;">
-          <ha-formfield label="${this.localize('show_search_lbl')}">
-            <ha-checkbox ${this._config.show_search !== false ? 'checked' : ''} configValue="show_search"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="${this.localize('show_add_lbl')}">
-            <ha-checkbox ${this._config.show_add !== false ? 'checked' : ''} configValue="show_add"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="${this.localize('show_edit_lbl')}">
-            <ha-checkbox ${this._config.show_edit !== false ? 'checked' : ''} configValue="show_edit"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="${this.localize('show_delete_lbl')}">
-            <ha-checkbox ${this._config.show_delete !== false ? 'checked' : ''} configValue="show_delete"></ha-checkbox>
-          </ha-formfield>
+          ${renderCheckbox({ label: this.localize('show_search_lbl'), checked: this._config.show_search !== false, configValue: 'show_search' })}
+          ${renderCheckbox({ label: this.localize('show_add_lbl'), checked: this._config.show_add !== false, configValue: 'show_add' })}
+          ${renderCheckbox({ label: this.localize('show_edit_lbl'), checked: this._config.show_edit !== false, configValue: 'show_edit' })}
+          ${renderCheckbox({ label: this.localize('show_delete_lbl'), checked: this._config.show_delete !== false, configValue: 'show_delete' })}
         </div>
 
         <ha-input label="${this.localize('sort_by_lbl')}" placeholder="${this.localize('sort_by_placeholder')}" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-input>
@@ -2250,7 +2240,7 @@ class TaskOrganizerCardEditor extends HTMLElement {
           display: block;
           margin-bottom: 8px;
         }
-        ha-formfield {
+        ha-formfield, ha-checkbox {
           display: flex;
           align-items: center;
         }
