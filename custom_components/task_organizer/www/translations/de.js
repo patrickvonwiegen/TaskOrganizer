@@ -52,7 +52,7 @@ export const de = {
     prev: "Zurück",
     recreate_task_prompt: "Möchtest du '{taskName}' aus einer Vorlage erstellen?",
     recurring: "Wiederkehrende Aufgabe",
-    restrict_months_lbl: "Historie einschränken (Monate)",
+    restrict_months_lbl: "Auf bestimmte Monate begrenzen",
     save: "Speichern",
     saved: "Gespeichert",
     search_btn: "Suchen",

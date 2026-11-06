@@ -52,7 +52,7 @@ export const en = {
     prev: "Previous",
     recreate_task_prompt: "Create '{taskName}' from a template?",
     recurring: "Recurring Task",
-    restrict_months_lbl: "Restrict History (Months)",
+    restrict_months_lbl: "Restrict to specific months",
     save: "Save",
     saved: "Saved",
     search_btn: "Search",

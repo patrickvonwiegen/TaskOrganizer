@@ -135,6 +135,19 @@ class TaskOrganizerProtocol extends HTMLElement {
     } 
   }
 
+  /**
+   * Displays a toast notification in the Home Assistant UI.
+   * @param {string} message - The message to display.
+   */
+  _showToast(message) {
+    const event = new CustomEvent("hass-notification", { 
+        detail: { message: message, duration: 3000 }, 
+        bubbles: true, 
+        composed: true 
+    });
+    this.dispatchEvent(event);
+  }
+
   render() {
     if (!this.config || !this._hass) return;
     const itemsPerPage = this.config.items_per_page || 10;

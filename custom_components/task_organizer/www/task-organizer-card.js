@@ -909,13 +909,6 @@ class TaskOrganizerCard extends HTMLElement {
         composed: true 
     });
     this.dispatchEvent(event);
-    
-    const root = document.querySelector("home-assistant");
-    if (root) { 
-        root.dispatchEvent(new CustomEvent("hass-notification", { 
-            detail: { message: message, duration: 3000 } 
-        })); 
-    }
   }
 
   /**
