@@ -1,77 +1,18 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_STATS = { 
-  en: {
-    title: "Household Reports", empty: "No entries.", unknown: "Unknown",
-    confirm_delete: "Really delete this entry?", edit: "Edit", points: "Points",
-    user: "Assignee", cancel: "Cancel", save: "Save", filter_all: "All",
-    prev: "Previous", next: "Next", page: "Page",
-    edit_hover: "Edit entry",
-    delete_hover: "Delete entry",
-    entry_saved: "Entry saved!", 
-    height_lbl: "Height", width_lbl: "Width",
-    title_lbl: "Title",
-    items_per_page_lbl: "Items per Page",
-    filter_by_lbl: "Filter By",
-    filter_by_placeholder: "all, mine",
-    user_filter_lbl: "User",
-    show_user_select_lbl: "Show User Selection",
-    points_per_day: "Points per day",
-    goal_progress: "Goal progress",
-    goal_reached_congrats: "Goal achieved! 🎉",
-    all_users: "All Users",
-    report_type: "Report Type",
-    report_overview: "Completed Tasks",
-    report_burndown: "Goal Setting",
-    remaining_points: "Remaining Points",
-    pending: "pending",
-    today_target_tooltip: "Today's target: {target} pts, Current: {current} pts",
-    today_points_tooltip: "Current points: {current} pts, Avg last 3 days: {average} pts",
-    above_goal: "above goal"
-  },
-  de: { 
-    title: "Haushaltsberichte", empty: "Keine Einträge.", unknown: "Unbekannt", 
-    confirm_delete: "Eintrag wirklich löschen?", edit: "Korrigieren", points: "Punkte", 
-    user: "Bearbeiter", cancel: "Abbrechen", save: "Speichern", filter_all: "Alle",
-    prev: "Zurück", next: "Weiter", page: "Seite",
-    edit_hover: "Eintrag bearbeiten",
-    delete_hover: "Eintrag löschen",
-    entry_saved: "Eintrag gespeichert!", 
-    height_lbl: "Höhe", width_lbl: "Breite",
-    title_lbl: "Titel",
-    items_per_page_lbl: "Einträge pro Seite",
-    filter_by_lbl: "Filtern nach",
-    filter_by_placeholder: "all, mine",
-    user_filter_lbl: "Benutzer",
-    show_user_select_lbl: "Benutzerauswahl anzeigen",
-    points_per_day: "Punkte pro Tag",
-    goal_progress: "Ziel-Fortschritt",
-    goal_reached_congrats: "Ziel erreicht! 🎉",
-    all_users: "Alle Benutzer",
-    report_type: "Berichtsart",
-    report_overview: "Abgeschlossene Aufgaben",
-    report_burndown: "Zielsetzung",
-    remaining_points: "Verbleibende Punkte",
-    pending: "ausstehend",
-    today_target_tooltip: "Heutiges Soll: {target} Pkt, Aktuell: {current} Pkt",
-    today_points_tooltip: "Aktuelle Punkte: {current} Pkt, Ø letzte 3 Tage: {average} Pkt",
-    above_goal: "über dem Ziel"
-  }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-stats",
-  name: "Task Organizer: Reports",
-  description: "Displays graphical reports and point progress charts.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-stats")) {
+  window.customCards.push({
+    type: "task-organizer-stats",
+    name: "Task Organizer: Reports",
+    description: "Displays graphical reports and point progress charts.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerStats extends HTMLElement {
   /**
@@ -106,15 +47,7 @@ class TaskOrganizerStats extends HTMLElement {
    * @returns {string} - The translated text.
    */
   static _localize(hass, key, replace = null) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_STATS[lang] || I18N_STATS['en'];
-    let text = dict[key] || I18N_STATS['en'][key] || key;
-    if (replace) {
-      for (const [k, v] of Object.entries(replace)) {
-        text = text.replace(`{${k}}`, v);
-      }
-    }
-    return text;
+    return localize(hass, key, replace, 'stats');
   }
 
   /**
@@ -659,6 +592,110 @@ class TaskOrganizerStats extends HTMLElement {
     `;
   }
 
+  _renderHeatmap(userId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Start from today minus 1 year
+    const startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+    // Align to Monday (so the first week is shown correctly)
+    const dayOfWeek = startDate.getDay();
+    const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    startDate.setDate(diff);
+
+    const daysToShow = Math.ceil((today.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const numCols = Math.ceil(daysToShow / 7);
+
+    const dailyPoints = {};
+    let maxPoints = 1;
+
+    this.history.forEach(h => {
+        if (h.user_id === userId) {
+            const d = new Date(h.timestamp);
+            if (d >= startDate) {
+                const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                dailyPoints[dateKey] = (dailyPoints[dateKey] || 0) + h.points;
+                if (dailyPoints[dateKey] > maxPoints) {
+                    maxPoints = dailyPoints[dateKey];
+                }
+            }
+        }
+    });
+
+    const cellSize = 14;
+    const cellSpacing = 3;
+    const chartLeft = 5;
+    const chartTop = 20;
+    
+    // Calculate total width based on number of columns
+    const calculatedWidth = chartLeft + (numCols * (cellSize + cellSpacing)) + 10;
+    const svgWidth = calculatedWidth; 
+    const svgHeight = chartTop + (7 * (cellSize + cellSpacing)) + 10;
+
+    let elements = '';
+    const monthLabels = [];
+    let lastMonth = -1;
+
+    for (let i = 0; i < daysToShow; i++) {
+        const d = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const pts = dailyPoints[dateKey] || 0;
+        
+        const col = Math.floor(i / 7);
+        const row = d.getDay() === 0 ? 6 : d.getDay() - 1;
+
+        const x = chartLeft + col * (cellSize + cellSpacing);
+        const y = chartTop + row * (cellSize + cellSpacing);
+
+        let intensity = 0;
+        if (pts > 0) {
+            intensity = Math.ceil((pts / maxPoints) * 4);
+            intensity = Math.max(1, Math.min(4, intensity));
+        }
+
+        const opacities = ['0.1', '0.3', '0.55', '0.8', '1.0'];
+        const fill = intensity === 0 ? 'var(--divider-color)' : 'var(--primary-color)';
+        const opacity = intensity === 0 ? '0.3' : opacities[intensity];
+
+        const lang = (this._hass && this._hass.language) ? this._hass.language : 'en-US';
+        const formattedDate = d.toLocaleDateString(lang, { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const hoverText = this.localize('heatmap_tooltip', {date: formattedDate, points: pts.toFixed(1)});
+        
+        elements += `<rect class="data-point" data-tooltip="${hoverText}" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fill}" opacity="${opacity}" rx="2" style="cursor: pointer;" />`;
+
+        if (row === 0 && d.getMonth() !== lastMonth) {
+            monthLabels.push({text: d.toLocaleString(lang, { month: 'short' }), x: x});
+            lastMonth = d.getMonth();
+        }
+    }
+
+    const rowLabels = [
+        {text: 'Mo', y: chartTop + 0 * (cellSize + cellSpacing) + 11},
+        {text: 'Di', y: chartTop + 1 * (cellSize + cellSpacing) + 11},
+        {text: 'Mi', y: chartTop + 2 * (cellSize + cellSpacing) + 11},
+        {text: 'Do', y: chartTop + 3 * (cellSize + cellSpacing) + 11},
+        {text: 'Fr', y: chartTop + 4 * (cellSize + cellSpacing) + 11},
+        {text: 'Sa', y: chartTop + 5 * (cellSize + cellSpacing) + 11},
+        {text: 'So', y: chartTop + 6 * (cellSize + cellSpacing) + 11}
+    ];
+
+    return `
+      <div class="chart-container" style="display: flex; align-items: flex-start; padding-bottom: 10px;">
+        <div style="width: 20px; flex-shrink: 0;">
+          <svg width="20" height="${svgHeight}" viewBox="0 0 20 ${svgHeight}" style="display: block; shape-rendering: geometricPrecision;">
+            ${rowLabels.map(l => `<text x="0" y="${l.y}" font-size="10" font-weight="500" fill="var(--secondary-text-color)">${l.text}</text>`).join('')}
+          </svg>
+        </div>
+        <div class="heatmap-scroll-container" style="overflow-x: auto; overflow-y: hidden; flex-grow: 1;">
+          <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="display: block; shape-rendering: geometricPrecision;">
+            ${monthLabels.map(l => `<text x="${l.x}" y="12" font-size="12" font-weight="500" fill="var(--secondary-text-color)">${l.text}</text>`).join('')}
+            ${elements}
+          </svg>
+        </div>
+      </div>
+    `;
+  }
+
   render() {
     if (!this.config || !this._hass) {
       return;
@@ -691,18 +728,29 @@ class TaskOrganizerStats extends HTMLElement {
       <select id="report-select">
         <option value="overview" ${this._reportType === 'overview' ? 'selected' : ''}>${this.localize('report_overview')}</option>
         <option value="burndown" ${this._reportType === 'burndown' ? 'selected' : ''}>${this.localize('report_burndown')}</option>
+        <option value="heatmap" ${this._reportType === 'heatmap' ? 'selected' : ''}>${this.localize('report_heatmap')}</option>
       </select>
     </div>`;
 
     if (this._selectedUserId !== 'all') {
       if (this._reportType === 'overview') html += this._renderOverviewChart(this._selectedUserId);
       else if (this._reportType === 'burndown') html += this._renderBurnDownChart(this._selectedUserId);
+      else if (this._reportType === 'heatmap') html += this._renderHeatmap(this._selectedUserId);
     }
 
     html += `</ha-card>
     <div id="custom-tooltip"></div>`;
     
     this.shadowRoot.innerHTML = html;
+    
+    if (this._reportType === 'heatmap') {
+      setTimeout(() => {
+        const container = this.shadowRoot.querySelector('.heatmap-scroll-container');
+        if (container) {
+          container.scrollLeft = container.scrollWidth;
+        }
+      }, 50);
+    }
   }
 }
 
@@ -746,11 +794,10 @@ class TaskOrganizerStatsEditor extends HTMLElement {
         <select configValue="report_type" style="width:100%; padding:8px; margin: 8px 0; border-radius:4px; background:var(--card-background-color); color:var(--primary-text-color); border:1px solid var(--divider-color);">
            <option value="overview" ${this._config.report_type === 'overview' ? 'selected' : ''}>${this.localize('report_overview')}</option>
            <option value="burndown" ${this._config.report_type === 'burndown' ? 'selected' : ''}>${this.localize('report_burndown')}</option>
+           <option value="heatmap" ${this._config.report_type === 'heatmap' ? 'selected' : ''}>${this.localize('report_heatmap')}</option>
         </select>
         
-        <ha-formfield label="${this.localize('show_user_select_lbl')}">
-          <ha-checkbox ${this._config.show_user_select !== false ? 'checked' : ''} configValue="show_user_select"></ha-checkbox>
-        </ha-formfield>
+        ${renderCheckbox({ label: this.localize('show_user_select_lbl'), checked: this._config.show_user_select !== false, configValue: 'show_user_select' })}
 
       </div>
       <style>
@@ -811,5 +858,5 @@ class TaskOrganizerStatsEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-stats-editor', TaskOrganizerStatsEditor);
-customElements.define('task-organizer-stats', TaskOrganizerStats);
+try { customElements.define('task-organizer-stats-editor', TaskOrganizerStatsEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-stats', TaskOrganizerStats); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }

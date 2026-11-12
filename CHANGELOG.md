@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.0.0]
+### 🚀 New Features
+- **Point Goals Indicator:** Added a visual indicator to the settings card that helps evaluate if the configured point goals are sufficient to cover the recurring tasks.
+- **Kanban Board:** Added a new card (`task-organizer-kanban`) to display and manage tasks in a Kanban board style layout.
+- **Redesigned Task Modal:** The task creation and editing modal has been completely redesigned with a new tabbed interface for better organization.
+- **File Attachments:** Added support for file attachments and image uploads to tasks.
+- **Task-History:** Added a detailed audit log and the ability to clear it or include it in JSON exports and imports.
+- **Seasonal Tasks:** Added the ability to restrict tasks to specific months (e.g., mowing the lawn only from April to October). Tasks will automatically be treated as paused during inactive months.
+- **Task Behavior Settings:** Added a new "Complete points distribution" option which, when disabled, allows assigning fewer total points in the "Who did it?" modal without adjusting other users' sliders.
+- **Reports:** Added a new Heatmap chart to track user activity over time.
+- **Calendar View:** Added a Home Assistant calendar entity (`calendar.task_organizer_calendar`) to display upcoming, overdue, and completed tasks as full-day events.
+- **Extended configurable colors:** Added configuration options for the colors of the "Paused" and "In Progress" statuses across card and kanban card.
+
+### 🐛 Bug Fixes
+- **HA Component Compatibility:** Fixed missing labels on checkboxes and toggle switches across dialogs and card editors (such as Export modal, Task edit assignees, and Time settings toggles) caused by the removal of `ha-formfield` in Home Assistant 2026.11.
+- **Task Modal Tab Navigation:** Fixed tab scroll indicators and navigation scrolling in the Task edit modal, adding click event handlers for the left and right scroll buttons and horizontal mouse wheel support.
+- **Architecture & Translations:** The modals have been outsourced into separate components and the translations have been centralized to improve maintainability.
+- **Scrollable Assignees:** The assignee list now features a scrollbar if you have more than 5 users.
+- **Scrollable History:** The history in the leaderboard card now features a scrollbar if you have more entries.
+
 ## [1.7.0]
 ### ⚠️ Breaking Changes
 - **Transparency Settings:** The transparency configuration scale has been inverted. 100% now represents full opacity (solid color), and 0% represents full transparency. The default value has been updated to 8% to match the previous highly transparent look.

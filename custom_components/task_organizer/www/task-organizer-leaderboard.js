@@ -1,23 +1,18 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_BOARD = {
-  en: { title: "Roommate of the Month", no_points: "No points this month.", unknown: "Unknown", pts: "Pts", today: "Today", month: "Month", year: "Year", winner: "Winner", history: "History", podium_hover: "{place}. Place: {name} ({points} Pts)", history_hover: "Winner in {month} {year}: {name} with {points} points", height_lbl: "Height", width_lbl: "Width", title_lbl: "Title", show_history_lbl: "Show History", goal_reached: "Goal reached!" },
-  de: { title: "Mitbewohner des Monats", no_points: "Keine Punkte diesen Monat.", unknown: "Unbekannt", pts: "Pkt", today: "Heute", month: "Monat", year: "Jahr", winner: "Sieger", history: "Historie", podium_hover: "{place}. Platz: {name} ({points} Pkt)", history_hover: "Sieger im {month} {year}: {name} mit {points} Punkten", height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel", show_history_lbl: "Verlauf anzeigen", goal_reached: "Ziel erreicht!" }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-leaderboard",
-  name: "Task Organizer: Leaderboard",
-  description: "Displays the roommate of the month and the history of previous winners.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-leaderboard")) {
+  window.customCards.push({
+    type: "task-organizer-leaderboard",
+    name: "Task Organizer: Roommate of the Month",
+    description: "A custom card to display the winner's podium.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerLeaderboard extends HTMLElement {
   /**
@@ -46,16 +41,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
    * @returns {string} - The translated text.
    */
   static _localize(hass, key, replace = null) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_BOARD[lang] || I18N_BOARD['en'];
-    let text = dict[key] || I18N_BOARD['en'][key] || key;
-    
-    if (replace) { 
-      for (const [k, v] of Object.entries(replace)) { 
-        text = text.replace(`{${k}}`, v); 
-      } 
-    }
-    return text;
+    return localize(hass, key, replace, 'leaderboard');
   }
 
   /**
@@ -222,8 +208,9 @@ class TaskOrganizerLeaderboard extends HTMLElement {
         .place-3 .step { background: linear-gradient(to top, #CD7F32, #D2B48C); }
         .history-section { margin-top: 30px; border-top: 1px solid var(--divider-color); padding-top: 15px; text-align: left; }
         .history-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; }
+        .history-table-container { max-height: 180px; overflow-y: auto; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
-        .history-table th { border-bottom: 2px solid var(--divider-color); padding: 8px 4px; color: var(--secondary-text-color); }
+        .history-table th { position: sticky; top: 0; background: var(--card-background-color, var(--ha-card-background, var(--primary-background-color, #fff))); border-bottom: 2px solid var(--divider-color); padding: 8px 4px; color: var(--secondary-text-color); z-index: 1; }
         .history-table td { border-bottom: 1px solid var(--divider-color); padding: 8px 4px; }
       </style>
     `;
@@ -320,7 +307,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
     if (showHistory && Object.keys(this.monthlyHistory).length > 0) {
         // Render the history table
         html += `<div class="history-section"><div class="history-title">${this.localize('history')}</div>`;
-        html += `<table class="history-table"><thead><tr><th>${this.localize('month')}</th><th>${this.localize('year')}</th><th>${this.localize('winner')}</th><th>${this.localize('pts')}</th></tr></thead><tbody>`;
+        html += `<div class="history-table-container"><table class="history-table"><thead><tr><th>${this.localize('month')}</th><th>${this.localize('year')}</th><th>${this.localize('winner')}</th><th>${this.localize('pts')}</th></tr></thead><tbody>`;
         
         const sortedMonths = Object.keys(this.monthlyHistory).sort((a, b) => b.localeCompare(a));
         const lang = (this._hass && this._hass.language) || 'de';
@@ -350,7 +337,7 @@ class TaskOrganizerLeaderboard extends HTMLElement {
                 html += `<tr title="${hoverText}"><td>${monthName}</td><td>${y}</td><td>${winnerName}</td><td>${maxPts}</td></tr>`;
             }
         });
-        html += `</tbody></table></div>`;
+        html += `</tbody></table></div></div>`;
     }
 
     html += `</ha-card>`;
@@ -439,9 +426,7 @@ class TaskOrganizerLeaderboardEditor extends HTMLElement {
           <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
           <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-formfield label="${this.localize('show_history_lbl')}">
-          <ha-checkbox ${this._config.show_history !== false ? 'checked' : ''} configValue="show_history"></ha-checkbox>
-        </ha-formfield>
+        ${renderCheckbox({ label: this.localize('show_history_lbl'), checked: this._config.show_history !== false, configValue: 'show_history' })}
       </div>
       <style>
         .card-config ha-input { display: block; margin-bottom: 8px; }
@@ -489,5 +474,5 @@ class TaskOrganizerLeaderboardEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-leaderboard-editor', TaskOrganizerLeaderboardEditor);
-customElements.define('task-organizer-leaderboard', TaskOrganizerLeaderboard);
+try { customElements.define('task-organizer-leaderboard-editor', TaskOrganizerLeaderboardEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-leaderboard', TaskOrganizerLeaderboard); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }

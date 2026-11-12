@@ -1,99 +1,18 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_SETTINGS = {
-  en: { 
-    title: "Settings", colors: "Colors (Done, Due, Overdue)", c_done: "Done", c_due: "Due", c_overdue: "Overdue", 
-    days_overdue: "Overdue after (Days)", save: "Save Settings", advanced: "ADVANCED SETTINGS", cancel: "Cancel",
-    archive_btn: "Archive and reset monthly points now", factory_btn: "🔥 Factory reset (Delete everything)", 
-    success: "Settings saved!", confirm_reset: "Do you really want to reset all points? Data will be archived.", 
-    confirm_factory: "WARNING: This permanently deletes ALL tasks, points, and history!",
-    import_export: "Import & Export", export_btn: "Export Tasks", import_btn: "Import Tasks", 
-    import_success: "Tasks successfully imported!", import_error: "Error reading file. Is it valid JSON?",
-    templates: "Templates", templates_desc: "Manage templates for tasks here for quick reuse.", 
-    add_template: "Add Template", edit_template: "Edit Template", template_name: "Template Name",
-    confirm_delete_template: "Do you really want to delete this template? It cannot be recovered.",
-    template_saved: "Template saved!", template_deleted: "Template deleted!", no_templates: "No templates found. Create a new one!",
-    point_goals: "Monthly Point Goals",
-    goal_lbl: "Goal for {user}",
-    template_name_placeholder: "e.g. Take out trash",
-    subtasks: "Subtasks", 
-    add_subtask: "Add Subtask", 
-    confirm: "Add", 
-    subtask_placeholder: "Subtask title...",
-    edit_template_hover: "Edit template", delete_template_hover: "Delete template",
-    save_hover: "Saves the current color and day settings.",
-    export_hover: "Downloads all current tasks as a JSON file.",
-    import_hover: "Opens a dialog to select a JSON file for importing tasks.", 
-    desc_lbl: "Description (optional)", area_lbl: "Area", points_lbl: "Points (1-10)", icon_lbl: "Icon",
-    interval_lbl: "Days (Interval)", assignees_lbl: "Assignees",
-    cancel: "Cancel", save: "Save",
-    export_tasks_cb: "Tasks", export_templates_cb: "Templates", export_history_cb: "History & Points", export_settings_cb: "Settings",
-    no_desc: "No description", onetime: "One-time",
-    show_advanced_lbl: "Show Advanced Settings",
-    height_lbl: "Height",
-    width_lbl: "Width",
-    title_lbl: "Title",
-    color_done_lbl: "Color Done", color_due_lbl: "Color Due", color_overdue_lbl: "Color Overdue",
-    transparency_lbl: "Transparency", color_adjustments: "Color Adjustments",
-    set_default: "Set Default",
-    import_tasks_title: "Import Tasks", metadata_title: "Import Overview", tasks_lbl: "Tasks", 
-    templates_lbl: "Templates", history_lbl: "History Entries", settings_included: "Settings", 
-    yes: "Yes", no: "No", start_import: "Start Import", confirm_reload: "Confirm & Reload"
-  },
-  de: { 
-    title: "Einstellungen", colors: "Farben (Erledigt, Fällig, Überfällig)", c_done: "Erledigt", c_due: "Fällig", c_overdue: "Überfällig", 
-    days_overdue: "Überfällig nach (Tagen)", save: "Einstellungen speichern", advanced: "ERWEITERTE EINSTELLUNGEN", cancel: "Abbrechen",
-    archive_btn: "Monats-Punkte archivieren und zurücksetzen", factory_btn: "🔥 Werkseinstellungen setzen (Alles löschen)", 
-    success: "Einstellungen erfolgreich gespeichert!", confirm_reset: "Möchtest du alle monatlichen Punkte wirklich auf 0 setzen? Die Daten werden archiviert.", 
-    confirm_factory: "ACHTUNG: Dies löscht unwiderruflich ALLE Aufgaben, Punkte und die Historie!", 
-    import_export: "Import & Export", export_btn: "Aufgaben exportieren", import_btn: "Aufgaben importieren", 
-    import_success: "Aufgaben erfolgreich importiert!", import_error: "Fehler beim Lesen der Datei. Ist es valides JSON?",
-    templates: "Vorlagen", templates_desc: "Verwalte hier Vorlagen für Aufgaben, um sie schnell wiederverwenden zu können.", 
-    add_template: "Vorlage hinzufügen", edit_template: "Vorlage bearbeiten", template_name: "Name der Vorlage",
-    confirm_delete_template: "Möchtest du diese Vorlage wirklich löschen? Sie kann nicht wiederhergestellt werden.",
-    template_saved: "Vorlage gespeichert!", template_deleted: "Vorlage gelöscht!", no_templates: "Keine Vorlagen vorhanden. Erstelle eine neue!",
-    point_goals: "Monatliche Punktziele",
-    goal_lbl: "Ziel für {user}",
-    template_name_placeholder: "z.B. Müll rausbringen",
-    subtasks: "Unteraufgaben", 
-    add_subtask: "Unteraufgabe hinzufügen", 
-    confirm: "Hinzufügen", 
-    subtask_placeholder: "Titel der Unteraufgabe...",
-    edit_template_hover: "Vorlage bearbeiten", delete_template_hover: "Vorlage löschen",
-    save_hover: "Speichert die aktuellen Farb- und Tageseinstellungen.",
-    export_hover: "Lädt alle aktuellen Aufgaben als JSON-Datei herunter.",
-    import_hover: "Öffnet einen Dialog zur Auswahl einer JSON-Datei für den Import von Aufgaben.", 
-    desc_lbl: "Beschreibung (optional)", area_lbl: "Bereich", points_lbl: "Punkte (1-10)", icon_lbl: "Icon",
-    interval_lbl: "Tage (Intervall)", assignees_lbl: "Bearbeiter",
-    cancel: "Abbrechen", save: "Speichern",
-    export_tasks_cb: "Aufgaben", export_templates_cb: "Vorlagen", export_history_cb: "Protokoll & Historie", export_settings_cb: "Einstellungen",
-    no_desc: "Keine Beschreibung", onetime: "Einmalig",
-    show_advanced_lbl: "Erweiterte Einstellungen anzeigen",
-    height_lbl: "Höhe",
-    width_lbl: "Breite",
-    title_lbl: "Titel",
-    color_done_lbl: "Farbe Erledigt", color_due_lbl: "Farbe Fällig", color_overdue_lbl: "Farbe Überfällig",
-    transparency_lbl: "Transparenz", color_adjustments: "Farbanpassungen",
-    set_default: "Standard setzen",
-    import_tasks_title: "Aufgaben importieren", metadata_title: "Import Übersicht", tasks_lbl: "Aufgaben", 
-    templates_lbl: "Vorlagen", history_lbl: "Historien-Einträge", settings_included: "Einstellungen", 
-    yes: "Ja", no: "Nein", start_import: "Import starten", confirm_reload: "Bestätigen & Neuladen"
-  }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize, renderCheckbox, renderSwitch } = await import(`./utils/i18n.js?v=${_v}`);
 
 /**
  * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "task-organizer-settings",
-  name: "Task Organizer: Settings",
-  description: "Displays and manages integration settings, colors, and imports/exports.",
-  preview: true,
-});
+if (!window.customCards.some(c => c.type === "task-organizer-settings")) {
+  window.customCards.push({
+    type: "task-organizer-settings",
+    name: "Task Organizer: Settings",
+    description: "A custom card to manage settings, templates, and backups.",
+    preview: true,
+  });
+}
 
 class TaskOrganizerSettings extends HTMLElement {
   /**
@@ -105,7 +24,7 @@ class TaskOrganizerSettings extends HTMLElement {
     this._themeView = 'light';
     
     // Global properties
-    this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', overdue_days: 5 };
+    this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', color_in_progress: '#2196F3', color_paused: '#9E9E9E', overdue_days: 5, full_points_distribution: false };
     this.tasks = {};
     this.users = {};
     this.templates = {};
@@ -118,9 +37,11 @@ class TaskOrganizerSettings extends HTMLElement {
     this._dataLoaded = false; 
     this._advancedOpen = false; 
     this._ieOpen = false; 
+    this._behaviorOpen = false;
     this._templatesOpen = false;
     this._templateModalOpen = false;
     this._importModalOpen = false;
+    this._exportModalOpen = false;
     this._importState = 'initial';
     this._importData = null;
     this._importProgress = 0;
@@ -135,19 +56,18 @@ class TaskOrganizerSettings extends HTMLElement {
    * @param {string} key - The translation key.
    * @returns {string} - The translated text.
    */
-  static _localize(hass, key) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_SETTINGS[lang] || I18N_SETTINGS['en'];
-    return dict[key] || key;
+  static _localize(hass, key, replace = null) {
+    return localize(hass, key, replace, 'settings');
   }
 
   /**
    * Translates a given key based on the Home Assistant language.
    * * @param {string} key - The translation key.
+   * @param {object} replace - Object with parameters to replace.
    * @returns {string} - The translated text.
    */
-  localize(key) { 
-    return TaskOrganizerSettings._localize(this._hass, key);
+  localize(key, replace = null) { 
+    return TaskOrganizerSettings._localize(this._hass, key, replace);
   }
 
   /**
@@ -254,6 +174,7 @@ class TaskOrganizerSettings extends HTMLElement {
       this.tasks = data.tasks || {};
       this.templates = data.templates || {};
       this.history = data.history || [];
+      this.audit_log = data.audit_log || [];
       this.points = data.points || {};
       this.monthly_history = data.monthly_history || {};
       this.current_month = data.current_month;
@@ -262,6 +183,32 @@ class TaskOrganizerSettings extends HTMLElement {
     }); 
   }
   
+  /**
+   * Distributes the required points evenly across all users.
+   */
+  _distributeGoals() {
+    let requiredPoints = 0;
+    if (this.tasks) {
+      Object.values(this.tasks).forEach(t => {
+        if (t.interval > 0) {
+          requiredPoints += (t.complexity || 0) / t.interval;
+        }
+      });
+    }
+    
+    const userKeys = Object.keys(this.users);
+    if (userKeys.length === 0 || requiredPoints === 0) return;
+    
+    const pointsPerUser = Math.ceil(requiredPoints / userKeys.length);
+    
+    if (!this.settings.point_goals) this.settings.point_goals = {};
+    userKeys.forEach(uid => {
+      this.settings.point_goals[uid] = pointsPerUser;
+    });
+    
+    this._render();
+  }
+
   /**
    * Gathers modified settings from the UI and saves them via websocket.
    */
@@ -273,7 +220,7 @@ class TaskOrganizerSettings extends HTMLElement {
     });
 
     // We merge the currently visible values into this.settings first
-    ['done', 'due', 'overdue'].forEach(status => {
+    ['done', 'due', 'overdue', 'in_progress', 'paused'].forEach(status => {
       const cInput = this.shadowRoot.getElementById(`c-${status}`);
       if (cInput) this.settings[`color_${status}_${this._themeView}`] = cInput.value;
       const tInput = this.shadowRoot.getElementById(`t-${status}`);
@@ -283,6 +230,7 @@ class TaskOrganizerSettings extends HTMLElement {
     const newSettings = { 
       ...this.settings,
       overdue_days: parseInt(this.shadowRoot.getElementById('num-overdue').value),
+      full_points_distribution: this.shadowRoot.getElementById('full-points-toggle') ? this.shadowRoot.getElementById('full-points-toggle').checked : false,
       point_goals: pointGoals
     }; 
     
@@ -301,6 +249,18 @@ class TaskOrganizerSettings extends HTMLElement {
         this._fetchData(); 
       }); 
     } 
+  }
+
+  /**
+   * Clears the audit log / task protocol history.
+   */
+  _clearHistory() {
+    if (confirm(this.localize('confirm_clear_history'))) {
+      this._hass.callWS({ type: 'task_organizer/clear_audit_log' }).then(() => {
+        this._showToast(this.localize('success'));
+        this._fetchData();
+      });
+    }
   }
 
   /**
@@ -342,7 +302,7 @@ class TaskOrganizerSettings extends HTMLElement {
       this._render();
     }
     else if (id === 'btn-default-colors') {
-      ['done', 'due', 'overdue'].forEach(status => {
+      ['done', 'due', 'overdue', 'in_progress', 'paused'].forEach(status => {
         delete this.settings[`color_${status}_light`];
         delete this.settings[`transparency_${status}_light`];
         delete this.settings[`color_${status}_dark`];
@@ -353,11 +313,15 @@ class TaskOrganizerSettings extends HTMLElement {
     }
     else if (id === 'color-toggle') { this._colorOpen = !this._colorOpen; this._render(); }
     else if (id === 'overdue-toggle') { this._overdueOpen = !this._overdueOpen; this._render(); }
+    else if (id === 'behavior-toggle') { this._behaviorOpen = !this._behaviorOpen; this._render(); }
     else if (id === 'ie-toggle') { this._ieOpen = !this._ieOpen; this._render(); }
     else if (id === 'templates-toggle') { this._templatesOpen = !this._templatesOpen; this._render(); }
     else if (id === 'adv-toggle') { this._advancedOpen = !this._advancedOpen; this._render(); }
     else if (id === 'goals-toggle') { this._goalsOpen = !this._goalsOpen; this._render(); }
-    else if (id === 'btn-export') this._exportTasks();
+    else if (id === 'btn-distribute-goals') this._distributeGoals();
+    else if (id === 'btn-export-trigger') { this._exportModalOpen = true; this._render(); }
+    else if (id === 'btn-export-cancel') { this._exportModalOpen = false; this._render(); }
+    else if (id === 'btn-export-start') { this._exportTasks(); this._exportModalOpen = false; this._render(); }
     else if (id === 'btn-import-trigger') this._openImportModal();
     else if (id === 'btn-import-cancel') this._closeImportModal();
     else if (id === 'btn-import-start') this._startImport();
@@ -366,6 +330,7 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (target.classList.contains('btn-edit-template')) this._openTemplateModal(target.dataset.id);
     else if (target.classList.contains('btn-delete-template')) this._deleteTemplate(target.dataset.id);
     else if (id === 'btn-reset') this._triggerReset();
+    else if (id === 'btn-clear-history') this._clearHistory();
     else if (id === 'btn-factory') this._factoryReset();
     // Modal Handlers
     else if (id === 'btn-modal-cancel') this._closeTemplateModal();
@@ -555,11 +520,6 @@ class TaskOrganizerSettings extends HTMLElement {
         composed: true
     });
     this.dispatchEvent(event);
-    
-    const root = document.querySelector("home-assistant");
-    if (root) { 
-        root.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: message, duration: 3000 } })); 
-    }
   }
 
   /**
@@ -583,11 +543,13 @@ class TaskOrganizerSettings extends HTMLElement {
     const exportTasks = this.shadowRoot.getElementById('cb-export-tasks').checked;
     const exportTemplates = this.shadowRoot.getElementById('cb-export-templates').checked;
     const exportHistory = this.shadowRoot.getElementById('cb-export-history').checked;
+    const exportAuditLog = this.shadowRoot.getElementById('cb-export-audit-log').checked;
     const exportSettings = this.shadowRoot.getElementById('cb-export-settings').checked;
     
     let dataToExport = {};
     if (exportTasks) dataToExport.tasks = this.tasks;
     if (exportTemplates) dataToExport.templates = this.templates;
+    if (exportAuditLog) dataToExport.audit_log = this.audit_log;
     if (exportHistory) {
       dataToExport.history = this.history;
       dataToExport.points = this.points;
@@ -634,10 +596,11 @@ class TaskOrganizerSettings extends HTMLElement {
         
         let payload = { type: 'task_organizer/import_tasks' };
         
-        if (importedData.tasks || importedData.templates || importedData.history || importedData.settings) {
+        if (importedData.tasks || importedData.templates || importedData.history || importedData.settings || importedData.audit_log) {
             if (importedData.tasks) payload.tasks = importedData.tasks;
             if (importedData.templates) payload.templates = importedData.templates;
             if (importedData.settings) payload.settings = importedData.settings;
+            if (importedData.audit_log) payload.audit_log = importedData.audit_log;
             if (importedData.history) {
                 payload.history = importedData.history;
                 if (importedData.points) payload.points = importedData.points;
@@ -720,8 +683,8 @@ class TaskOrganizerSettings extends HTMLElement {
         .modal.open { display: flex; } 
         .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; }
         .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
-        .form-row { display: flex; gap: 16px; }
-        .form-col { flex: 1; }
+        .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
+        .form-col { flex: 1; min-width: 0; width: 100%; }
         .templates-header { display: flex; justify-content: space-between; align-items: center; }
         .template-card { display: flex; align-items: center; justify-content: space-between; background: var(--card-background-color); padding: 12px; border-radius: 8px; border: 1px solid var(--divider-color); }
         .template-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
@@ -761,6 +724,9 @@ class TaskOrganizerSettings extends HTMLElement {
         .btn-factory { background: #F44336; color: white; } 
         .btn-export { background: #2196F3; color: white; }
         .btn-import { background: #2196F3; color: white; }
+        .goal-indicator-wrapper { display: flex; align-items: center; width: 100px; height: 10px; background: linear-gradient(to right, #cc0000, red, orange 50%, green, #007300); border-radius: 5px; position: relative; margin-left: 10px; cursor: pointer; }
+        .goal-indicator-ideal { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background-color: var(--primary-text-color); transform: translateX(-50%); z-index: 1; }
+        .goal-indicator-current { position: absolute; top: 50%; width: 8px; height: 8px; background-color: white; border: 1px solid var(--primary-text-color); border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
       </style>
     `;
   }
@@ -777,6 +743,26 @@ class TaskOrganizerSettings extends HTMLElement {
     const displayTitle = this._config.title || this.localize('title');
     const showAdvanced = this._config.show_advanced === true;
     const template = this._editingTemplateId ? this.templates[this._editingTemplateId] : null;
+
+    let requiredPoints = 0;
+    if (this.tasks) {
+      Object.values(this.tasks).forEach(t => {
+        if (t.interval > 0) {
+          requiredPoints += (t.complexity || 0) / t.interval;
+        }
+      });
+    }
+
+    let currentGoals = 0;
+    if (this.settings?.point_goals) {
+      Object.values(this.settings.point_goals).forEach(g => currentGoals += (parseInt(g) || 0));
+    }
+
+    let indicatorPercent = 50; 
+    if (requiredPoints > 0) {
+      indicatorPercent = (currentGoals / requiredPoints) * 50;
+      indicatorPercent = Math.max(0, Math.min(100, indicatorPercent));
+    }
 
     let html = this._getStyles();
     
@@ -800,11 +786,11 @@ class TaskOrganizerSettings extends HTMLElement {
           
           <div class="section-content ${this._colorOpen ? 'open' : ''}">
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-              ${['done', 'due', 'overdue'].map(status => {
+              ${['done', 'due', 'overdue', 'in_progress', 'paused'].map(status => {
                 const colorKey = `color_${status}_${this._themeView}`;
                 const transpKey = `transparency_${status}_${this._themeView}`;
                 
-                const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status==='done'?'#4CAF50':status==='due'?'#FFC107':'#F44336');
+                const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status==='done'?'#4CAF50':status==='due'?'#FFC107':status==='overdue'?'#F44336':status==='in_progress'?'#2196F3':'#9E9E9E');
                 const transpVal = this.settings[transpKey] !== undefined ? this.settings[transpKey] : 8;
                 
                 return `
@@ -824,9 +810,25 @@ class TaskOrganizerSettings extends HTMLElement {
           </div>
         </div>
         
-        <div class="section-card" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: 500; font-size: 14px; color: var(--primary-text-color);">${this.localize('days_overdue')}</span>
-          <input type="number" id="num-overdue" min="1" value="${this.settings.overdue_days}">
+        <div class="section-card">
+          <div class="section-header" id="behavior-toggle">
+            <div class="section-title">
+              <ha-icon icon="${this._behaviorOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
+              <span>${this.localize('task_behavior')}</span>
+            </div>
+          </div>
+          <div class="section-content ${this._behaviorOpen ? 'open' : ''}">
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14px; color: var(--primary-text-color);">${this.localize('days_overdue')}</span>
+                <input type="number" id="num-overdue" min="1" value="${this.settings.overdue_days}">
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14px; color: var(--primary-text-color);">${this.localize('full_points_distribution')}</span>
+                <ha-switch id="full-points-toggle" ${this.settings.full_points_distribution === true ? 'checked' : ''}></ha-switch>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div class="section-card">
@@ -837,22 +839,8 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
           </div>
           <div class="section-content ${this._ieOpen ? 'open' : ''}">
-            <div style="display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap;">
-              <ha-formfield label="${this.localize('export_tasks_cb')}">
-                <ha-checkbox id="cb-export-tasks" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_templates_cb')}">
-                <ha-checkbox id="cb-export-templates" checked></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_history_cb')}">
-                <ha-checkbox id="cb-export-history"></ha-checkbox>
-              </ha-formfield>
-              <ha-formfield label="${this.localize('export_settings_cb')}">
-                <ha-checkbox id="cb-export-settings" checked></ha-checkbox>
-              </ha-formfield>
-            </div>
             <div style="display: flex; gap: 10px; width: 100%;">
-              <button class="btn btn-export" id="btn-export" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
+              <button class="btn btn-export" id="btn-export-trigger" title="${this.localize('export_hover')}">${this.localize('export_btn')}</button>
               <button class="btn btn-import" id="btn-import-trigger" title="${this.localize('import_hover')}">${this.localize('import_btn')}</button>
             </div>
           </div>
@@ -913,6 +901,12 @@ class TaskOrganizerSettings extends HTMLElement {
               <ha-icon icon="${this._goalsOpen ? 'mdi:chevron-up' : 'mdi:chevron-right'}"></ha-icon>
               <span>${this.localize('point_goals')}</span>
             </div>
+            <div style="display: ${this._goalsOpen ? 'flex' : 'none'}; align-items: center;" @click="ev => ev.stopPropagation()">
+              <div id="btn-distribute-goals" class="goal-indicator-wrapper" title="${this.localize('goal_indicator_tooltip', { ideal: requiredPoints.toFixed(1), current: currentGoals })}">
+                <div class="goal-indicator-ideal"></div>
+                <div class="goal-indicator-current" style="left: ${indicatorPercent}%;"></div>
+              </div>
+            </div>
           </div>
           <div class="section-content ${this._goalsOpen ? 'open' : ''}" id="goals-content">
             ${Object.entries(this.users).map(([uid, name]) => `
@@ -935,6 +929,7 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
             <div class="section-content ${this._advancedOpen ? 'open' : ''}">
               <button class="btn btn-reset" id="btn-reset" title="${this.localize('confirm_reset')}">${this.localize('archive_btn')}</button>
+              <button class="btn btn-clear-history" id="btn-clear-history" title="${this.localize('confirm_clear_history')}" style="background-color: var(--warning-color, #ff9800); color: white;">${this.localize('clear_history_btn')}</button>
               <button class="btn btn-factory" id="btn-factory" title="${this.localize('confirm_factory')}">${this.localize('factory_btn')}</button>
             </div>
           </div>
@@ -972,11 +967,7 @@ class TaskOrganizerSettings extends HTMLElement {
                   <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
                       ${Object.entries(this.users).map(([uid, name]) => {
                           const isChecked = template?.assignees?.includes(uid) || false;
-                          return `
-                              <ha-formfield label="${name}">
-                                  <ha-checkbox class="tmpl-assignee-cb" value="${uid}" ${isChecked ? 'checked' : ''}></ha-checkbox>
-                              </ha-formfield>
-                          `;
+                          return renderCheckbox({ label: name, className: 'tmpl-assignee-cb', value: uid, checked: isChecked });
                       }).join('')}
                   </div>
               </div>
@@ -1000,6 +991,29 @@ class TaskOrganizerSettings extends HTMLElement {
         </div>
       </div>
 
+      <div id="export-modal" class="modal ${this._exportModalOpen ? 'open' : ''}">
+        <div class="modal-content">
+            <h2>${this.localize('export_btn')}</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+              ${renderCheckbox({ id: 'cb-export-tasks', label: this.localize('export_tasks_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-templates', label: this.localize('export_templates_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-audit-log', label: this.localize('export_audit_log_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-history', label: this.localize('export_history_cb'), checked: true })}
+              ${renderCheckbox({ id: 'cb-export-settings', label: this.localize('export_settings_cb'), checked: true })}
+              
+              <div title="${this.localize('export_images_info')}" style="cursor: help; width: max-content;">
+                ${renderCheckbox({ id: 'cb-export-images', label: this.localize('export_images_lbl'), disabled: true, style: 'opacity: 0.5;' })}
+              </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <ha-button appearance="plain" variant="brand" id="btn-export-cancel">${this.localize('cancel')}</ha-button>
+              <ha-button raised id="btn-export-start">${this.localize('export_btn')}</ha-button>
+            </div>
+        </div>
+      </div>
+
       <div id="import-modal" class="modal ${this._importModalOpen ? 'open' : ''}">
         <div class="modal-content">
             <h2>${this.localize('import_tasks_title')}</h2>
@@ -1014,6 +1028,7 @@ class TaskOrganizerSettings extends HTMLElement {
                  <h4 style="margin: 0 0 8px 0;">${this.localize('metadata_title')}</h4>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('tasks_lbl')}:</span> <span>${this._importData.tasks ? Object.keys(this._importData.tasks).length : 0}</span></div>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('templates_lbl')}:</span> <span>${this._importData.templates ? Object.keys(this._importData.templates).length : 0}</span></div>
+                 <div style="display: flex; justify-content: space-between;"><span>${this.localize('audit_log_lbl')}:</span> <span>${this._importData.audit_log ? this._importData.audit_log.length : 0}</span></div>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('history_lbl')}:</span> <span>${this._importData.history ? this._importData.history.length : 0}</span></div>
                  <div style="display: flex; justify-content: space-between;"><span>${this.localize('settings_included')}:</span> <span>${this._importData.settings ? this.localize('yes') : this.localize('no')}</span></div>
               </div>
@@ -1041,6 +1056,7 @@ class TaskOrganizerSettings extends HTMLElement {
     // Bind click events
     this.shadowRoot.querySelector('ha-card').addEventListener('click', (ev) => this._handleClick(ev));
     this.shadowRoot.querySelector('#template-modal').addEventListener('click', (ev) => this._handleClick(ev));
+    this.shadowRoot.querySelector('#export-modal').addEventListener('click', (ev) => this._handleClick(ev));
     this.shadowRoot.querySelector('#import-modal').addEventListener('click', (ev) => this._handleClick(ev));
 
     // Bind File Import
@@ -1110,9 +1126,7 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
           <ha-input label="${this.localize('height_lbl')}" placeholder="400px" value="${this._config.card_height || ''}" configValue="card_height" style="flex:1"></ha-input>
           <ha-input label="${this.localize('width_lbl')}" placeholder="100%" value="${this._config.card_width || ''}" configValue="card_width" style="flex:1"></ha-input>
         </div>
-        <ha-formfield label="${this.localize('show_advanced_lbl')}">
-          <ha-checkbox ${this._config.show_advanced === true ? 'checked' : ''} configValue="show_advanced"></ha-checkbox>
-        </ha-formfield>
+        ${renderCheckbox({ label: this.localize('show_advanced_lbl'), checked: this._config.show_advanced === true, configValue: 'show_advanced' })}
       </div>
       <style>
         .card-config ha-input { display: block; margin-bottom: 8px; }
@@ -1160,5 +1174,5 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-settings-editor', TaskOrganizerSettingsEditor);
-customElements.define('task-organizer-settings', TaskOrganizerSettings);
+try { customElements.define('task-organizer-settings-editor', TaskOrganizerSettingsEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-settings', TaskOrganizerSettings); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
