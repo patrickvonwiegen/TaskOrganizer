@@ -6,60 +6,21 @@ Suggestions for improvement or bug reports are welcome.
 
 ## Features
 * **Task Management**: Show, create, edit, and delete tasks directly in your dashboard. Assign tasks to specific areas and give them a unique icon.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f8fa36ed-233c-4784-99bb-535cfb788205" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/40408802-bd37-41c7-950e-aef76062b458" />
-
 * **Search Functionality**: Quickly find tasks by name or description using the integrated search bar.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/f3a24024-4412-4e88-befc-66e4a8100f47" />
-
 * **Subtasks**: Break down complex tasks into smaller sub-steps. Includes a progress indicator (%) and a dedicated completion dialog.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/30f2debe-c15e-4150-af17-783a827d2236" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/1389a275-beb5-4636-8ece-4dfbc8291901" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/4c18de25-250b-4837-b38c-96229667a5f8" />
-
 * **One-time & Recurring Tasks**: Supports both recurring tasks with an interval and one-time tasks that are deleted upon completion.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/e032b7c4-72a7-4442-99ec-59972ea352ac" />
-
 * **Task Templates**: Create and manage templates to quickly add frequently used tasks.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/7d278343-8473-42ae-b9ab-1f23f23b8272" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/791eaac0-63b3-48a0-804d-8bfa11cff376" />
-
 * **Points System**: Each task has a complexity level (1-10); points can be distributed flexibly upon completion. For 3+ participants, an interactive spider chart allows shifting the point tendency by dragging a center point. 
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/4d5fa9ba-0a0c-4702-9797-f9da9f8363da" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/389f566d-ab40-4d2e-ada4-7e07b5e11011" />
-
-* **Interval Management**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date. Override the global overdue setting for individual tasks.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/41a75d46-6855-4be5-9bd4-65dec23bec90" />
-
+* **Interval Management**: Tasks can be paused until a specific date or have their next due date manually set to any chosen date. You can also restrict tasks to specific active months (seasonal tasks) and override the global overdue setting for individual tasks.
 * **Roommate of the Month**: A podium system visualizes current standings. At the end of the month, points are archived, and a long-term history is maintained.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/8860eb6b-1b92-436b-bbf1-9908bde8f7ec" />
-
 * **History Protocol**: A history log allows you to view the history and modify the points and the assignee afterwards.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
-
-* **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis and a "Goal Setting" burndown chart to track your monthly point targets.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3f28e234-6ed6-406c-8577-9fd4e22de873" />
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/c98534b9-3283-482e-a356-b35185c9c521" />
-
-
+* **Advanced Reports**: Graphical visualization of your progress. Includes a "Completed Tasks" view with trend analysis, a "Goal Setting" burndown chart to track your monthly point targets, and a "Heatmap" view to track activity over time.
 * **Monthly Point Goals**: Set personal point goals for each roommate in the settings. If a user reaches their goal, a checkered flag icon appears in the leaderboard and a progress bar is shown in the log when filtering by that user.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3a5bbe6e-c67c-419a-886b-3fc4895a72ef" />
-  <img width="10%" alt="image" src="https://github.com/user-attachments/assets/e0e16fbe-5984-4c48-9ba0-c5b794045836" />
-
+* **File Attachments**: Attach files and images directly to your tasks. 
+* **Calendar View**: A Home Assistant calendar entity (`calendar.task_organizer_calendar`) that displays upcoming, overdue, and completed tasks as full-day events.
+* **Audit Log per Task (History)**: Keep track of every change with a detailed audit log.
 * **Configuration**: Manage global settings, colors, overdue thresholds, and task templates. Secure your data by exporting all tasks to a JSON file or importing them back.
-  <br>
-  <img width="24%" alt="image" src="https://github.com/user-attachments/assets/119748db-9521-4125-b44e-71b9f21afebb" />
+* **Kanban Board**: Keep track of all your tasks at a glance.
 
 ## Installation
 ### Option 1: HACS (Recommended)
@@ -76,7 +37,7 @@ Suggestions for improvement or bug reports are welcome.
 - Restart Home Assistant.
   
 ## Dashboard Cards
-The integration includes four specialized cards for the Lovelace dashboard.
+The integration includes specialized cards for the Lovelace dashboard.
 
 ### 1. Household Tasks (`task-organizer-card`)
 The main card for viewing and completing tasks.
@@ -134,7 +95,8 @@ show_history: true      # Displays the table of previous winners (default: true)
 ### 3. Household Log (task-organizer-protocol)
 A list of recently completed tasks with the option to correct or delete entries.
 
-<img width="383" height="354" alt="image" src="https://github.com/user-attachments/assets/a63d8081-eb54-4c36-a9de-00c3c6345cf5" />
+<img width="383" height="397" alt="image" src="https://github.com/user-attachments/assets/42ec21b7-3bfa-44da-899f-756b5520789e" />
+
 
 **YAML Configuration:**
 ```yaml
@@ -145,23 +107,25 @@ items_per_page: 10  # Number of displayed items
 ```
 
 ### 4. Reports (task-organizer-stats)
-Provides advanced reporting with different views like "Completed Tasks" and "Goal Setting", including monthly point charts and progress tracking.
+Provides advanced reporting with different views like "Completed Tasks","Goal Setting" and "Heatmap", including monthly point charts and progress tracking.
 
 <img width="24%" alt="image" src="https://github.com/user-attachments/assets/3f28e234-6ed6-406c-8577-9fd4e22de873" />
 <img width="24%" alt="image" src="https://github.com/user-attachments/assets/c98534b9-3283-482e-a356-b35185c9c521" />
+<img width="24%" alt="image" src="https://github.com/user-attachments/assets/e7e5587b-33fc-4cc1-b654-29f5d5a9f8c7" />
+
 
 **YAML Configuration:**
 ```yaml
 type: custom:task-organizer-stats
 title: "Reports"
-report_type: overview  # Options: overview, burndown
+report_type: overview  # Options: overview, burndown, heatmap
 show_user_select: true # Allows selecting a specific user
 ```
 
 ### 5. Settings (task-organizer-settings)
-Allows customization of colors, data export, and factory resets.
+Allows customization of colors, task behavior (overdue thresholds, points distribution), data export, and factory resets.
 
-<img width="385" height="713" alt="image" src="https://github.com/user-attachments/assets/119748db-9521-4125-b44e-71b9f21afebb" />
+<img width="306" height="784" alt="image" src="https://github.com/user-attachments/assets/712adebe-b78b-4843-a2a6-5cbbf2823a5f" />
 
 **YAML Configuration:**
 ```yaml
@@ -169,11 +133,35 @@ type: custom:task-organizer-settings
 show_advanced: false    # Unlocks the reset and factory reset area (Default: false)
 ```
 
-## Sensors
-The integration provides the following sensors:
+### 6. Kanban Board (task-organizer-kanban)
+Displays tasks in a drag & drop Kanban board with columns.
 
-| Sensor | Description |
+<img width="853" height="237" alt="image" src="https://github.com/user-attachments/assets/18b15306-b002-45a6-bb9e-50bfb5f0e9f8" />
+
+**YAML Configuration:**
+```yaml
+type: custom:task-organizer-kanban
+title: "Kanban Board"    # Custom title for the card (Default: Kanban Board)
+sort_by: due_date        # Options: due_date, points, assignee, alphabet (default due_date)
+sort_order: desc         # Options: default, asc, desc (default default)
+filter_by: none          # Options: see filter options above
+visible_columns: "due_and_overdue, in_progress, completed" # See below for options
+show_edit: true          # Shows the task edit symbol (Default true)
+show_delete: true        # Shows the task delete symbol (Default true)
+show_add: true           # Shows the add task button (Default true)
+zoom: 1.0                # Scales the size of the Kanban board (Default 1.0)
+```
+
+#### Visible Columns
+You can control exactly which columns are displayed and their display order from left to right by providing a comma-separated list to the `visible_columns` parameter. 
+Available options: `due_and_overdue`, `overdue`, `due`, `in_progress`, `paused`, `completed`.
+
+## Sensors & Entities
+The integration provides the following sensors and entities:
+
+| Sensor / Entity | Description |
 | :--- | :--- |
+| `calendar.task_organizer_calendar` | Displays upcoming, overdue, and completed tasks as full-day events. |
 | `sensor.task_organizer_all_tasks` | Displays the total number of created tasks. The full task list (including subtasks) is available as JSON in the attributes. |
 | `sensor.task_organizer_due_tasks` | Displays the number of tasks that are due but not yet overdue. |
 | `sensor.task_organizer_overdue_tasks` | Displays the number of overdue tasks. |

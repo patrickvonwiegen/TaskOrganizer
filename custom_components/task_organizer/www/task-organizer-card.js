@@ -1,87 +1,11 @@
-/**
- * Configuration for translations.
- * en: English translations.
- * de: German translations.
- */
-const I18N_CARD = {
-  en: { 
-    title: "Household Tasks", unknown: "Unknown", done: "Done!", saved: "Saved", 
-    deleted: "Deleted", confirm_delete: "Really delete this task?", today: "Today", 
-    in_days: "in {days} days", ago_days: "{days} days ago", points: "pts.", 
-    no_desc: "No description", who_did_it: "Who did it?", fair_points: "Adjust the work shares to keep it fair.", distribute_fairly: "Distribute Fairly", assign_all: "Assign",
-    cancel: "Cancel", confirm: "Confirm", save: "Save", task: "Task", name_lbl: "Name", 
-    desc_lbl: "Description (optional)", desc_placeholder: "Additional info...",
-    interval_lbl: "Days (Interval)", points_lbl: "Points (1-10)", icon_lbl: "Icon", 
-    assignees_lbl: "Assignees", select_one: "Please select at least one person!", 
-    task_type: "Task Type", onetime: "One-time", recurring: "Recurring",
-    recreate_task_prompt: "Create '{taskName}' from a template?",
-    set_due_today: "Set due date", pause_until: "Pause until", paused: "Paused until {date}", due_date_lbl: "Due Date", area_lbl: "Area", area_placeholder: "e.g. Kitchen",
-    override_overdue_lbl: "Task specific overdue", override_overdue_days_placeholder: "Days",
-    time_settings: "Time Settings", subtasks: "Subtasks", 
-    add_subtask: "Add Subtask", subtask_placeholder: "Subtask title...",
-    completed_percent: "{percent}%",
-    confirm_task_complete: "All subtasks are done. Do you want to complete the main task now?",
-    complete_subtasks: "Complete Subtasks",
-    complete_subtasks_desc: "Complete some subtasks now or finish the main task completely.",
-    prev: "Previous", next: "Next", page: "Page", 
-    search_placeholder: "Search tasks...",
-    all_done: "All done", 
-    height_lbl: "Height", width_lbl: "Width", title_lbl: "Title",
-    items_per_page_lbl: "Items per Page",
-    show_search_lbl: "Show Search",
-    show_add_lbl: "Show Add Button",
-    show_edit_lbl: "Show Edit Button",
-    show_delete_lbl: "Show Delete Button",
-    sort_by_lbl: "Sort By",
-    sort_by_placeholder: "due_date, points, assignee, alphabet",
-    sort_order_lbl: "Sort Order",
-    sort_order_placeholder: "default, asc, desc",
-    filter_by_lbl: "Filter By",
-    filter_by_placeholder: "comma separated, e.g. !paused, due",
-    search_btn: "Search", add_task_btn: "Add Task", clear_btn: "Clear",
-    help_link: "Configuration Guide (README)"
-  },
-  de: { 
-    title: "Haushaltsliste", unknown: "Unbekannt", done: "Aufgabe erledigt!", saved: "Gespeichert", 
-    deleted: "Gelöscht", confirm_delete: "Aufgabe wirklich löschen?", today: "Heute", 
-    in_days: "in {days} Tage(n)", ago_days: "vor {days} Tage(n)", points: "Pkt.", 
-    no_desc: "Keine Beschreibung", who_did_it: "Wer hat's gemacht?", fair_points: "Stelle die Arbeitsanteile ein, damit es fair bleibt.", distribute_fairly: "Gleichmäßig aufteilen", assign_all: "Zuweisen",
-    cancel: "Abbrechen", confirm: "Bestätigen", save: "Speichern", task: "Aufgabe", name_lbl: "Name", 
-    desc_lbl: "Beschreibung (optional)", desc_placeholder: "Zusätzliche Infos...", 
-    interval_lbl: "Tage (Intervall)", points_lbl: "Punkte (1-10)", icon_lbl: "Icon", 
-    assignees_lbl: "Bearbeiter", select_one: "Bitte mindestens eine Person auswählen!", 
-    task_type: "Aufgabentyp", onetime: "Einmalig", recurring: "Wiederkehrend",
-    recreate_task_prompt: "Möchtest du '{taskName}' aus einer Vorlage erstellen?",
-    set_due_today: "Fälligkeit setzen", pause_until: "Pausieren bis", paused: "Pausiert bis {date}", due_date_lbl: "Fälligkeit", area_lbl: "Bereich", area_placeholder: "z.B. Küche",
-    override_overdue_lbl: "Aufgabenspezifische Überfälligkeit", override_overdue_days_placeholder: "Tage",
-    time_settings: "Zeiteinstellungen", subtasks: "Unteraufgaben",
-    add_subtask: "Unteraufgabe hinzufügen", subtask_placeholder: "Titel der Unteraufgabe...",
-    completed_percent: "{percent}%",
-    confirm_task_complete: "Alle Unteraufgaben sind erledigt. Möchtest du die Hauptaufgabe jetzt abschließen?",
-    complete_subtasks: "Unteraufgaben abschließen",
-    complete_subtasks_desc: "Schließen Sie jetzt einige Unteraufgaben ab oder schließen Sie die Aufgabe komplett ab.",
-    prev: "Zurück", next: "Weiter", page: "Seite", 
-    search_placeholder: "Aufgaben suchen...",
-    all_done: "Alles erledigen", 
-    height_lbl: "Höhe", width_lbl: "Breite", title_lbl: "Titel",
-    items_per_page_lbl: "Einträge pro Seite",
-    show_search_lbl: "Suche anzeigen",
-    show_add_lbl: "Hinzufügen-Button anzeigen",
-    show_edit_lbl: "Bearbeiten-Button anzeigen",
-    show_delete_lbl: "Löschen-Button anzeigen",
-    sort_by_lbl: "Sortieren nach",
-    sort_by_placeholder: "due_date, points, assignee, alphabet",
-    sort_order_lbl: "Sortierreihenfolge",
-    sort_order_placeholder: "default, asc, desc",
-    filter_by_lbl: "Filtern nach",
-    filter_by_placeholder: "Kommagetrennt, z.B. !paused, due",
-    search_btn: "Suchen", add_task_btn: "Aufgabe hinzufügen", clear_btn: "Leeren",
-    help_link: "Konfigurations-Handbuch (README)"
-  }
-};
+const _v = new URLSearchParams(import.meta.url.split('?')[1]).get('v') || Date.now();
+const { localize, renderCheckbox } = await import(`./utils/i18n.js?v=${_v}`);
+await import(`./modals/choice-modal.js?v=${_v}`);
+await import(`./modals/subtask-modal.js?v=${_v}`);
+await import(`./modals/task-modal.js?v=${_v}`);
 
 /**
- * Make this card available in the Home Assistant Card Picker.
+ * Register card in the Home Assistant Card Picker.
  */
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -121,6 +45,12 @@ class TaskOrganizerCard extends HTMLElement {
     this._completionSubtasks = [];
     this._distribution = {};
     this.addEventListener('click', (ev) => this._handleCardClick(ev));
+    this.addEventListener('task-saved', (e) => this._onTaskSaved(e));
+    this.addEventListener('proceed-to-assignee', (e) => this._proceedToAssigneeCheck(e.detail.taskId));
+    this.addEventListener('subtasks-saved', (e) => this._fetchData());
+    this.addEventListener('task-complete', (e) => this._onTaskComplete(e));
+    this.addEventListener('assign-to', (e) => this._onAssignTo(e));
+    this.addEventListener('show-toast', (e) => this._showToast(e.detail.message));
   }
 
   /**
@@ -131,16 +61,7 @@ class TaskOrganizerCard extends HTMLElement {
    * @returns {string} - The translated text.
    */
   static _localize(hass, key, replace = null) {
-    const lang = (hass && hass.language) ? hass.language.substring(0, 2) : 'en';
-    const dict = I18N_CARD[lang] || I18N_CARD['en'];
-    let text = dict[key] || I18N_CARD['en'][key] || key;
-    
-    if (replace) { 
-      for (const [k, v] of Object.entries(replace)) { 
-        text = text.replace(`{${k}}`, v); 
-      } 
-    }
-    return text;
+    return localize(hass, key, replace, false);
   }
 
   /**
@@ -288,6 +209,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => {
       this.tasks = data.tasks || {};
       this.templates = data.templates || {};
+      this.history = data.history || [];
       if (data.settings) {
           this.settings = { ...this.settings, ...data.settings };
       }
@@ -316,7 +238,7 @@ class TaskOrganizerCard extends HTMLElement {
     ev.stopPropagation();
     const taskId = target.dataset?.id;
 
-    if (target.id === 'btn-add-task') this._openModal();
+    if (target.id === 'btn-add-task') this.shadowRoot.getElementById('modal-task').open(null, null, this.templates, this.users, this._hass);
     else if (target.id === 'btn-search-toggle') {
         this._searchVisible = !this._searchVisible;
         if (!this._searchVisible) {
@@ -337,16 +259,8 @@ class TaskOrganizerCard extends HTMLElement {
         this._renderTaskList();
     } 
     else if (target.classList?.contains('btn-complete')) this._checkCompleteAction(taskId);
-    else if (target.classList?.contains('btn-edit')) this._openModal(taskId);
+    else if (target.classList?.contains('btn-edit')) this.shadowRoot.getElementById('modal-task').open(taskId, this.tasks[taskId], this.templates, this.users, this._hass);
     else if (target.classList?.contains('btn-delete')) this._deleteTask(taskId);
-    else if (target.id === 'btn-modal-cancel') this._closeModal();
-    else if (target.id === 'btn-modal-save') this._saveTask();
-    else if (target.id === 'btn-choice-cancel') this._closeChoiceModal();
-    else if (target.id === 'btn-choice-confirm') this._confirmCompletion();
-    else if (target.id === 'btn-submodal-cancel') this._closeSubtaskCompletionModal();
-    else if (target.id === 'btn-submodal-save') this._saveSubtaskProgress();
-    else if (target.id === 'btn-submodal-all') this._completeEverything();
-    else if (target.classList.contains('sub-complete-check')) this._toggleCompletionSubtask(target.dataset.index);
     else if (target.classList?.contains('suggestion-item')) this._applyTemplate(target.dataset.id);
     else if (target.id === 'btn-prev-page') {
         this.currentPage = Math.max(1, this.currentPage - 1);
@@ -356,15 +270,34 @@ class TaskOrganizerCard extends HTMLElement {
         this.currentPage++;
         this._renderTaskList();
     }
-    else if (target.id === 'btn-type-recurring') this._updateTaskTypeUI(false);
-    else if (target.id === 'btn-type-onetime') this._updateTaskTypeUI(true);
     // Subtask Handlers
-    else if (target.classList.contains('dist-btn')) this._handlePresetDistribution(target.dataset.preset, target.dataset.uid);
-    else if (target.id === 'toggle-time-settings') this._toggleSection('time-settings-content');
-    else if (target.id === 'toggle-subtasks') this._toggleSection('subtasks-content');
-    else if (target.id === 'btn-add-subtask') this._addSubtask();
-    else if (target.classList.contains('btn-del-subtask')) this._removeSubtask(target.dataset.index);
-    else if (target.classList.contains('subtask-check')) this._toggleSubtaskStatus(target.dataset.index);
+    else if (target.id === 'scroll-left') {
+        const tabs = this.shadowRoot.getElementById('tabs-scroll');
+        if (tabs) tabs.scrollBy({ left: -100, behavior: 'smooth' });
+    }
+    else if (target.id === 'scroll-right') {
+        const tabs = this.shadowRoot.getElementById('tabs-scroll');
+        if (tabs) tabs.scrollBy({ left: 100, behavior: 'smooth' });
+    }
+  }
+
+  _updateTabScrollIndicators() {
+      const tabs = this.shadowRoot.getElementById('tabs-scroll');
+      const leftBtn = this.shadowRoot.getElementById('scroll-left');
+      const rightBtn = this.shadowRoot.getElementById('scroll-right');
+      if (!tabs || !leftBtn || !rightBtn) return;
+      
+      const isScrollable = tabs.scrollWidth > tabs.clientWidth;
+      const isAtStart = tabs.scrollLeft <= 0;
+      const isAtEnd = tabs.scrollLeft + tabs.clientWidth >= tabs.scrollWidth - 1;
+      
+      if (isScrollable) {
+          leftBtn.style.display = isAtStart ? 'none' : 'block';
+          rightBtn.style.display = isAtEnd ? 'none' : 'block';
+      } else {
+          leftBtn.style.display = 'none';
+          rightBtn.style.display = 'none';
+      }
   }
 
   /**
@@ -410,6 +343,40 @@ class TaskOrganizerCard extends HTMLElement {
     }
   }
 
+  _onTaskSaved(e) {
+    const { payload, editingTaskId, completeAfterSave } = e.detail;
+    const type = editingTaskId ? 'task_organizer/edit_task' : 'task_organizer/add_task';
+    if (editingTaskId) payload.task_id = editingTaskId;
+    this._hass.callWS({ type, ...payload }).then(() => {
+        this._showToast(this.localize('saved'));
+        this._fetchData();
+        if (completeAfterSave && editingTaskId) {
+            this._checkCompleteAction(editingTaskId);
+        }
+    }).catch(err => {
+        console.error("TaskOrganizer: Fehler beim Speichern", err);
+        this._showToast("Fehler: " + (err.message || "Unbekannter Fehler"));
+    });
+  }
+
+  _onTaskComplete(e) {
+    const { taskId, userPoints } = e.detail;
+    const completedBy = Object.keys(userPoints);
+    this._completeTask(taskId, completedBy, userPoints);
+  }
+
+  _onAssignTo(e) {
+    const { taskId, userId } = e.detail;
+    this._hass.callWS({
+        type: 'task_organizer/complete_task',
+        task_id: taskId,
+        user_id: userId
+    }).then(() => {
+        this._fetchData();
+        this._showToast(this.localize('done'));
+    });
+  }
+
   /**
    * Determines if a task can be completed directly or requires subtask interaction.
    * @param {string} taskId - The unique identifier of the task.
@@ -420,7 +387,7 @@ class TaskOrganizerCard extends HTMLElement {
 
     // Wenn Unteraufgaben vorhanden sind, öffne den neuen Teildialog
     if (task.subtasks && task.subtasks.length > 0) {
-        this._openSubtaskCompletionModal(taskId);
+        this.shadowRoot.getElementById('modal-subtask').open(taskId, this.tasks[taskId], this._hass);
     } else {
         this._proceedToAssigneeCheck(taskId);
     }
@@ -451,11 +418,9 @@ class TaskOrganizerCard extends HTMLElement {
   _renderSubtaskCompletionList() {
     const container = this.shadowRoot.getElementById('sub-completion-list');
     if (!container) return;
-    container.innerHTML = this._completionSubtasks.map((st, index) => `
-        <ha-formfield label="${st.title}">
-            <ha-checkbox class="sub-complete-check" data-index="${index}" ${st.done ? 'checked' : ''}></ha-checkbox>
-        </ha-formfield>
-    `).join('');
+    container.innerHTML = this._completionSubtasks.map((st, index) => 
+        renderCheckbox({ label: st.title, className: 'sub-complete-check', data: { index }, checked: st.done })
+    ).join('');
   }
 
   /**
@@ -551,7 +516,7 @@ class TaskOrganizerCard extends HTMLElement {
     if (isOnlyMe) {
       this._completeTask(taskId, [currentUserId], { [currentUserId]: 100 });
     } else {
-      this._openChoiceModal(taskId);
+      this.shadowRoot.getElementById('modal-choice').open(taskId, this.tasks[taskId], this.users, this._hass, this.settings);
     }
   }
 
@@ -881,6 +846,10 @@ class TaskOrganizerCard extends HTMLElement {
       payload.points_distribution = pointsDistribution; 
     }
     this._hass.callWS(payload)
+      .then(() => {
+        this._fetchData();
+        this._showToast(this.localize('done'));
+      })
       .catch(err => {
         console.error("TaskOrganizer: Fehler beim Abschließen der Aufgabe", err);
         this._showToast("Fehler: " + (err.message || "Unbekannter Fehler beim Abschließen"));
@@ -940,13 +909,6 @@ class TaskOrganizerCard extends HTMLElement {
         composed: true 
     });
     this.dispatchEvent(event);
-    
-    const root = document.querySelector("home-assistant");
-    if (root) { 
-        root.dispatchEvent(new CustomEvent("hass-notification", { 
-            detail: { message: message, duration: 3000 } 
-        })); 
-    }
   }
 
   /**
@@ -971,6 +933,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._editingTaskId = taskId;
     const modal = this.shadowRoot.getElementById('task-modal');
     this._subtasks = [];
+    this._currentTaskImages = [];
     
     if (taskId && this.tasks[taskId]) {
         const t = this.tasks[taskId];
@@ -982,6 +945,12 @@ class TaskOrganizerCard extends HTMLElement {
         }
         if (this.shadowRoot.getElementById('f-complexity')) this.shadowRoot.getElementById('f-complexity').value = t.complexity;
         this._subtasks = t.subtasks ? [...t.subtasks] : [];
+        this._currentTaskImages = t.images ? t.images.map(img => {
+            if (typeof img === 'string') {
+                return { url: img, name: img.split('/').pop() };
+            }
+            return img;
+        }) : [];
         this._currentIcon = t.icon || "mdi:broom";
         
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
@@ -998,11 +967,35 @@ class TaskOrganizerCard extends HTMLElement {
         if (t.paused_until && new Date(t.paused_until) >= now) {
             this.shadowRoot.getElementById('f-pause-cb').checked = true;
             this.shadowRoot.getElementById('f-pause-date').value = t.paused_until;
-            this.shadowRoot.getElementById('f-pause-date').disabled = false;
+            this.shadowRoot.getElementById('f-pause-date').style.display = '';
         } else {
             this.shadowRoot.getElementById('f-pause-cb').checked = false;
             this.shadowRoot.getElementById('f-pause-date').value = "";
-            this.shadowRoot.getElementById('f-pause-date').disabled = true;
+            this.shadowRoot.getElementById('f-pause-date').style.display = 'none';
+        }
+
+        if (t.active_months && t.active_months.length > 0) {
+            this.shadowRoot.getElementById('f-restrict-months-cb').checked = true;
+            this.shadowRoot.getElementById('f-months-band').style.display = 'flex';
+            this.shadowRoot.querySelectorAll('#f-months-band .month-pill').forEach(p => {
+                if (t.active_months.includes(parseInt(p.dataset.month))) {
+                    p.classList.add('selected');
+                    p.style.background = 'var(--primary-color)';
+                    p.style.color = 'var(--text-primary-color)';
+                } else {
+                    p.classList.remove('selected');
+                    p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                    p.style.color = 'var(--primary-text-color)';
+                }
+            });
+        } else {
+            this.shadowRoot.getElementById('f-restrict-months-cb').checked = false;
+            this.shadowRoot.getElementById('f-months-band').style.display = 'none';
+            this.shadowRoot.querySelectorAll('#f-months-band .month-pill').forEach(p => {
+                p.classList.remove('selected');
+                p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                p.style.color = 'var(--primary-text-color)';
+            });
         }
     } else {
         this.shadowRoot.getElementById('f-name').value = ""; 
@@ -1020,11 +1013,19 @@ class TaskOrganizerCard extends HTMLElement {
 
         this.shadowRoot.getElementById('f-pause-cb').checked = false;
         this.shadowRoot.getElementById('f-pause-date').value = "";
-        this.shadowRoot.getElementById('f-pause-date').disabled = true;
+        this.shadowRoot.getElementById('f-pause-date').style.display = 'none';
+
+        this.shadowRoot.getElementById('f-restrict-months-cb').checked = false;
+        this.shadowRoot.getElementById('f-months-band').style.display = 'none';
+        this.shadowRoot.querySelectorAll('#f-months-band .month-pill').forEach(p => {
+            p.classList.remove('selected');
+            p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+            p.style.color = 'var(--primary-text-color)';
+        });
 
         this.shadowRoot.getElementById('f-override-overdue-cb').checked = false;
         this.shadowRoot.getElementById('f-override-overdue-days').value = "";
-        this.shadowRoot.getElementById('f-override-overdue-days').disabled = true;
+        this.shadowRoot.getElementById('f-override-overdue-days').style.display = 'none';
 
     }
     
@@ -1033,7 +1034,7 @@ class TaskOrganizerCard extends HTMLElement {
     if (setDueDateCb && customDueDateInput) {
         setDueDateCb.checked = false;
         customDueDateInput.value = "";
-        customDueDateInput.disabled = true;
+        customDueDateInput.style.display = 'none';
     }
 
     const overrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb');
@@ -1043,32 +1044,30 @@ class TaskOrganizerCard extends HTMLElement {
         if (t.override_overdue_days !== null && t.override_overdue_days !== undefined) {
             overrideOverdueCb.checked = true;
             overrideOverdueDays.value = t.override_overdue_days;
-            overrideOverdueDays.disabled = false;
+            overrideOverdueDays.style.display = '';
         } else {
             overrideOverdueCb.checked = false;
-            overrideOverdueDays.disabled = true;
+            overrideOverdueDays.style.display = 'none';
         }
     }
 
-    // Manage Section Visibility
-    let timeSettingsOpen = false;
-    if (taskId && this.tasks[taskId]) {
-        const t = this.tasks[taskId];
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const isPaused = t.paused_until && new Date(t.paused_until) >= now;
-        const hasOverride = t.override_overdue_days !== null && t.override_overdue_days !== undefined;
-        
-        if (isPaused || hasOverride) timeSettingsOpen = true;
-    }
-    this._setSectionState('time-settings-content', timeSettingsOpen);
-    this._setSectionState('subtasks-content', this._subtasks.length > 0);
+    // Reset active tab to General when opening
+    this.shadowRoot.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    this.shadowRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    const firstTab = this.shadowRoot.querySelector('.tab-btn[data-tab="tab-general"]');
+    const firstContent = this.shadowRoot.querySelector('#tab-general');
+    if (firstTab) firstTab.classList.add('active');
+    if (firstContent) firstContent.classList.add('active');
+
     this._renderModalSubtasks();
+    this._renderImageGallery();
+    this._loadTaskHistory(taskId);
 
     const picker = this.shadowRoot.getElementById('f-icon-picker');
     if (picker) picker.value = this._currentIcon; 
     
     modal.classList.add('open');
+    setTimeout(() => this._updateTabScrollIndicators(), 10);
   }
 
   /**
@@ -1126,10 +1125,298 @@ class TaskOrganizerCard extends HTMLElement {
   }
 
   /**
+   * Fetches and renders the history timeline for the task editor modal.
+   * @param {string|null} taskId - The ID of the task.
+   */
+  _loadTaskHistory(taskId) {
+    const container = this.shadowRoot.getElementById('f-history-container');
+    if (!container) return;
+    
+    if (!taskId) {
+        container.innerHTML = `<div style="text-align: center; color: var(--secondary-text-color); padding: 16px;">${this.localize ? (this.localize('no_history') || 'Keine Historie vorhanden') : 'Keine Historie vorhanden'}</div>`;
+        return;
+    }
+    
+    // Set loading indicator
+    container.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; color: var(--secondary-text-color);">
+            <ha-circular-progress active size="medium"></ha-circular-progress>
+            <div style="margin-top: 8px; font-size: 14px;">Lade Historie...</div>
+        </div>
+    `;
+    
+    this._hass.callWS({
+        type: 'task_organizer/get_task_audit_log',
+        task_id: taskId
+    }).then(response => {
+        this._renderAuditLog(container, response.history || []);
+    }).catch(err => {
+        console.error("Error loading task history:", err);
+        container.innerHTML = `<div style="text-align: center; color: var(--error-color); padding: 16px;">Fehler beim Laden der Historie</div>`;
+    });
+  }
+
+  _renderAuditLog(container, taskHistory) {
+    if (taskHistory.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--secondary-text-color); padding: 16px;">${this.localize ? (this.localize('no_history') || 'Noch keine Historie für diese Aufgabe') : 'Noch keine Historie für diese Aufgabe'}</div>`;
+        return;
+    }
+    
+    let html = '<div class="history-timeline">';
+    taskHistory.forEach(entry => {
+        const dateStr = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'Unbekannt';
+        const userName = entry.user_id && this.users ? (this.users[entry.user_id] || entry.user_id) : 'Unbekannt';
+        
+        let title = '';
+        let detailsHtml = '';
+        let icon = '';
+        let color = '';
+        
+        if (entry.action === 'created') {
+            title = 'Aufgabe erstellt';
+            icon = 'mdi:plus-circle';
+            color = 'var(--info-color, #2196f3)';
+        } else if (entry.action === 'edited') {
+            title = 'Aufgabe bearbeitet';
+            icon = 'mdi:text-box-edit-outline';
+            color = 'var(--primary-color, #03a9f4)';
+            
+            const keyMap = {
+                'name': 'Name', 'description': 'Beschreibung', 'area': 'Bereich',
+                'interval': 'Intervall', 'assignees': 'Bearbeiter', 'complexity': 'Punkte',
+                'category': 'Kategorie', 'icon': 'Icon', 'subtasks': 'Unteraufgaben',
+                'images': 'Bilder', 'due_date': 'Fälligkeitsdatum', 'paused_until': 'Pausiert bis',
+                'override_overdue_days': 'Überfälligkeit (Tage)'
+            };
+            
+            const changes = entry.details?.changes;
+            if (changes && Object.keys(changes).length > 0) {
+                detailsHtml = '<div style="margin-top: 8px; font-size: 12px; background: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px;">';
+                for (const [key, diff] of Object.entries(changes)) {
+                    const translatedKey = keyMap[key] || key;
+                    if (key === 'subtasks') {
+                        const oldSubtasks = diff.old || [];
+                        const newSubtasks = diff.new || [];
+                        let completedSubtasks = [];
+                        let addedSubtasks = [];
+                        
+                        newSubtasks.forEach(st => {
+                            const oldSt = oldSubtasks.find(o => o.title === st.title);
+                            if (oldSt) {
+                                if (st.done && !oldSt.done) {
+                                    completedSubtasks.push(st.title);
+                                }
+                            } else {
+                                addedSubtasks.push(st.title);
+                            }
+                        });
+                        
+                        if (completedSubtasks.length > 0 || addedSubtasks.length > 0) {
+                            if (completedSubtasks.length > 0) {
+                                completedSubtasks.forEach(stTitle => {
+                                    detailsHtml += `<div style="margin-bottom: 2px; color: var(--success-color, #4caf50);">• <b>Unteraufgabe:</b> <s>${stTitle}</s> abgeschlossen <ha-icon icon="mdi:check-circle" style="--mdc-icon-size: 12px; margin-left: 2px;"></ha-icon></div>`;
+                                });
+                                // If ONLY subtasks were completed, change the main timeline event to reflect this
+                                if (Object.keys(changes).length === 1 && addedSubtasks.length === 0) {
+                                    title = userName !== 'Unbekannt' ? `${userName} hat Unteraufgaben abgeschlossen` : 'Unteraufgaben abgeschlossen';
+                                    icon = 'mdi:check-circle-outline';
+                                    color = 'var(--success-color, #4caf50)';
+                                }
+                            }
+                            if (addedSubtasks.length > 0) {
+                                addedSubtasks.forEach(stTitle => {
+                                    detailsHtml += `<div style="margin-bottom: 2px;">• <b>Unteraufgabe:</b> ${stTitle} hinzugefügt</div>`;
+                                });
+                            }
+                        } else {
+                            detailsHtml += `<div style="margin-bottom: 2px;">• <b>${translatedKey}</b> geändert</div>`;
+                        }
+                    } else if (key === 'images' || key === 'assignees') {
+                        detailsHtml += `<div style="margin-bottom: 2px;">• <b>${translatedKey}</b> geändert</div>`;
+                    } else {
+                        const oldVal = diff.old !== null ? String(diff.old) : 'leer';
+                        const newVal = diff.new !== null ? String(diff.new) : 'leer';
+                        detailsHtml += `<div style="margin-bottom: 2px;">• <b>${translatedKey}</b>: <s>${oldVal}</s> → ${newVal}</div>`;
+                    }
+                }
+                detailsHtml += '</div>';
+            }
+        } else if (entry.action === 'completed') {
+            const usersWithPoints = entry.details?.users_with_points;
+            
+            if (usersWithPoints && Object.keys(usersWithPoints).length > 1) {
+                title = 'Aufgabe gemeinsam abgeschlossen';
+                let usersListHtml = '';
+                for (const [uId, pts] of Object.entries(usersWithPoints)) {
+                    const uName = this.users && this.users[uId] ? this.users[uId] : uId;
+                    usersListHtml += `<div style="margin-bottom: 2px;">• <b>${uName}</b>: +${pts} Punkte</div>`;
+                }
+                detailsHtml = `<div style="margin-top: 8px; font-size: 12px; background: rgba(0,0,0,0.1); padding: 6px; border-radius: 4px;">${usersListHtml}</div>`;
+            } else {
+                title = userName !== 'Unbekannt' ? `${userName} hat die Aufgabe abgeschlossen` : 'Aufgabe abgeschlossen';
+                if (entry.details?.points) {
+                    detailsHtml = `<div class="timeline-points" style="color: var(--success-color, #4caf50)">+${entry.details.points} Punkte</div>`;
+                }
+            }
+            icon = 'mdi:check-circle';
+            color = 'var(--success-color, #4caf50)';
+        } else {
+            title = 'Aktion: ' + entry.action;
+            icon = 'mdi:information';
+            color = 'var(--secondary-text-color)';
+        }
+        
+        html += `
+            <div class="timeline-item">
+                <div class="timeline-marker" style="background-color: ${color}; border-color: var(--card-background-color);">
+                    <ha-icon icon="${icon}" style="--mdc-icon-size: 16px; color: white; display: flex; align-items: center; justify-content: center;"></ha-icon>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-date">${dateStr}${userName !== 'Unbekannt' ? ' • ' + userName : ''}</div>
+                    <div class="timeline-title">${title}</div>
+                    ${detailsHtml}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  /**
    * Closes the task editor modal.
    */
   _closeModal() { 
       this.shadowRoot.getElementById('task-modal').classList.remove('open'); 
+  }
+
+  _renderImageGallery() {
+      const gallery = this.shadowRoot.getElementById('f-images-gallery');
+      const dropzoneText = this.shadowRoot.getElementById('f-image-dropzone-text');
+      if (!gallery) return;
+      if (!this._currentTaskImages || this._currentTaskImages.length === 0) {
+          gallery.innerHTML = '';
+          if (dropzoneText) dropzoneText.style.display = 'flex';
+          return;
+      }
+      if (dropzoneText) dropzoneText.style.display = 'none';
+      gallery.innerHTML = this._currentTaskImages.map((imgObj, index) => {
+          const url = typeof imgObj === 'string' ? imgObj : imgObj.url;
+          const name = typeof imgObj === 'string' ? url.split('/').pop() : (imgObj.name || url.split('/').pop());
+          const isImage = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i.test(url);
+          
+          if (isImage) {
+              return `
+                  <div class="image-preview" title="${name}">
+                      <img src="${url}" onclick="event.stopPropagation(); window.open('${url}', '_blank')">
+                      <button class="image-delete-btn" data-index="${index}" onclick="event.stopPropagation();"><ha-icon icon="mdi:close" style="--mdc-icon-size: 14px;"></ha-icon></button>
+                  </div>
+              `;
+          } else {
+              return `
+                  <div class="image-preview file-preview" title="${name}" onclick="event.stopPropagation(); window.open('${url}', '_blank')">
+                      <ha-icon icon="mdi:file-document-outline" style="--mdc-icon-size: 32px; color: var(--primary-color);"></ha-icon>
+                      <span style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-align: center; margin-top: 4px;">${name}</span>
+                      <button class="image-delete-btn" data-index="${index}" onclick="event.stopPropagation();"><ha-icon icon="mdi:close" style="--mdc-icon-size: 14px;"></ha-icon></button>
+                  </div>
+              `;
+          }
+      }).join('');
+      
+      gallery.querySelectorAll('.image-delete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const idx = e.currentTarget.dataset.index;
+              this._currentTaskImages.splice(idx, 1);
+              this._renderImageGallery();
+          });
+      });
+  }
+
+  async _handleImageSelection(e) {
+      const targetInput = e.target;
+      const files = Array.from(targetInput.files || []);
+      if (!files.length) return;
+      
+      for (const file of files) {
+          try {
+              let blob = file;
+              if (file.type.startsWith('image/')) {
+                  blob = await this._resizeImage(file, 500);
+              }
+              const response = await this._uploadImage(blob, file.name);
+              if (response && response.url) {
+                  if (!this._currentTaskImages) this._currentTaskImages = [];
+                  this._currentTaskImages.push({ url: response.url, name: response.name || file.name });
+              }
+          } catch (err) {
+              console.error("TaskOrganizer: Image upload error", err);
+              this._showToast("Fehler beim Hochladen: " + err.message);
+          }
+      }
+      
+      if (targetInput && targetInput.value !== undefined) {
+          targetInput.value = ''; 
+      }
+      this._renderImageGallery();
+  }
+
+  _resizeImage(file, maxSize) {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                  let width = img.width;
+                  let height = img.height;
+                  if (width > maxSize || height > maxSize) {
+                      if (width > height) {
+                          height = Math.round((height * maxSize) / width);
+                          width = maxSize;
+                      } else {
+                          width = Math.round((width * maxSize) / height);
+                          height = maxSize;
+                      }
+                  }
+                  const canvas = document.createElement('canvas');
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, width, height);
+                  canvas.toBlob((blob) => {
+                      resolve(blob);
+                  }, 'image/jpeg', 0.85);
+              };
+              img.onerror = () => reject(new Error("Failed to load image for resizing"));
+              img.src = e.target.result;
+          };
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+      });
+  }
+
+  async _uploadImage(blob, originalName) {
+      const formData = new FormData();
+      formData.append("image", blob, originalName || "upload.jpg");
+      
+      const response = await fetch("/api/task_organizer/upload", {
+          method: "POST",
+          headers: {
+              authorization: `Bearer ${this._hass.auth.accessToken}`
+          },
+          body: formData
+      });
+      
+      if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.success && data.url) {
+          return data;
+      } else {
+          throw new Error(data.message || "Unknown error from server");
+      }
   }
 
   /**
@@ -1169,6 +1456,16 @@ class TaskOrganizerCard extends HTMLElement {
     const pauseDateVal = this.shadowRoot.getElementById('f-pause-date')?.value;
     const pausedUntil = (isPausedCb && pauseDateVal) ? pauseDateVal : null;
 
+    const isRestrictMonthsCb = this.shadowRoot.getElementById('f-restrict-months-cb')?.checked || false;
+    let activeMonths = null;
+    if (isRestrictMonthsCb) {
+        activeMonths = [];
+        this.shadowRoot.querySelectorAll('#f-months-band .month-pill.selected').forEach(p => {
+            activeMonths.push(parseInt(p.dataset.month));
+        });
+        if (activeMonths.length === 0) activeMonths = null;
+    }
+
     const isOverrideOverdueCb = this.shadowRoot.getElementById('f-override-overdue-cb')?.checked || false;
     const overrideOverdueDaysVal = this.shadowRoot.getElementById('f-override-overdue-days')?.value;
     const overrideOverdueDays = (isOverrideOverdueCb && overrideOverdueDaysVal) ? (parseInt(overrideOverdueDaysVal) || null) : null;
@@ -1184,8 +1481,10 @@ class TaskOrganizerCard extends HTMLElement {
       assignees: assignees,
       custom_due_date: customDueDate,
       paused_until: pausedUntil,
+      active_months: activeMonths,
       override_overdue_days: overrideOverdueDays,
-      subtasks: this._subtasks
+      subtasks: this._subtasks,
+      images: this._currentTaskImages
     };
     
     const type = this._editingTaskId ? 'task_organizer/edit_task' : 'task_organizer/add_task';
@@ -1262,16 +1561,19 @@ class TaskOrganizerCard extends HTMLElement {
           
           .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
           
-          .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
+          .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 10vh; box-sizing: border-box; } 
           .modal.open { display: flex; } 
-          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); } 
+          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: var(--ha-dialog-border-radius, 28px); width: calc(100% - 32px); max-width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); margin: 0 16px; box-sizing: border-box; } 
           
           .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
-          .task-type-selector { display: flex; border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-          .type-btn { flex: 1; padding: 12px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 14px; font-weight: 500; transition: background-color 0.2s, color 0.2s; }
-          .type-btn.active { background: var(--primary-color); color: var(--text-primary-color, white); }
-          .form-row { display: flex; gap: 16px; }
-          .form-col { flex: 1; }
+          .task-type-selector { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--secondary-background-color); border-radius: 12px; border: 1px solid var(--divider-color); overflow: hidden; align-self: center; }
+          .type-slider { position: absolute; top: 0; bottom: 0; left: 0; width: 50%; background: var(--primary-color); transition: transform 0.3s ease; z-index: 0; }
+          .type-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 8px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 11px; font-weight: 500; transition: color 0.3s; z-index: 1; white-space: nowrap; }
+          .type-btn ha-icon { --mdc-icon-size: 16px; }
+          .type-btn.active { color: var(--text-primary-color, white); }
+          .task-type-selector[data-active="onetime"] .type-slider { transform: translateX(100%); }
+          .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
+          .form-col { flex: 1; min-width: 0; width: 100%; }
           .template-suggestions { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
           .suggestion-item { background: transparent; border: none; color: var(--primary-color); cursor: pointer; text-align: left; padding: 4px 0; font-size: 14px; }
           .suggestion-item:hover { text-decoration: underline; }
@@ -1280,6 +1582,39 @@ class TaskOrganizerCard extends HTMLElement {
           .collapsible-content { display: none; flex-direction: column; gap: 16px; padding: 8px 0 16px 0; }
           .subtask-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
           .subtask-list { display: flex; flex-direction: column; gap: 6px; }
+          
+          .tabs-container { position: relative; display: flex; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--divider-color); }
+          .tabs { display: flex; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; gap: 8px; flex: 1; scroll-behavior: smooth; }
+          .tabs::-webkit-scrollbar { display: none; }
+          .tab-btn { display: flex; align-items: center; justify-content: center; gap: 4px; flex: 0 0 auto; min-width: max-content; padding: 12px 6px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--secondary-text-color); font-size: 11px; font-weight: 500; transition: color 0.2s, border-color 0.2s; --mdc-icon-size: 16px; }
+          .scroll-indicator { background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-weight: bold; font-size: 16px; padding: 0 4px; z-index: 2; user-select: none; }
+          .scroll-indicator:hover { color: var(--primary-color); }
+          .tab-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .tab-btn:hover { color: var(--primary-text-color); }
+          .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+          .tab-content { display: none; flex-direction: column; gap: 16px; }
+          .tab-content.active { display: flex; }
+          .assignees-container { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; max-height: 200px; overflow-y: auto; }
+          .image-dropzone { border: 2px dashed var(--divider-color); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; color: var(--secondary-text-color); transition: all 0.3s; margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+          .image-dropzone:hover, .image-dropzone.dragover { border-color: var(--primary-color); color: var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05); }
+          .image-dropzone ha-icon { --mdc-icon-size: 32px; }
+          .image-gallery { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; width: 100%; }
+          .image-preview { position: relative; width: 60px; height: 60px; }
+          .image-preview.file-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(128,128,128,0.1); border-radius: 4px; border: 1px solid var(--divider-color); cursor: pointer; padding: 4px; box-sizing: border-box; }
+          .image-preview img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; border-radius: 4px; border: 1px solid var(--divider-color); }
+          .image-delete-btn { position: absolute; top: -6px; right: -6px; background: #f44336; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; transition: background 0.3s; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+          .image-delete-btn:hover { background: #d32f2f; }
+          .history-timeline { position: relative; padding-left: 36px; margin-top: 10px; display: flex; flex-direction: column; gap: 16px; }
+          .history-timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background-color: var(--divider-color); }
+          .timeline-item { position: relative; display: flex; flex-direction: column; }
+          .timeline-marker { position: absolute; left: -36px; top: 0px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--card-background-color); box-sizing: border-box; z-index: 1; display: flex; align-items: center; justify-content: center; }
+          .timeline-marker ha-icon { --mdc-icon-size: 16px; }
+          .timeline-content { background: rgba(128,128,128,0.05); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--divider-color); }
+          .timeline-date { font-size: 12px; color: var(--secondary-text-color); margin-bottom: 4px; }
+          .timeline-title { font-size: 14px; font-weight: 500; color: var(--primary-text-color); }
+          .timeline-points { font-size: 12px; color: var(--primary-color); font-weight: bold; margin-top: 4px; }
+          .task-images-preview { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+          .task-images-preview img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; border: 1px solid var(--divider-color); cursor: pointer; }
         </style>
       `;
   }
@@ -1315,121 +1650,9 @@ class TaskOrganizerCard extends HTMLElement {
 
         <div id="task-list-wrapper"></div>
 
-        <div id="choice-modal" class="modal">
-            <div class="modal-content">
-                <h2 style="margin: 0 0 8px 0;">${this.localize('who_did_it')}</h2>
-                <p style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 16px;">${this.localize('fair_points')}</p>
-                <div id="choice-assignees" style="display:flex; flex-direction:column; gap:4px;"></div>
-                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                    <ha-button appearance="plain" variant="brand" id="btn-choice-cancel">${this.localize('cancel')}</ha-button>
-                    <ha-button raised id="btn-choice-confirm">${this.localize('confirm')}</ha-button>
-                </div>
-            </div>
-        </div>
-        
-        <div id="subtask-completion-modal" class="modal">
-            <div class="modal-content">
-                <h2 id="sub-completion-title" style="margin: 0 0 8px 0;">${this.localize('complete_subtasks')}</h2>
-                <p style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 16px; font-style: italic;">${this.localize('complete_subtasks_desc')}</p>
-                <div id="sub-completion-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-                <div style="display:flex; justify-content:flex-end; align-items: center; gap:8px; margin-top:24px; flex-wrap: wrap;">
-                    <ha-button appearance="plain" variant="brand" id="btn-submodal-cancel">${this.localize('cancel')}</ha-button>
-                    <div style="flex: 1;"></div>
-                    <ha-button id="btn-submodal-save">${this.localize('save')}</ha-button>
-                    <ha-button raised id="btn-submodal-all">${this.localize('all_done')}</ha-button>
-                </div>
-            </div>
-        </div>
-        
-        <div id="task-modal" class="modal">
-            <div class="modal-content">
-                <h2 style="margin: 0 0 20px 0;">${this.localize('task')}</h2>
-                
-                <div class="task-type-selector">
-                    <button class="type-btn" id="btn-type-recurring">${this.localize('recurring')}</button>
-                    <button class="type-btn" id="btn-type-onetime">${this.localize('onetime')}</button>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:16px;">
-                    <div>
-                        <ha-input id="f-name" label="${this.localize('name_lbl')}" style="width: 100%;"></ha-input>
-                        <div id="template-suggestions"></div>
-                    </div>
-                    <ha-input id="f-description" label="${this.localize('desc_lbl')}"></ha-input>
-                    
-                    <div class="form-row">
-                        <ha-input id="f-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col"></ha-input>
-                        <ha-input id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" class="form-col"></ha-input>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-col">
-                            <label class="form-label">${this.localize('icon_lbl')}</label>
-                            <ha-icon-picker id="f-icon-picker"></ha-icon-picker>
-                        </div>
-                        <div class="form-col">
-                            <label class="form-label">${this.localize('area_lbl')}</label>
-                            <ha-area-picker id="f-area"></ha-area-picker>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="form-label">${this.localize('assignees_lbl')}</label>
-                        <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
-                            ${Object.entries(this.users).map(([uid, name]) => `
-                                <ha-formfield label="${name}">
-                                    <ha-checkbox class="assignee-cb" id="cb-${uid}" value="${uid}"></ha-checkbox>
-                                </ha-formfield>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div id="toggle-time-settings" class="collapsible-header">
-                        <span>${this.localize('time_settings')}</span>
-                        <ha-icon icon="mdi:chevron-down"></ha-icon>
-                    </div>
-                    <div id="time-settings-content" class="collapsible-content">
-                        <div style="display:flex; flex-direction:column; gap:16px;">
-                            <div style="display:flex; align-items:center; gap:16px;">
-                                <ha-formfield label="${this.localize('set_due_today')}">
-                                    <ha-switch id="f-set-due-date-cb"></ha-switch>
-                                </ha-formfield>
-                                <input type="date" id="f-custom-due-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:16px;">
-                                <ha-formfield label="${this.localize('override_overdue_lbl')}">
-                                    <ha-switch id="f-override-overdue-cb"></ha-switch>
-                                </ha-formfield>
-                                <ha-input id="f-override-overdue-days" type="number" min="0" max="9999" style="flex:1;" placeholder="${this.localize('override_overdue_days_placeholder')}" disabled></ha-input>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:16px;">
-                                <ha-formfield label="${this.localize('pause_until')}">
-                                    <ha-switch id="f-pause-cb"></ha-switch>
-                                </ha-formfield>
-                                <input type="date" id="f-pause-date" style="flex:1; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--divider-color); border-radius: 4px; background: transparent; color: var(--primary-text-color); font-size: 16px; font-family: inherit;" disabled>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="toggle-subtasks" class="collapsible-header">
-                        <span>${this.localize('subtasks')}</span>
-                        <ha-icon icon="mdi:chevron-down"></ha-icon>
-                    </div>
-                    <div id="subtasks-content" class="collapsible-content">
-                        <div class="subtask-input-row">
-                            <ha-input id="new-subtask-title" placeholder="${this.localize('subtask_placeholder')}" style="flex: 1;"></ha-input>
-                            <ha-button id="btn-add-subtask">${this.localize('confirm')}</ha-button>
-                        </div>
-                        <div id="subtask-list" class="subtask-list"></div>
-                    </div>
-                </div>
-                
-                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                    <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
-                    <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
-                </div>
-            </div>
-        </div>
+                <task-organizer-choice-modal id="modal-choice"></task-organizer-choice-modal>
+        <task-organizer-subtask-modal id="modal-subtask"></task-organizer-subtask-modal>
+        <task-organizer-task-modal id="modal-task"></task-organizer-task-modal>
       </ha-card>
     `;
     
@@ -1459,7 +1682,7 @@ class TaskOrganizerCard extends HTMLElement {
     const pauseDate = this.shadowRoot.getElementById('f-pause-date');
     if (pauseCb && pauseDate) {
         pauseCb.addEventListener('change', (e) => {
-            pauseDate.disabled = !e.target.checked;
+            pauseDate.style.display = e.target.checked ? '' : 'none';
             if (e.target.checked && !pauseDate.value) {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1468,11 +1691,39 @@ class TaskOrganizerCard extends HTMLElement {
         });
     }
 
+    const restrictMonthsCb = this.shadowRoot.getElementById('f-restrict-months-cb');
+    const monthsBand = this.shadowRoot.getElementById('f-months-band');
+    if (restrictMonthsCb && monthsBand) {
+        restrictMonthsCb.addEventListener('change', (e) => {
+            monthsBand.style.display = e.target.checked ? 'flex' : 'none';
+            if (!e.target.checked) {
+                monthsBand.querySelectorAll('.month-pill').forEach(p => {
+                    p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                    p.style.color = 'var(--primary-text-color)';
+                    p.classList.remove('selected');
+                });
+            }
+        });
+        monthsBand.querySelectorAll('.month-pill').forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                const p = e.target;
+                p.classList.toggle('selected');
+                if (p.classList.contains('selected')) {
+                    p.style.background = 'var(--primary-color)';
+                    p.style.color = 'var(--text-primary-color)';
+                } else {
+                    p.style.background = 'var(--secondary-background-color, #e0e0e0)';
+                    p.style.color = 'var(--primary-text-color)';
+                }
+            });
+        });
+    }
+
     const setDueDateCb = this.shadowRoot.getElementById('f-set-due-date-cb');
     const customDueDateInput = this.shadowRoot.getElementById('f-custom-due-date');
     if (setDueDateCb && customDueDateInput) {
         setDueDateCb.addEventListener('change', (e) => {
-            customDueDateInput.disabled = !e.target.checked;
+            customDueDateInput.style.display = e.target.checked ? '' : 'none';
             if (e.target.checked && !customDueDateInput.value) {
                 const today = new Date();
                 customDueDateInput.value = today.toISOString().split('T')[0];
@@ -1484,9 +1735,55 @@ class TaskOrganizerCard extends HTMLElement {
     const overrideOverdueDays = this.shadowRoot.getElementById('f-override-overdue-days');
     if (overrideOverdueCb && overrideOverdueDays) {
         overrideOverdueCb.addEventListener('change', (e) => {
-            overrideOverdueDays.disabled = !e.target.checked;
+            overrideOverdueDays.style.display = e.target.checked ? '' : 'none';
             if (!e.target.checked) {
                 overrideOverdueDays.value = "";
+            }
+        });
+    }
+
+    // Tab switching logic
+    this.shadowRoot.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            this.shadowRoot.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.shadowRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const currentBtn = e.currentTarget;
+            const tabId = currentBtn.getAttribute('data-tab');
+            currentBtn.classList.add('active');
+            this.shadowRoot.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    const tabsScroll = this.shadowRoot.getElementById('tabs-scroll');
+    if (tabsScroll) {
+        tabsScroll.addEventListener('scroll', () => this._updateTabScrollIndicators());
+        window.addEventListener('resize', () => this._updateTabScrollIndicators());
+    }
+
+    // Image upload logic
+    const dropzone = this.shadowRoot.getElementById('f-image-dropzone');
+    const fileInput = this.shadowRoot.getElementById('f-images-upload');
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', (e) => {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+        fileInput.addEventListener('change', (e) => this._handleImageSelection(e));
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                this._handleImageSelection({ target: { files: e.dataTransfer.files } });
             }
         });
     }
@@ -1500,17 +1797,20 @@ class TaskOrganizerCard extends HTMLElement {
     const intervalField = this.shadowRoot.getElementById('f-interval');
     const btnOnetime = this.shadowRoot.getElementById('btn-type-onetime');
     const btnRecurring = this.shadowRoot.getElementById('btn-type-recurring');
+    const selector = this.shadowRoot.querySelector('.task-type-selector');
 
     if (isOnetime) {
         intervalField.disabled = true;
         intervalField.value = 0;
         btnOnetime.classList.add('active');
         btnRecurring.classList.remove('active');
+        if (selector) selector.setAttribute('data-active', 'onetime');
     } else {
         intervalField.disabled = false;
         if (intervalField.value == 0) intervalField.value = 7;
         btnOnetime.classList.remove('active');
         btnRecurring.classList.add('active');
+        if (selector) selector.setAttribute('data-active', 'recurring');
     }
   }
 
@@ -1558,7 +1858,6 @@ class TaskOrganizerCard extends HTMLElement {
         
         this._subtasks = t.subtasks ? JSON.parse(JSON.stringify(t.subtasks)) : [];
         this._renderModalSubtasks();
-        this._setSectionState('subtasks-content', this._subtasks.length > 0);
 
         const isOnetimeSelected = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
         if (isOnetimeSelected) {
@@ -1632,7 +1931,13 @@ class TaskOrganizerCard extends HTMLElement {
         d.setHours(0,0,0,0);
         
         const diff = Math.round((d - nowForSort) / (1000 * 60 * 60 * 24));
-        const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+        let isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+        if (task.active_months && task.active_months.length > 0) {
+            const currentMonth = nowForSort.getMonth() + 1;
+            if (!task.active_months.includes(currentMonth)) {
+                isPaused = true;
+            }
+        }
         const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined)
             ? task.override_overdue_days : this.settings.overdue_days;
         const overdueDiff = -overdueThreshold;
@@ -1684,8 +1989,20 @@ class TaskOrganizerCard extends HTMLElement {
     });
     
     taskArray.sort((a, b) => {
-      const aPaused = a.paused_until && new Date(a.paused_until) > nowForSort;
-      const bPaused = b.paused_until && new Date(b.paused_until) > nowForSort;
+      let aPaused = a.paused_until && new Date(a.paused_until) > nowForSort;
+      if (!aPaused && a.active_months && a.active_months.length > 0) {
+          aPaused = !a.active_months.includes(nowForSort.getMonth() + 1);
+      }
+      let bPaused = b.paused_until && new Date(b.paused_until) > nowForSort;
+      if (!bPaused && b.active_months && b.active_months.length > 0) {
+          bPaused = !b.active_months.includes(nowForSort.getMonth() + 1);
+      }
+
+      const isAPaused = !!aPaused;
+      const isBPaused = !!bPaused;
+      if (isAPaused !== isBPaused) {
+          return isAPaused ? 1 : -1;
+      }
 
       let cmp = 0;
       if (sortBy === 'points') cmp = a.complexity - b.complexity;
@@ -1696,14 +2013,12 @@ class TaskOrganizerCard extends HTMLElement {
       } 
       else if (sortBy === 'alphabet') cmp = a.name.localeCompare(b.name);
       else { 
-          if (aPaused && !bPaused) cmp = 1;
-          else if (!aPaused && bPaused) cmp = -1;
-          else cmp = new Date(a.due_date) - new Date(b.due_date);
+          cmp = new Date(a.due_date) - new Date(b.due_date);
       }
 
       if (sortOrder === 'desc') return -cmp;
       if (sortOrder === 'asc') return cmp;
-      return cmp; 
+      return cmp;
     });
 
     let paginatedTasks = taskArray;
@@ -1726,7 +2041,13 @@ class TaskOrganizerCard extends HTMLElement {
       now.setHours(0,0,0,0);
       
       const diff = Math.round((d - now) / (1000 * 60 * 60 * 24));
-      const isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+      let isPaused = task.paused_until && new Date(task.paused_until) > nowForSort;
+      if (task.active_months && task.active_months.length > 0) {
+          const currentMonth = nowForSort.getMonth() + 1;
+          if (!task.active_months.includes(currentMonth)) {
+              isPaused = true;
+          }
+      }
       const overdueThreshold = (task.override_overdue_days !== null && task.override_overdue_days !== undefined)
         ? task.override_overdue_days
         : this.settings.overdue_days;
@@ -1737,21 +2058,44 @@ class TaskOrganizerCard extends HTMLElement {
       const configColorDone = this.settings[`color_done_${themeSuffix}`] || this.settings.color_done || 'var(--success-color, #4CAF50)';
       const configColorDue = this.settings[`color_due_${themeSuffix}`] || this.settings.color_due || 'var(--warning-color, #FFC107)';
       const configColorOverdue = this.settings[`color_overdue_${themeSuffix}`] || this.settings.color_overdue || 'var(--error-color, #F44336)';
+      const configColorPaused = this.settings[`color_paused_${themeSuffix}`] || this.settings.color_paused || 'var(--disabled-text-color, #9e9e9e)';
+      const configColorInProgress = this.settings[`color_in_progress_${themeSuffix}`] || this.settings.color_in_progress || 'var(--info-color, #2196f3)';
       
       const transpDone = this.settings[`transparency_done_${themeSuffix}`] !== undefined ? this.settings[`transparency_done_${themeSuffix}`] : 8;
       const transpDue = this.settings[`transparency_due_${themeSuffix}`] !== undefined ? this.settings[`transparency_due_${themeSuffix}`] : 8;
       const transpOverdue = this.settings[`transparency_overdue_${themeSuffix}`] !== undefined ? this.settings[`transparency_overdue_${themeSuffix}`] : 8;
+      const transpPaused = this.settings[`transparency_paused_${themeSuffix}`] !== undefined ? this.settings[`transparency_paused_${themeSuffix}`] : 8;
+      const transpInProgress = this.settings[`transparency_in_progress_${themeSuffix}`] !== undefined ? this.settings[`transparency_in_progress_${themeSuffix}`] : 8;
 
       let borderColor = configColorDone;
       let transparency = transpDone;
       let timeText = this.localize('today');
       
       if (isPaused) {
-        borderColor = 'var(--disabled-text-color, #9e9e9e)'; 
-        timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
+        borderColor = configColorPaused; 
+        transparency = transpPaused;
+        let isPausedByDate = task.paused_until && new Date(task.paused_until) > nowForSort;
+        if (isPausedByDate) {
+            timeText = this.localize('paused', {date: new Date(task.paused_until).toLocaleDateString()});
+        } else {
+            timeText = this.localize('seasonal_pause');
+        }
       } else {
         if (diff <= 0) { borderColor = configColorDue; transparency = transpDue; }
         if (diff <= -overdueThreshold) { borderColor = configColorOverdue; transparency = transpOverdue; }
+        
+        let someSubtasksDone = false;
+        let allSubtasksDone = false;
+        if (task.subtasks && task.subtasks.length > 0) {
+            const total = task.subtasks.length;
+            const completed = task.subtasks.filter(st => st.done).length;
+            if (completed === total) allSubtasksDone = true;
+            else if (completed > 0) someSubtasksDone = true;
+        }
+        if (someSubtasksDone && !allSubtasksDone) {
+            borderColor = configColorInProgress; 
+            transparency = transpInProgress;
+        }
         
         if (diff > 0) timeText = this.localize('in_days', {days: diff});
         else if (diff < 0) timeText = this.localize('ago_days', {days: Math.abs(diff)});
@@ -1798,6 +2142,7 @@ class TaskOrganizerCard extends HTMLElement {
                         <span ${descTooltip ? `title="${descTooltip}"` : 'style="cursor: default;"'}>${task.name}</span>
                         ${task.subtasks?.length > 0 ? `<ha-icon icon="mdi:book-multiple-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${subtaskTooltip}"></ha-icon>` : ''}
                         ${task.interval === 0 ? `<ha-icon icon="mdi:numeric-1-circle-outline" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="${this.localize('onetime')}"></ha-icon>` : ''}
+                        ${task.images?.length > 0 ? `<ha-icon icon="mdi:paperclip" style="--mdc-icon-size: 14px; flex-shrink: 0; opacity: 0.7;" title="Task beinhaltet ${task.images.length} Datei${task.images.length !== 1 ? 'en' : ''}"></ha-icon>` : ''}
                     </div>
                     <div class="task-meta">${areaName ? areaName + ' • ' : ''}${timeText} • ${task.complexity} ${this.localize('points')}${progressText}</div>
                     <div class="assignees-icons">${assigneeHtml}</div>
@@ -1873,18 +2218,10 @@ class TaskOrganizerCardEditor extends HTMLElement {
         <ha-input label="${this.localize('items_per_page_lbl')}" type="number" value="${this._config.items_per_page || 10}" configValue="items_per_page"></ha-input>
         
         <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px;">
-          <ha-formfield label="${this.localize('show_search_lbl')}">
-            <ha-checkbox ${this._config.show_search !== false ? 'checked' : ''} configValue="show_search"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="${this.localize('show_add_lbl')}">
-            <ha-checkbox ${this._config.show_add !== false ? 'checked' : ''} configValue="show_add"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="${this.localize('show_edit_lbl')}">
-            <ha-checkbox ${this._config.show_edit !== false ? 'checked' : ''} configValue="show_edit"></ha-checkbox>
-          </ha-formfield>
-          <ha-formfield label="${this.localize('show_delete_lbl')}">
-            <ha-checkbox ${this._config.show_delete !== false ? 'checked' : ''} configValue="show_delete"></ha-checkbox>
-          </ha-formfield>
+          ${renderCheckbox({ label: this.localize('show_search_lbl'), checked: this._config.show_search !== false, configValue: 'show_search' })}
+          ${renderCheckbox({ label: this.localize('show_add_lbl'), checked: this._config.show_add !== false, configValue: 'show_add' })}
+          ${renderCheckbox({ label: this.localize('show_edit_lbl'), checked: this._config.show_edit !== false, configValue: 'show_edit' })}
+          ${renderCheckbox({ label: this.localize('show_delete_lbl'), checked: this._config.show_delete !== false, configValue: 'show_delete' })}
         </div>
 
         <ha-input label="${this.localize('sort_by_lbl')}" placeholder="${this.localize('sort_by_placeholder')}" value="${this._config.sort_by || 'due_date'}" configValue="sort_by" style="width: 100%; margin-top: 16px;"></ha-input>
@@ -1896,7 +2233,7 @@ class TaskOrganizerCardEditor extends HTMLElement {
           display: block;
           margin-bottom: 8px;
         }
-        ha-formfield {
+        ha-formfield, ha-checkbox {
           display: flex;
           align-items: center;
         }
@@ -1949,5 +2286,5 @@ class TaskOrganizerCardEditor extends HTMLElement {
   }
 }
 
-customElements.define('task-organizer-card-editor', TaskOrganizerCardEditor);
-customElements.define('task-organizer-card', TaskOrganizerCard);
+try { customElements.define('task-organizer-card-editor', TaskOrganizerCardEditor); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
+try { customElements.define('task-organizer-card', TaskOrganizerCard); } catch (e) { if (!e.message.includes('already been used')) { throw e; } }
