@@ -36,13 +36,13 @@ jobs:
             fi
             echo "TYPE=stable" >> $GITHUB_ENV
             echo "TAG=$TAG" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
+            echo "TITLE=$TAG" >> $GITHUB_ENV
             echo "PRERELEASE=false" >> $GITHUB_ENV
           elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
             TAG="v${VERSION}-beta"
             echo "TYPE=beta" >> $GITHUB_ENV
             echo "TAG=$TAG" >> $GITHUB_ENV
-            echo "TITLE=TaskOrganizer $TAG" >> $GITHUB_ENV
+            echo "TITLE=$TAG" >> $GITHUB_ENV
             echo "PRERELEASE=true" >> $GITHUB_ENV
           else
             echo "TYPE=unknown" >> $GITHUB_ENV
