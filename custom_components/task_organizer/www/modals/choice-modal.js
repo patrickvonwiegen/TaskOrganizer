@@ -151,9 +151,16 @@ export class TaskOrganizerChoiceModal extends HTMLElement {
     const pointStepPct = (0.5 / (this._task.complexity || 5)) * 100;
     let html = `
       <style>
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 120px; padding-bottom: 24px; box-sizing: border-box; overflow-y: auto; }
         .modal.open { display: flex; }
-        .modal-content { background: var(--card-background-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: var(--card-background-color); padding: 24px; border-radius: 16px; width: fit-content; max-width: calc(100% - 32px); margin: 0 16px; box-sizing: border-box; display: flex; flex-direction: column; max-height: calc(100vh - 150px); overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); }
+        @media (max-width: 768px), (max-height: 768px) {
+          .modal { padding-top: 16px; padding-bottom: 16px; }
+          .modal-content { max-height: calc(100vh - 32px); }
+        }
+        @media (max-width: 768px) {
+          .modal-content { padding: 16px; width: calc(100% - 32px); max-width: calc(100% - 32px); margin: 0 16px; border-radius: 16px; }
+        }
       </style>
       <div id="choice-modal" class="modal">
         <div class="modal-content">

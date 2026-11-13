@@ -23,7 +23,7 @@ export function localize(hass, key, replace = null, dictType = 'card') {
   const defaultDictObj = TRANSLATIONS['en'];
   const defaultDict = defaultDictObj[dictKey] || {};
 
-  let text = dict[key] || defaultDict[key] || key;
+  let text = dict[key] || defaultDict[key] || (dictObj['card'] && dictObj['card'][key]) || (defaultDictObj['card'] && defaultDictObj['card'][key]) || key;
 
   if (replace) {
     for (const [k, v] of Object.entries(replace)) {

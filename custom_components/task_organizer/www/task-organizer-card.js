@@ -46,6 +46,7 @@ class TaskOrganizerCard extends HTMLElement {
     this._distribution = {};
     this.addEventListener('click', (ev) => this._handleCardClick(ev));
     this.addEventListener('task-saved', (e) => this._onTaskSaved(e));
+    this.addEventListener('task-deleted', (e) => this._deleteTask(e.detail.taskId, e.detail.confirmed));
     this.addEventListener('proceed-to-assignee', (e) => this._proceedToAssigneeCheck(e.detail.taskId));
     this.addEventListener('subtasks-saved', (e) => this._fetchData());
     this.addEventListener('task-complete', (e) => this._onTaskComplete(e));
@@ -914,9 +915,10 @@ class TaskOrganizerCard extends HTMLElement {
   /**
    * Deletes a task after user confirmation.
    * @param {string} taskId - The ID of the task to delete.
+   * @param {boolean} [confirmed=false] - Whether the deletion has already been confirmed.
    */
-  _deleteTask(taskId) { 
-      if (confirm(this.localize('confirm_delete'))) { 
+  _deleteTask(taskId, confirmed = false) { 
+      if (confirmed || confirm(this.localize('confirm_delete'))) { 
           this._hass.callWS({ type: 'task_organizer/delete_task', task_id: taskId }).then(() => { 
               this._showToast(this.localize('deleted')); 
               this._fetchData(); 
@@ -1561,9 +1563,16 @@ class TaskOrganizerCard extends HTMLElement {
           
           .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
           
-          .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 10vh; box-sizing: border-box; } 
+          .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 120px; padding-bottom: 24px; box-sizing: border-box; overflow-y: auto; } 
           .modal.open { display: flex; } 
-          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: var(--ha-dialog-border-radius, 28px); width: calc(100% - 32px); max-width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); margin: 0 16px; box-sizing: border-box; } 
+          .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: var(--ha-dialog-border-radius, 28px); width: fit-content; max-width: calc(100% - 32px); max-height: calc(100vh - 150px); overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); margin: 0 16px; box-sizing: border-box; } 
+          @media (max-width: 768px), (max-height: 768px) {
+            .modal { padding-top: 16px; padding-bottom: 16px; }
+            .modal-content { max-height: calc(100vh - 32px); }
+          }
+          @media (max-width: 768px) {
+            .modal-content { padding: 16px; width: calc(100% - 32px); max-width: calc(100% - 32px); margin: 0 16px; border-radius: var(--ha-dialog-border-radius, 28px); }
+          } 
           
           .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
           .task-type-selector { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--secondary-background-color); border-radius: 12px; border: 1px solid var(--divider-color); overflow: hidden; align-self: center; }

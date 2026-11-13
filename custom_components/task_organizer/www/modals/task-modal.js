@@ -13,6 +13,8 @@ export class TaskOrganizerTaskModal extends HTMLElement {
     this._subtasks = [];
     this._currentTaskImages = [];
     this._currentIcon = "mdi:broom";
+    this._previousInterval = 7;
+    this._isOnetime = false;
   }
 
   localize(key, replace = null) {
@@ -36,8 +38,11 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         if (this.shadowRoot.getElementById('f-name')) this.shadowRoot.getElementById('f-name').value = t.name;
         if (this.shadowRoot.getElementById('f-description')) this.shadowRoot.getElementById('f-description').value = t.description || "";
         if (this.shadowRoot.getElementById('f-area')) this.shadowRoot.getElementById('f-area').value = t.area || "";
+        const taskInterval = (t.interval !== undefined && t.interval !== null) ? parseInt(t.interval) : 7;
+        const isOnetime = taskInterval === 0;
+        this._previousInterval = !isOnetime ? taskInterval : 7;
         if (this.shadowRoot.getElementById('f-interval')) {
-            this.shadowRoot.getElementById('f-interval').value = (t.interval !== undefined) ? t.interval : 7;
+            this.shadowRoot.getElementById('f-interval').value = taskInterval;
         }
         if (this.shadowRoot.getElementById('f-complexity')) this.shadowRoot.getElementById('f-complexity').value = t.complexity;
         this._subtasks = t.subtasks ? [...t.subtasks] : [];
@@ -53,7 +58,6 @@ export class TaskOrganizerTaskModal extends HTMLElement {
             cb.checked = t.assignees && t.assignees.includes(cb.value);
         });
         
-        const isOnetime = t.interval === 0;
         this._updateTaskTypeUI(isOnetime);
         this.shadowRoot.getElementById('template-suggestions').style.display = 'none';
         
@@ -101,6 +105,7 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         this.shadowRoot.getElementById('f-complexity').value = 5; 
         this._currentIcon = "mdi:broom";
         this._subtasks = [];
+        this._previousInterval = 7;
         
         this._updateTaskTypeUI(false); 
         this.shadowRoot.getElementById('template-suggestions').style.display = 'block';
@@ -168,6 +173,11 @@ export class TaskOrganizerTaskModal extends HTMLElement {
       picker.hass = this._hass;
       picker.value = this._currentIcon; 
     }
+
+    const btnDelete = this.shadowRoot.getElementById('btn-modal-delete');
+    if (btnDelete) {
+      btnDelete.style.display = taskId ? '' : 'none';
+    }
     
     modal.classList.add('open');
     const tabsScroll = this.shadowRoot.getElementById('tabs-scroll');
@@ -177,27 +187,58 @@ export class TaskOrganizerTaskModal extends HTMLElement {
     setTimeout(() => this._updateTabScrollIndicators(), 200);
   }
 
+  /**
+   * Confirms and dispatches the task deletion event, then closes the modal.
+   */
+  _deleteTask() {
+    if (!this._editingTaskId) return;
+    if (confirm(this.localize('confirm_delete'))) {
+      const taskId = this._editingTaskId;
+      this._close();
+      this.dispatchEvent(new CustomEvent('task-deleted', {
+        detail: { taskId, confirmed: true },
+        bubbles: true,
+        composed: true
+      }));
+    }
+  }
+
   _close() {
     this.shadowRoot.getElementById('task-modal').classList.remove('open');
   }
 
+  /**
+   * Updates the UI elements based on whether the task is one-time or recurring.
+   * Preserves previous interval value when toggling back to recurring.
+   * @param {boolean} isOnetime - Whether the task is configured as a one-time task.
+   */
   _updateTaskTypeUI(isOnetime) {
+    this._isOnetime = isOnetime;
     const intervalField = this.shadowRoot.getElementById('f-interval');
     const btnOnetime = this.shadowRoot.getElementById('btn-type-onetime');
     const btnRecurring = this.shadowRoot.getElementById('btn-type-recurring');
     const selector = this.shadowRoot.querySelector('.task-type-selector');
 
     if (isOnetime) {
-        intervalField.disabled = true;
-        intervalField.value = 0;
-        btnOnetime.classList.add('active');
-        btnRecurring.classList.remove('active');
+        if (intervalField) {
+            const currentVal = parseInt(intervalField.value);
+            if (!isNaN(currentVal) && currentVal > 0) {
+                this._previousInterval = currentVal;
+            }
+            intervalField.disabled = true;
+            intervalField.value = 0;
+        }
+        if (btnOnetime) btnOnetime.classList.add('active');
+        if (btnRecurring) btnRecurring.classList.remove('active');
         if (selector) selector.setAttribute('data-active', 'onetime');
     } else {
-        intervalField.disabled = false;
-        if (intervalField.value == 0) intervalField.value = 7;
-        btnOnetime.classList.remove('active');
-        btnRecurring.classList.add('active');
+        if (intervalField) {
+            intervalField.disabled = false;
+            const restoreVal = (this._previousInterval && this._previousInterval > 0) ? this._previousInterval : 7;
+            intervalField.value = restoreVal;
+        }
+        if (btnOnetime) btnOnetime.classList.remove('active');
+        if (btnRecurring) btnRecurring.classList.add('active');
         if (selector) selector.setAttribute('data-active', 'recurring');
     }
   }
@@ -240,11 +281,15 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         this._subtasks = t.subtasks ? JSON.parse(JSON.stringify(t.subtasks)) : [];
         this._renderModalSubtasks();
 
-        const isOnetimeSelected = this.shadowRoot.getElementById('btn-type-onetime').classList.contains('active');
+        const tmplInterval = (t.interval !== undefined && t.interval !== null) ? parseInt(t.interval) : 7;
+        const isOnetimeSelected = this._isOnetime ?? this.shadowRoot.getElementById('btn-type-onetime')?.classList.contains('active');
         if (isOnetimeSelected) {
             this.shadowRoot.getElementById('f-interval').value = 0;
+            this._previousInterval = tmplInterval > 0 ? tmplInterval : 7;
         } else {
-            this.shadowRoot.getElementById('f-interval').value = t.interval > 0 ? t.interval : 7;
+            const intVal = tmplInterval > 0 ? tmplInterval : 7;
+            this.shadowRoot.getElementById('f-interval').value = intVal;
+            this._previousInterval = intVal;
         }
 
         this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
@@ -619,7 +664,7 @@ export class TaskOrganizerTaskModal extends HTMLElement {
     }
 
     const assignees = [];
-    const isOnetime = this.shadowRoot.getElementById('btn-type-onetime')?.classList.contains('active') || false;
+    const isOnetime = this._isOnetime ?? (this.shadowRoot.getElementById('btn-type-onetime')?.classList.contains('active') || false);
     this.shadowRoot.querySelectorAll('.assignee-cb').forEach(cb => {
         if (cb.checked) assignees.push(cb.value);
     });
@@ -654,7 +699,7 @@ export class TaskOrganizerTaskModal extends HTMLElement {
       name: name, 
       description: this.shadowRoot.getElementById('f-description')?.value || "",
       area: this.shadowRoot.getElementById('f-area')?.value || "",
-      interval: isOnetime ? 0 : parseInt(this.shadowRoot.getElementById('f-interval')?.value) || 7,
+      interval: isOnetime ? 0 : Math.max(1, parseInt(this.shadowRoot.getElementById('f-interval')?.value) || 7),
       complexity: parseInt(this.shadowRoot.getElementById('f-complexity')?.value) || 5, 
       icon: this.shadowRoot.getElementById('f-icon-picker')?.value || "mdi:broom",
       category: "Allgemein", 
@@ -677,9 +722,18 @@ export class TaskOrganizerTaskModal extends HTMLElement {
   _render() {
     this.shadowRoot.innerHTML = `
       <style>
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 10vh; box-sizing: border-box; } 
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 120px; padding-bottom: 24px; box-sizing: border-box; overflow-y: auto; } 
         .modal.open { display: flex; } 
-        .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: var(--ha-dialog-border-radius, 28px); width: calc(100% - 32px); max-width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); margin: 0 16px; box-sizing: border-box; }
+        .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: var(--ha-dialog-border-radius, 28px); width: fit-content; max-width: calc(100% - 32px); max-height: calc(100vh - 150px); overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); margin: 0 16px; box-sizing: border-box; }
+        @media (max-width: 768px), (max-height: 768px) {
+            .modal { padding-top: 16px; padding-bottom: 16px; }
+            .modal-content { max-height: calc(100vh - 32px); }
+        }
+        @media (max-width: 768px) {
+            .modal-content { padding: 16px; width: calc(100% - 32px); max-width: calc(100% - 32px); margin: 0 16px; border-radius: var(--ha-dialog-border-radius, 28px); }
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .modal-header h2 { margin: 0; }
         .tabs-container { display: flex; align-items: center; border-bottom: 1px solid var(--divider-color); margin-bottom: 16px; position: relative; }
         .tabs { display: flex; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth; flex: 1; }
         .tabs::-webkit-scrollbar { display: none; }
@@ -700,11 +754,11 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         #template-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .suggestion-item { background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 16px; padding: 6px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 4px; }
         .suggestion-item:hover { background: var(--primary-color); color: var(--text-primary-color); }
-        .task-type-selector { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--secondary-background-color); border-radius: 12px; border: 1px solid var(--divider-color); overflow: hidden; align-self: center; margin-bottom: 16px; }
+        .task-type-selector { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--secondary-background-color); border-radius: 12px; border: 1px solid var(--divider-color); overflow: hidden; align-self: center; box-sizing: border-box; max-width: 100%; }
         .type-slider { position: absolute; top: 0; bottom: 0; left: 0; width: 50%; background: var(--primary-color); transition: transform 0.3s ease; z-index: 0; }
         .task-type-selector[data-active="recurring"] .type-slider { transform: translateX(0); }
         .task-type-selector[data-active="onetime"] .type-slider { transform: translateX(100%); }
-        .type-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 8px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 11px; font-weight: 500; transition: color 0.3s; z-index: 1; white-space: nowrap; }
+        .type-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 10px; background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); font-size: 11px; font-weight: 500; transition: color 0.3s; z-index: 1; white-space: nowrap; user-select: none; }
         .type-btn ha-icon { --mdc-icon-size: 16px; }
         .type-btn.active { color: var(--text-primary-color, white); }
         .subtask-input-row { display: flex; gap: 8px; align-items: center; }
@@ -715,18 +769,23 @@ export class TaskOrganizerTaskModal extends HTMLElement {
         .history-timeline { display: flex; flex-direction: column; gap: 0; padding-left: 16px; position: relative; }
         .history-timeline::before { content: ''; position: absolute; left: 32px; top: 16px; bottom: 16px; width: 2px; background: var(--divider-color); z-index: 0; }
         .month-pill { padding: 8px 12px; border-radius: 16px; background: var(--secondary-background-color, #e0e0e0); color: var(--primary-text-color); border: 1px solid var(--divider-color); cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; }
+        .modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 24px; }
+        .modal-footer-left { display: flex; align-items: center; }
+        .modal-footer-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+        .btn-danger { color: var(--error-color, #F44336) !important; --mdc-theme-primary: var(--error-color, #F44336); }
+        .btn-danger ha-icon { --mdc-icon-size: 18px; margin-right: 4px; }
       </style>
       <div id="task-modal" class="modal">
           <div class="modal-content">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                  <h2 style="margin: 0;">${this.localize('task')}</h2>
-                  <div class="task-type-selector" style="margin-bottom:0;" data-active="recurring">
+              <div class="modal-header">
+                  <h2>${this.localize('task')}</h2>
+                  <div class="task-type-selector" data-active="recurring">
                       <div class="type-slider"></div>
-                      <button class="type-btn" id="btn-type-recurring">
+                      <button type="button" class="type-btn active" id="btn-type-recurring">
                           <ha-icon icon="mdi:calendar-sync"></ha-icon>
                           <span>${this.localize('recurring')}</span>
                       </button>
-                      <button class="type-btn" id="btn-type-onetime">
+                      <button type="button" class="type-btn" id="btn-type-onetime">
                           <ha-icon icon="mdi:calendar-check"></ha-icon>
                           <span>${this.localize('onetime')}</span>
                       </button>
@@ -768,7 +827,7 @@ export class TaskOrganizerTaskModal extends HTMLElement {
                   </div>
                   
                   <div class="form-row">
-                      <ha-input id="f-interval" type="number" label="${this.localize('interval_lbl')}" class="form-col"></ha-input>
+                      <ha-input id="f-interval" type="number" min="0" label="${this.localize('interval_lbl')}" class="form-col"></ha-input>
                       <ha-input id="f-complexity" type="number" label="${this.localize('points_lbl')}" min="1" max="10" class="form-col"></ha-input>
                   </div>
 
@@ -846,9 +905,17 @@ export class TaskOrganizerTaskModal extends HTMLElement {
                   <div id="f-history-container"></div>
               </div>
               
-              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                  <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
-                  <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
+              <div class="modal-footer">
+                  <div class="modal-footer-left">
+                      <ha-button appearance="plain" variant="danger" id="btn-modal-delete" class="btn-danger" style="display: none;">
+                          <ha-icon icon="mdi:delete" slot="icon"></ha-icon>
+                          ${this.localize('delete')}
+                      </ha-button>
+                  </div>
+                  <div class="modal-footer-right">
+                      <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
+                      <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
+                  </div>
               </div>
           </div>
       </div>
@@ -995,6 +1062,20 @@ export class TaskOrganizerTaskModal extends HTMLElement {
 
     this.shadowRoot.getElementById('btn-type-onetime').addEventListener('click', () => this._updateTaskTypeUI(true));
     this.shadowRoot.getElementById('btn-type-recurring').addEventListener('click', () => this._updateTaskTypeUI(false));
+    
+    const intervalField = this.shadowRoot.getElementById('f-interval');
+    if (intervalField) {
+        intervalField.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            if (!isNaN(val) && val > 0) {
+                this._previousInterval = val;
+            }
+        });
+    }
+    const deleteBtn = this.shadowRoot.getElementById('btn-modal-delete');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => this._deleteTask());
+    }
     this.shadowRoot.getElementById('btn-add-subtask').addEventListener('click', () => this._addSubtask());
     this.shadowRoot.getElementById('btn-modal-cancel').addEventListener('click', () => this._close());
     this.shadowRoot.getElementById('btn-modal-save').addEventListener('click', () => this._saveTask());

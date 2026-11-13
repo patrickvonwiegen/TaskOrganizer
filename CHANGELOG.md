@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1]
+
+### 🐛 Bug Fixes
+- **Live Point Goals Indicator:** The point goals indicator in the settings card now updates immediately when changing user goals in real-time, without requiring the settings to be saved first.
+- **Task Type Toggle:** Renamed task type toggle options to prevent text truncation on mobile displays, and ensured that the interval value is preserved when toggling between recurring and one-time tasks.
+- **Delete Buttons & Translations in Edit Modals:** Added a left-aligned red delete button to the task edit modal, history log entry edit modal, and template edit modal, with localized labels ("Löschen") and confirmation dialogs.
+- **Modal Dynamic Sizing & Responsive Positioning:** All popup modals dynamically adjust to the width needed by their content, provide a wider desktop view for templates, and are positioned approx. 120px from the top on standard desktop displays. In mobile or low-height views, popups start near the top with an even margin (16px) and expand usable vertical space, while retaining their rounded corner design and comfortable margins.
+
 ## [2.0.0]
 ### 🚀 New Features
 - **Point Goals Indicator:** Added a visual indicator to the settings card that helps evaluate if the configured point goals are sufficient to cover the recurring tasks.
