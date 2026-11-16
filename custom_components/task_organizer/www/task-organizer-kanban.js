@@ -35,6 +35,7 @@ class TaskOrganizerKanban extends HTMLElement {
     this._unsubEvents = null;
 
     this.addEventListener('task-saved', (e) => this._onTaskSaved(e));
+    this.addEventListener('task-deleted', (e) => this._deleteTask(e.detail.taskId, e.detail.confirmed));
     this.addEventListener('proceed-to-assignee', (e) => this._proceedToAssigneeCheck(e.detail.taskId));
     this.addEventListener('subtasks-saved', (e) => this._fetchData());
     this.addEventListener('task-complete', (e) => this._onTaskComplete(e));
@@ -232,8 +233,13 @@ class TaskOrganizerKanban extends HTMLElement {
     setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
   }
 
-  _deleteTask(taskId) {
-    if (confirm(this.localize('confirm_delete'))) {
+  /**
+   * Deletes a task after user confirmation.
+   * @param {string} taskId - The ID of the task to delete.
+   * @param {boolean} [confirmed=false] - Whether the deletion has already been confirmed.
+   */
+  _deleteTask(taskId, confirmed = false) {
+    if (confirmed || confirm(this.localize('confirm_delete'))) {
         this._hass.callWS({ type: 'task_organizer/delete_task', task_id: taskId }).then(() => {
             this._showToast(this.localize('deleted'));
             this._fetchData();

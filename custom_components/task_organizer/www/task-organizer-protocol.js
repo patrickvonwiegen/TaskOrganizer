@@ -30,6 +30,7 @@ class TaskOrganizerProtocol extends HTMLElement {
     this.currentPage = 1;
     this.addEventListener('click', (ev) => this._handleClick(ev));
     this.addEventListener('history-saved', (e) => this._onHistorySaved(e));
+    this.addEventListener('history-deleted', (e) => this._deleteEntry(e.detail.entryId, e.detail.confirmed));
   }
 
   static _localize(hass, key) {
@@ -129,8 +130,13 @@ class TaskOrganizerProtocol extends HTMLElement {
     });
   }
 
-  _deleteEntry(entryId) { 
-    if (confirm(this.localize('confirm_delete'))) { 
+  /**
+   * Deletes a history entry from the backend.
+   * @param {string} entryId - The entry ID to delete.
+   * @param {boolean} [confirmed=false] - Whether deletion was already confirmed.
+   */
+  _deleteEntry(entryId, confirmed = false) { 
+    if (confirmed || confirm(this.localize('confirm_delete'))) { 
       this._hass.callWS({ type: 'task_organizer/delete_history_item', entry_id: entryId }).then(() => this._fetchData());
     } 
   }
@@ -172,9 +178,16 @@ class TaskOrganizerProtocol extends HTMLElement {
         .btn-edit { color: var(--info-color, #2196F3); } 
         .btn-delete { color: var(--error-color, #F44336); }
         .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 120px; padding-bottom: 24px; box-sizing: border-box; overflow-y: auto; }
         .modal.open { display: flex; }
-        .modal-content { background: var(--card-background-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 16px; }
+        .modal-content { background: var(--card-background-color); padding: 24px; border-radius: 16px; width: fit-content; max-width: calc(100% - 32px); margin: 0 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; max-height: calc(100vh - 150px); overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); }
+        @media (max-width: 768px), (max-height: 768px) {
+          .modal { padding-top: 16px; padding-bottom: 16px; }
+          .modal-content { max-height: calc(100vh - 32px); }
+        }
+        @media (max-width: 768px) {
+          .modal-content { padding: 16px; width: calc(100% - 32px); max-width: calc(100% - 32px); margin: 0 16px; border-radius: 16px; }
+        }
         select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-family: inherit; font-size: 14px; }
         .form-label { font-size: 12px; color: var(--secondary-text-color); margin-bottom: 4px; display: block; }
       </style>

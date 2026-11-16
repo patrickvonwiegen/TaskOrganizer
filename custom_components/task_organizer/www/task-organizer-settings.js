@@ -18,11 +18,11 @@ class TaskOrganizerSettings extends HTMLElement {
   /**
    * Initializes the TaskOrganizerSettings element.
    */
-    constructor() {
-    super(); 
+  constructor() {
+    super();
     this.attachShadow({ mode: 'open' });
     this._themeView = 'light';
-    
+
     // Global properties
     this.settings = { color_done: '#4CAF50', color_due: '#FFC107', color_overdue: '#F44336', color_in_progress: '#2196F3', color_paused: '#9E9E9E', overdue_days: 5, full_points_distribution: false };
     this.tasks = {};
@@ -34,9 +34,9 @@ class TaskOrganizerSettings extends HTMLElement {
     this.current_month = null;
     this.current_period_start = null;
     this._subtasks = [];
-    this._dataLoaded = false; 
-    this._advancedOpen = false; 
-    this._ieOpen = false; 
+    this._dataLoaded = false;
+    this._advancedOpen = false;
+    this._ieOpen = false;
     this._behaviorOpen = false;
     this._templatesOpen = false;
     this._templateModalOpen = false;
@@ -66,26 +66,26 @@ class TaskOrganizerSettings extends HTMLElement {
    * @param {object} replace - Object with parameters to replace.
    * @returns {string} - The translated text.
    */
-  localize(key, replace = null) { 
+  localize(key, replace = null) {
     return TaskOrganizerSettings._localize(this._hass, key, replace);
   }
 
   /**
    * Defines layout options for the Home Assistant grid.
    */
-  static getLayoutOptions() { 
-    return { grid_columns: 4, grid_rows: "auto", grid_min_columns: 1, grid_max_columns: 4 }; 
+  static getLayoutOptions() {
+    return { grid_columns: 4, grid_rows: "auto", grid_min_columns: 1, grid_max_columns: 4 };
   }
 
   /**
    * Generates default configuration for the Card Picker.
    */
-  static getStubConfig(hass) { 
-    return { 
-      type: "custom:task-organizer-settings", 
+  static getStubConfig(hass) {
+    return {
+      type: "custom:task-organizer-settings",
       title: this._localize(hass, 'title'),
-      show_advanced: false 
-    }; 
+      show_advanced: false
+    };
   }
 
   /**
@@ -100,35 +100,35 @@ class TaskOrganizerSettings extends HTMLElement {
    * Sets the configuration from Home Assistant.
    * * @param {object} config - The card configuration.
    */
-  setConfig(config) { 
+  setConfig(config) {
     if (!config) throw new Error("Invalid configuration");
-    this._config = config; 
+    this._config = config;
     if (this._hass) this._render();
   }
 
-  connectedCallback() { 
-    if (this._hass && !this._unsubEvents) { 
-      this._subscribeToUpdates(); 
-    } 
+  connectedCallback() {
+    if (this._hass && !this._unsubEvents) {
+      this._subscribeToUpdates();
+    }
   }
 
-  disconnectedCallback() { 
-    if (this._unsubEvents) { 
-      this._unsubEvents.then(unsub => unsub()); 
-      this._unsubEvents = null; 
-    } 
+  disconnectedCallback() {
+    if (this._unsubEvents) {
+      this._unsubEvents.then(unsub => unsub());
+      this._unsubEvents = null;
+    }
   }
 
   /**
    * Subscribes to backend updates via websockets.
    */
-  async _subscribeToUpdates() { 
+  async _subscribeToUpdates() {
     if (!this._hass) {
-      return; 
+      return;
     }
     this._unsubEvents = this._hass.connection.subscribeEvents(() => {
       this._fetchData();
-    }, "task_organizer_updated"); 
+    }, "task_organizer_updated");
   }
 
   /**
@@ -138,11 +138,11 @@ class TaskOrganizerSettings extends HTMLElement {
     this._hass = hass;
     if (!this._dataLoaded && this._hass) {
       this._mapUsers();
-      this._fetchData(); 
-      this._dataLoaded = true; 
+      this._fetchData();
+      this._dataLoaded = true;
     }
-    if (!this._unsubEvents) { 
-      this._subscribeToUpdates(); 
+    if (!this._unsubEvents) {
+      this._subscribeToUpdates();
     }
   }
 
@@ -153,12 +153,12 @@ class TaskOrganizerSettings extends HTMLElement {
     const users = {};
     if (!this._hass) return;
     for (const entityId in this._hass.states) {
-        if (entityId.startsWith('person.')) {
-            const state = this._hass.states[entityId];
-            if (state.attributes.user_id) {
-                users[state.attributes.user_id] = state.attributes.friendly_name || entityId;
-            }
+      if (entityId.startsWith('person.')) {
+        const state = this._hass.states[entityId];
+        if (state.attributes.user_id) {
+          users[state.attributes.user_id] = state.attributes.friendly_name || entityId;
         }
+      }
     }
     this.users = users;
   }
@@ -166,11 +166,11 @@ class TaskOrganizerSettings extends HTMLElement {
   /**
    * Fetches the current settings and tasks from the backend.
    */
-  _fetchData() { 
-    this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => { 
-      if (data.settings && Object.keys(data.settings).length > 0) { 
-        this.settings = { ...this.settings, ...data.settings }; 
-      } 
+  _fetchData() {
+    this._hass.callWS({ type: 'task_organizer/get_data' }).then((data) => {
+      if (data.settings && Object.keys(data.settings).length > 0) {
+        this.settings = { ...this.settings, ...data.settings };
+      }
       this.tasks = data.tasks || {};
       this.templates = data.templates || {};
       this.history = data.history || [];
@@ -179,14 +179,15 @@ class TaskOrganizerSettings extends HTMLElement {
       this.monthly_history = data.monthly_history || {};
       this.current_month = data.current_month;
       this.current_period_start = data.current_period_start;
-      this._render(); 
-    }); 
+      this._render();
+    });
   }
-  
+
   /**
-   * Distributes the required points evenly across all users.
+   * Calculates the total required points per day based on configured recurring tasks.
+   * @returns {number} The required points per day.
    */
-  _distributeGoals() {
+  _getRequiredPoints() {
     let requiredPoints = 0;
     if (this.tasks) {
       Object.values(this.tasks).forEach(t => {
@@ -195,24 +196,69 @@ class TaskOrganizerSettings extends HTMLElement {
         }
       });
     }
-    
+    return requiredPoints;
+  }
+
+  /**
+   * Updates the point goals indicator dynamically based on current input values.
+   */
+  _updateGoalIndicator() {
+    const requiredPoints = this._getRequiredPoints();
+
+    let currentGoals = 0;
+    if (!this.settings.point_goals) this.settings.point_goals = {};
+    this.shadowRoot.querySelectorAll('.user-goal-input').forEach(input => {
+      const val = parseInt(input.value);
+      if (!isNaN(val) && val > 0) {
+        currentGoals += val;
+        this.settings.point_goals[input.dataset.uid] = val;
+      } else {
+        delete this.settings.point_goals[input.dataset.uid];
+      }
+    });
+
+    let indicatorPercent = 50;
+    if (requiredPoints > 0) {
+      indicatorPercent = (currentGoals / requiredPoints) * 50;
+      indicatorPercent = Math.max(0, Math.min(100, indicatorPercent));
+    }
+
+    const wrapper = this.shadowRoot.getElementById('btn-distribute-goals');
+    if (wrapper) {
+      wrapper.title = this.localize('goal_indicator_tooltip', {
+        ideal: requiredPoints.toFixed(1),
+        current: currentGoals
+      });
+      const currentIndicator = wrapper.querySelector('.goal-indicator-current');
+      if (currentIndicator) {
+        currentIndicator.style.left = `${indicatorPercent}%`;
+      }
+    }
+  }
+
+  /**
+   * Distributes the required points evenly across all users.
+   */
+  _distributeGoals() {
+    const requiredPoints = this._getRequiredPoints();
+
     const userKeys = Object.keys(this.users);
     if (userKeys.length === 0 || requiredPoints === 0) return;
-    
+
     const pointsPerUser = Math.ceil(requiredPoints / userKeys.length);
-    
+
     if (!this.settings.point_goals) this.settings.point_goals = {};
     userKeys.forEach(uid => {
       this.settings.point_goals[uid] = pointsPerUser;
     });
-    
+
     this._render();
   }
 
   /**
    * Gathers modified settings from the UI and saves them via websocket.
    */
-  _saveSettings() { 
+  _saveSettings() {
     const pointGoals = {};
     this.shadowRoot.querySelectorAll('.user-goal-input').forEach(input => {
       const val = parseInt(input.value);
@@ -227,28 +273,28 @@ class TaskOrganizerSettings extends HTMLElement {
       if (tInput) this.settings[`transparency_${status}_${this._themeView}`] = parseInt(tInput.value);
     });
 
-    const newSettings = { 
+    const newSettings = {
       ...this.settings,
       overdue_days: parseInt(this.shadowRoot.getElementById('num-overdue').value),
       full_points_distribution: this.shadowRoot.getElementById('full-points-toggle') ? this.shadowRoot.getElementById('full-points-toggle').checked : false,
       point_goals: pointGoals
-    }; 
-    
-    this._hass.callWS({ type: 'task_organizer/update_settings', settings: newSettings }).then(() => { 
-      alert(this.localize('success')); 
-      this._fetchData(); 
-    }); 
+    };
+
+    this._hass.callWS({ type: 'task_organizer/update_settings', settings: newSettings }).then(() => {
+      alert(this.localize('success'));
+      this._fetchData();
+    });
   }
-  
+
   /**
    * Triggers a manual reset of the monthly points.
    */
-  _triggerReset() { 
-    if (confirm(this.localize('confirm_reset'))) { 
-      this._hass.callService('task_organizer', 'reset_monthly_points', {}).then(() => { 
-        this._fetchData(); 
-      }); 
-    } 
+  _triggerReset() {
+    if (confirm(this.localize('confirm_reset'))) {
+      this._hass.callService('task_organizer', 'reset_monthly_points', {}).then(() => {
+        this._fetchData();
+      });
+    }
   }
 
   /**
@@ -266,20 +312,20 @@ class TaskOrganizerSettings extends HTMLElement {
   /**
    * Triggers a full factory reset of the integration.
    */
-  _factoryReset() { 
-    if (confirm(this.localize('confirm_factory'))) { 
-      this._hass.callWS({ type: 'task_organizer/factory_reset' }).then(() => { 
-        location.reload(); 
-      }); 
-    } 
+  _factoryReset() {
+    if (confirm(this.localize('confirm_factory'))) {
+      this._hass.callWS({ type: 'task_organizer/factory_reset' }).then(() => {
+        location.reload();
+      });
+    }
   }
-  
+
   /**
    * Toggles the visibility of the advanced settings section.
    */
-  _toggleAdvanced() { 
-    this._advancedOpen = !this._advancedOpen; 
-    this._render(); 
+  _toggleAdvanced() {
+    this._advancedOpen = !this._advancedOpen;
+    this._render();
   }
 
   /**
@@ -288,13 +334,13 @@ class TaskOrganizerSettings extends HTMLElement {
   _handleClick(ev) {
     const path = ev.composedPath();
     const target = path.find(el =>
-        (el.id && (el.id.startsWith('btn-') || el.id.startsWith('toggle-') || el.id === 'theme-toggle' || el.id.endsWith('-toggle'))) ||
-        (el.classList && (el.classList.contains('action-btn') || el.classList.contains('subtask-check')))
+      (el.id && (el.id.startsWith('btn-') || el.id.startsWith('toggle-') || el.id === 'theme-toggle' || el.id.endsWith('-toggle'))) ||
+      (el.classList && (el.classList.contains('action-btn') || el.classList.contains('subtask-check')))
     );
 
     if (!target) return;
     ev.stopPropagation();
-    
+
     const id = target.id;
     if (id === 'btn-save') this._saveSettings();
     else if (id === 'theme-toggle') {
@@ -333,6 +379,9 @@ class TaskOrganizerSettings extends HTMLElement {
     else if (id === 'btn-clear-history') this._clearHistory();
     else if (id === 'btn-factory') this._factoryReset();
     // Modal Handlers
+    else if (id === 'btn-template-delete') {
+      if (this._editingTemplateId) this._deleteTemplate(this._editingTemplateId);
+    }
     else if (id === 'btn-modal-cancel') this._closeTemplateModal();
     else if (id === 'btn-modal-save') this._saveTemplate();
     else if (id === 'toggle-subtasks') this._toggleSection('subtasks-content');
@@ -352,11 +401,11 @@ class TaskOrganizerSettings extends HTMLElement {
     const icon = this.shadowRoot.querySelector(`#${headerId} ha-icon`);
     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
     if (isHidden) {
-        content.style.display = 'flex';
-        if (icon) icon.setAttribute('icon', 'mdi:chevron-up');
+      content.style.display = 'flex';
+      if (icon) icon.setAttribute('icon', 'mdi:chevron-up');
     } else {
-        content.style.display = 'none';
-        if (icon) icon.setAttribute('icon', 'mdi:chevron-down');
+      content.style.display = 'none';
+      if (icon) icon.setAttribute('icon', 'mdi:chevron-down');
     }
   }
 
@@ -371,11 +420,11 @@ class TaskOrganizerSettings extends HTMLElement {
     const headerId = "toggle-" + id.replace("-content", "");
     const icon = this.shadowRoot.querySelector(`#${headerId} ha-icon`);
     if (open) {
-        content.style.display = 'flex';
-        if (icon) icon.setAttribute('icon', 'mdi:chevron-up');
+      content.style.display = 'flex';
+      if (icon) icon.setAttribute('icon', 'mdi:chevron-up');
     } else {
-        content.style.display = 'none';
-        if (icon) icon.setAttribute('icon', 'mdi:chevron-down');
+      content.style.display = 'none';
+      if (icon) icon.setAttribute('icon', 'mdi:chevron-down');
     }
   }
 
@@ -412,9 +461,9 @@ class TaskOrganizerSettings extends HTMLElement {
   /**
    * Toggles the visibility of the import/export section.
    */
-  _toggleIE() { 
-    this._ieOpen = !this._ieOpen; 
-    this._render(); 
+  _toggleIE() {
+    this._ieOpen = !this._ieOpen;
+    this._render();
   }
 
   /**
@@ -434,7 +483,7 @@ class TaskOrganizerSettings extends HTMLElement {
     this._templateModalOpen = true;
     this._subtasks = [];
     if (id && this.templates[id]) {
-        this._subtasks = this.templates[id].subtasks ? JSON.parse(JSON.stringify(this.templates[id].subtasks)) : [];
+      this._subtasks = this.templates[id].subtasks ? JSON.parse(JSON.stringify(this.templates[id].subtasks)) : [];
     }
     this._render();
     this._setSectionState('subtasks-content', this._subtasks.length > 0);
@@ -457,7 +506,7 @@ class TaskOrganizerSettings extends HTMLElement {
   _saveTemplate() {
     const assignees = [];
     this.shadowRoot.querySelectorAll('.tmpl-assignee-cb').forEach(cb => {
-        if (cb.checked) assignees.push(cb.value);
+      if (cb.checked) assignees.push(cb.value);
     });
 
     const payload = {
@@ -472,8 +521,8 @@ class TaskOrganizerSettings extends HTMLElement {
     };
 
     if (!payload.name || !payload.icon) {
-        alert("Name and Icon are required.");
-        return;
+      alert("Name and Icon are required.");
+      return;
     }
 
     const type = this._editingTemplateId ? 'task_organizer/edit_template' : 'task_organizer/add_template';
@@ -495,8 +544,8 @@ class TaskOrganizerSettings extends HTMLElement {
     const container = this.shadowRoot.getElementById('subtask-list');
     if (!container) return;
     if (this._subtasks.length === 0) {
-        container.innerHTML = '';
-        return;
+      container.innerHTML = '';
+      return;
     }
     container.innerHTML = this._subtasks.map((st, index) => `
         <div style="display: flex; align-items: center; gap: 8px; background: var(--secondary-background-color); padding: 4px 8px; border-radius: 4px;">
@@ -515,9 +564,9 @@ class TaskOrganizerSettings extends HTMLElement {
    */
   _showToast(message) {
     const event = new CustomEvent("hass-notification", {
-        detail: { message: message, duration: 3000 },
-        bubbles: true,
-        composed: true
+      detail: { message: message, duration: 3000 },
+      bubbles: true,
+      composed: true
     });
     this.dispatchEvent(event);
   }
@@ -528,10 +577,13 @@ class TaskOrganizerSettings extends HTMLElement {
    */
   _deleteTemplate(id) {
     if (confirm(this.localize('confirm_delete_template'))) {
+      if (this._templateModalOpen) {
+        this._closeTemplateModal();
+      }
       this._hass.callWS({ type: 'task_organizer/delete_template', template_id: id })
         .then(() => {
-          alert(this.localize('template_deleted'));
           this._showToast(this.localize('template_deleted'));
+          this._fetchData();
         });
     }
   }
@@ -545,7 +597,7 @@ class TaskOrganizerSettings extends HTMLElement {
     const exportHistory = this.shadowRoot.getElementById('cb-export-history').checked;
     const exportAuditLog = this.shadowRoot.getElementById('cb-export-audit-log').checked;
     const exportSettings = this.shadowRoot.getElementById('cb-export-settings').checked;
-    
+
     let dataToExport = {};
     if (exportTasks) dataToExport.tasks = this.tasks;
     if (exportTemplates) dataToExport.templates = this.templates;
@@ -563,7 +615,7 @@ class TaskOrganizerSettings extends HTMLElement {
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", "task_organizer_export.json");
-    
+
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -588,28 +640,28 @@ class TaskOrganizerSettings extends HTMLElement {
   _handleImportFileChange(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target.result);
-        
+
         let payload = { type: 'task_organizer/import_tasks' };
-        
+
         if (importedData.tasks || importedData.templates || importedData.history || importedData.settings || importedData.audit_log) {
-            if (importedData.tasks) payload.tasks = importedData.tasks;
-            if (importedData.templates) payload.templates = importedData.templates;
-            if (importedData.settings) payload.settings = importedData.settings;
-            if (importedData.audit_log) payload.audit_log = importedData.audit_log;
-            if (importedData.history) {
-                payload.history = importedData.history;
-                if (importedData.points) payload.points = importedData.points;
-                if (importedData.monthly_history) payload.monthly_history = importedData.monthly_history;
-                if (importedData.current_month) payload.current_month = importedData.current_month;
-                if (importedData.current_period_start) payload.current_period_start = importedData.current_period_start;
-            }
+          if (importedData.tasks) payload.tasks = importedData.tasks;
+          if (importedData.templates) payload.templates = importedData.templates;
+          if (importedData.settings) payload.settings = importedData.settings;
+          if (importedData.audit_log) payload.audit_log = importedData.audit_log;
+          if (importedData.history) {
+            payload.history = importedData.history;
+            if (importedData.points) payload.points = importedData.points;
+            if (importedData.monthly_history) payload.monthly_history = importedData.monthly_history;
+            if (importedData.current_month) payload.current_month = importedData.current_month;
+            if (importedData.current_period_start) payload.current_period_start = importedData.current_period_start;
+          }
         } else {
-            payload.tasks = importedData;
+          payload.tasks = importedData;
         }
 
         this._importData = payload;
@@ -620,7 +672,7 @@ class TaskOrganizerSettings extends HTMLElement {
         this._render();
       }
     };
-    
+
     reader.readAsText(file);
     event.target.value = '';
   }
@@ -633,22 +685,22 @@ class TaskOrganizerSettings extends HTMLElement {
 
     // Simulate progress
     const progressInterval = setInterval(() => {
-        if (this._importProgress < 90) {
-            this._importProgress += 10;
-            this._render();
-        }
+      if (this._importProgress < 90) {
+        this._importProgress += 10;
+        this._render();
+      }
     }, 100);
 
     this._hass.callWS(this._importData).then(() => {
-        clearInterval(progressInterval);
-        this._importProgress = 100;
-        this._importState = 'done';
-        this._fetchData();
-        this._render();
+      clearInterval(progressInterval);
+      this._importProgress = 100;
+      this._importState = 'done';
+      this._fetchData();
+      this._render();
     }).catch(() => {
-        clearInterval(progressInterval);
-        this._importState = 'error';
-        this._render();
+      clearInterval(progressInterval);
+      this._importState = 'error';
+      this._render();
     });
   }
 
@@ -679,9 +731,22 @@ class TaskOrganizerSettings extends HTMLElement {
         .collapsible-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 5px; cursor: pointer; margin-top: 5px; border-top: 1px solid var(--divider-color); color: var(--secondary-text-color); font-size: 13px; font-weight: bold; } 
         .collapsible-content { display: none; flex-direction: column; gap: 10px; padding-top: 5px; } 
         .collapsible-content.open { display: flex; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: center; } 
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; justify-content: center; align-items: flex-start; padding-top: 120px; padding-bottom: 24px; box-sizing: border-box; overflow-y: auto; } 
         .modal.open { display: flex; } 
-        .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; }
+        .modal-content { background: var(--card-background-color); color: var(--primary-text-color); padding: 24px; border-radius: 16px; width: fit-content; max-width: calc(100% - 32px); max-height: calc(100vh - 150px); overflow-y: auto; box-shadow: 0px 4px 16px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; margin: 0 16px; box-sizing: border-box; }
+        #template-modal .modal-content { width: 550px; }
+        .modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 24px; }
+        .modal-footer-left { display: flex; align-items: center; }
+        .modal-footer-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+        .btn-danger { color: var(--error-color, #F44336) !important; --mdc-theme-primary: var(--error-color, #F44336); }
+        .btn-danger ha-icon { --mdc-icon-size: 18px; margin-right: 4px; }
+        @media (max-width: 768px), (max-height: 768px) {
+          .modal { padding-top: 16px; padding-bottom: 16px; }
+          .modal-content, #template-modal .modal-content { max-height: calc(100vh - 32px); }
+        }
+        @media (max-width: 768px) {
+          .modal-content, #template-modal .modal-content { padding: 16px; width: calc(100% - 32px); max-width: calc(100% - 32px); margin: 0 16px; border-radius: 16px; }
+        }
         .form-label { font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 4px; display: block; } 
         .form-row { display: flex; gap: 16px; width: 100%; box-sizing: border-box; }
         .form-col { flex: 1; min-width: 0; width: 100%; }
@@ -726,7 +791,7 @@ class TaskOrganizerSettings extends HTMLElement {
         .btn-import { background: #2196F3; color: white; }
         .goal-indicator-wrapper { display: flex; align-items: center; width: 100px; height: 10px; background: linear-gradient(to right, #cc0000, red, orange 50%, green, #007300); border-radius: 5px; position: relative; margin-left: 10px; cursor: pointer; }
         .goal-indicator-ideal { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background-color: var(--primary-text-color); transform: translateX(-50%); z-index: 1; }
-        .goal-indicator-current { position: absolute; top: 50%; width: 8px; height: 8px; background-color: white; border: 1px solid var(--primary-text-color); border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .goal-indicator-current { position: absolute; top: 50%; width: 8px; height: 8px; background-color: white; border: 1px solid var(--primary-text-color); border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.5); transition: left 0.15s ease-out; }
       </style>
     `;
   }
@@ -738,34 +803,27 @@ class TaskOrganizerSettings extends HTMLElement {
     if (!this._config || !this._hass) {
       return;
     }
-    
+
     if (this._themeView === undefined) this._themeView = 'light';
     const displayTitle = this._config.title || this.localize('title');
     const showAdvanced = this._config.show_advanced === true;
     const template = this._editingTemplateId ? this.templates[this._editingTemplateId] : null;
 
-    let requiredPoints = 0;
-    if (this.tasks) {
-      Object.values(this.tasks).forEach(t => {
-        if (t.interval > 0) {
-          requiredPoints += (t.complexity || 0) / t.interval;
-        }
-      });
-    }
+    const requiredPoints = this._getRequiredPoints();
 
     let currentGoals = 0;
     if (this.settings?.point_goals) {
       Object.values(this.settings.point_goals).forEach(g => currentGoals += (parseInt(g) || 0));
     }
 
-    let indicatorPercent = 50; 
+    let indicatorPercent = 50;
     if (requiredPoints > 0) {
       indicatorPercent = (currentGoals / requiredPoints) * 50;
       indicatorPercent = Math.max(0, Math.min(100, indicatorPercent));
     }
 
     let html = this._getStyles();
-    
+
     // Add Main Layout
     html += `
       <ha-card>
@@ -787,13 +845,13 @@ class TaskOrganizerSettings extends HTMLElement {
           <div class="section-content ${this._colorOpen ? 'open' : ''}">
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
               ${['done', 'due', 'overdue', 'in_progress', 'paused'].map(status => {
-                const colorKey = `color_${status}_${this._themeView}`;
-                const transpKey = `transparency_${status}_${this._themeView}`;
-                
-                const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status==='done'?'#4CAF50':status==='due'?'#FFC107':status==='overdue'?'#F44336':status==='in_progress'?'#2196F3':'#9E9E9E');
-                const transpVal = this.settings[transpKey] !== undefined ? this.settings[transpKey] : 8;
-                
-                return `
+      const colorKey = `color_${status}_${this._themeView}`;
+      const transpKey = `transparency_${status}_${this._themeView}`;
+
+      const colorVal = this.settings[colorKey] || this.settings[`color_${status}`] || (status === 'done' ? '#4CAF50' : status === 'due' ? '#FFC107' : status === 'overdue' ? '#F44336' : status === 'in_progress' ? '#2196F3' : '#9E9E9E');
+      const transpVal = this.settings[transpKey] !== undefined ? this.settings[transpKey] : 8;
+
+      return `
                 <div style="display: grid; grid-template-columns: 35px 80px 1fr 35px; align-items: center; gap: 8px;">
                   <input type="color" id="c-${status}" value="${colorVal}" title="${this.localize(`color_${status}_lbl`)}" style="justify-self: center;">
                   <span style="font-size: 14px;">${this.localize(`c_${status}`)}</span>
@@ -801,7 +859,7 @@ class TaskOrganizerSettings extends HTMLElement {
                   <span style="font-size: 13px; color: var(--secondary-text-color); text-align: right;" id="tl-${status}">${transpVal}%</span>
                 </div>
                 `;
-              }).join('')}
+    }).join('')}
             </div>
             
             <div style="display: flex; justify-content: flex-end; margin-top: -8px;">
@@ -862,13 +920,13 @@ class TaskOrganizerSettings extends HTMLElement {
             </div>
             <div id="template-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
               ${Object.values(this.templates).length > 0 ? Object.values(this.templates).map(t => {
-                const descTooltip = t.description ? t.description.replace(/"/g, '&quot;') : "";
-                let subtaskTooltip = "";
-                if (t.subtasks && t.subtasks.length > 0) {
-                    const subtaskList = t.subtasks.map(st => `${st.done ? '✓' : '○'} ${st.title}`).join('&#10;');
-                    subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
-                }
-                return `
+      const descTooltip = t.description ? t.description.replace(/"/g, '&quot;') : "";
+      let subtaskTooltip = "";
+      if (t.subtasks && t.subtasks.length > 0) {
+        const subtaskList = t.subtasks.map(st => `${st.done ? '✓' : '○'} ${st.title}`).join('&#10;');
+        subtaskTooltip = `${this.localize('subtasks')}:&#10;${subtaskList}`;
+      }
+      return `
                 <div class="template-card">
                   <div class="template-info">
                     <ha-icon icon="${t.icon || 'mdi:label-outline'}"></ha-icon>
@@ -912,7 +970,7 @@ class TaskOrganizerSettings extends HTMLElement {
             ${Object.entries(this.users).map(([uid, name]) => `
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 500; font-size: 14px; color: var(--primary-text-color);">${name}</span>
-                <input type="number" class="user-goal-input" data-uid="${uid}" 
+                <input type="number" class="user-goal-input" data-uid="${uid}" min="0" 
                        value="${this.settings.point_goals?.[uid] || ''}" placeholder="0">
               </div>
             `).join('')}
@@ -966,9 +1024,9 @@ class TaskOrganizerSettings extends HTMLElement {
                   <label class="form-label">${this.localize('assignees_lbl')}</label>
                   <div style="display:flex; flex-direction:column; gap:8px; padding-top:8px;">
                       ${Object.entries(this.users).map(([uid, name]) => {
-                          const isChecked = template?.assignees?.includes(uid) || false;
-                          return renderCheckbox({ label: name, className: 'tmpl-assignee-cb', value: uid, checked: isChecked });
-                      }).join('')}
+        const isChecked = template?.assignees?.includes(uid) || false;
+        return renderCheckbox({ label: name, className: 'tmpl-assignee-cb', value: uid, checked: isChecked });
+      }).join('')}
                   </div>
               </div>
 
@@ -984,9 +1042,19 @@ class TaskOrganizerSettings extends HTMLElement {
                   <div id="subtask-list" class="subtask-list"></div>
               </div>
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
-                <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
-                <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
+            <div class="modal-footer">
+                <div class="modal-footer-left">
+                    ${this._editingTemplateId ? `
+                        <ha-button appearance="plain" variant="danger" id="btn-template-delete" class="btn-danger">
+                            <ha-icon icon="mdi:delete" slot="icon"></ha-icon>
+                            ${this.localize('delete')}
+                        </ha-button>
+                    ` : ''}
+                </div>
+                <div class="modal-footer-right">
+                    <ha-button appearance="plain" variant="brand" id="btn-modal-cancel">${this.localize('cancel')}</ha-button>
+                    <ha-button raised id="btn-modal-save">${this.localize('save')}</ha-button>
+                </div>
             </div>
         </div>
       </div>
@@ -1050,9 +1118,9 @@ class TaskOrganizerSettings extends HTMLElement {
         </div>
       </div>
     `;
-    
+
     this.shadowRoot.innerHTML = html;
-    
+
     // Bind click events
     this.shadowRoot.querySelector('ha-card').addEventListener('click', (ev) => this._handleClick(ev));
     this.shadowRoot.querySelector('#template-modal').addEventListener('click', (ev) => this._handleClick(ev));
@@ -1080,12 +1148,18 @@ class TaskOrganizerSettings extends HTMLElement {
       });
     });
 
+    // Bind goal input live updates
+    this.shadowRoot.querySelectorAll('.user-goal-input').forEach(el => {
+      el.addEventListener('input', () => this._updateGoalIndicator());
+      el.addEventListener('change', () => this._updateGoalIndicator());
+    });
+
     if (this._templateModalOpen) {
       const iconPicker = this.shadowRoot.getElementById('tmpl-icon');
-      if(iconPicker) iconPicker.hass = this._hass;
+      if (iconPicker) iconPicker.hass = this._hass;
 
       const areaPicker = this.shadowRoot.getElementById('tmpl-area');
-      if(areaPicker) areaPicker.hass = this._hass;
+      if (areaPicker) areaPicker.hass = this._hass;
     }
   }
 }
@@ -1116,8 +1190,8 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
   _render() {
     if (!this._config || !this._hass) return;
     if (this._rendered) {
-        this._updateUI();
-        return;
+      this._updateUI();
+      return;
     }
     this.innerHTML = `
       <div class="card-config">
@@ -1142,13 +1216,13 @@ class TaskOrganizerSettingsEditor extends HTMLElement {
   _updateUI() {
     if (!this._rendered) return;
     this.querySelectorAll('[configValue]').forEach(el => {
-        const key = el.getAttribute('configValue');
-        const value = this._config[key];
-        if (el.tagName === 'HA-CHECKBOX') {
-            el.checked = value === true;
-        } else if (value !== undefined) {
-            el.value = value;
-        }
+      const key = el.getAttribute('configValue');
+      const value = this._config[key];
+      if (el.tagName === 'HA-CHECKBOX') {
+        el.checked = value === true;
+      } else if (value !== undefined) {
+        el.value = value;
+      }
     });
   }
 
